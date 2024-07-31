@@ -1,0 +1,9 @@
+name: ncbi_datasets
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - ca-certificates=2024.2.2=hbcca054_0
+  - ncbi-datasets-cli=16.14.0=ha770c72_2
+prefix: /home/iweber/anaconda3/envs/ncbi_datasets
