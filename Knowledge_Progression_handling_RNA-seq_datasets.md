@@ -28,28 +28,39 @@ Using the documentation at NCBI, I found that one needs a suite of programs call
 
 I downloaded the SRA toolkit as a .tar.gz archive for Ubuntu from one of the FTP servers of the NCBI:
 
-	`wget --output-document sratoolkit.tar.gz https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/current/sratoolkit.current-ubuntu64.tar.gz `
+```bash
+wget --output-document sratoolkit.tar.gz https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/current/sratoolkit.current-ubuntu64.tar.gz
+```
 
 then extracted it in one of my Ubuntu folders with the tar utility (included in Ubuntu),
-	`tar -vxzf sratoolkit.tar.gz `
+
+```bash
+tar -vxzf sratoolkit.tar.gz
+```
 
  and could afterwards access its tools over the command line.
 
 As per the instructions of the GitHub page, I modified the PATH variable in my system. This essentially tells Ubuntu that there is a shortcut to the folders where SRA Toolkit has its binaries (bin directory) so that I can then easily access the individual tools and commands from the toolkit via the command line without needing to constantly change directories to that in which I extracted the SRA toolkit. 
  
-	 `export PATH=$PATH:$PWD/sratoolkit.3.1.0-ubuntu64/bin`
+```bash
+export PATH=$PATH:$PWD/sratoolkit.3.1.0-ubuntu64/bin
+```
 
 This should tell the shell that, when looking for binaries (tools, programs, etc that are executable), it should also look in the respective folder of the SRA Toolkit.
 
 To verify whether the binaries can be found by the shell, I used
 
-	fastq-dump --stdout -X 2 SRR390728
+```bash
+fastq-dump --stdout -X 2 SRR390728
+```
 
 ...which worked as expected with returning the path to the directory of binaries precisely until I restarted the terminal :) I then found out that "export" only does a temporary modification of the PATH environment variable, which isn't kept in the global namespace. So, after advice from Christoph, I found out I need to only add the exact same line, minus "export", into the .profiles file, which should save any customized variants of the PATH variable. And now I have the SRA Toolkit set up to work from any directory, and even after restarting the shell.
 
 Additionally, I created a handy alias for changing the directory to where my datasets are stored by adding the following under "Some more aliases" in the .bashrc file:
 
-`alias mydatasets='cd /home/iweber/Datasets'`
+```bash
+alias mydatasets='cd /home/iweber/Datasets'
+```
 
 So now I can go straight to that folder with only typing "myd" and hitting tab.
 
@@ -61,7 +72,10 @@ However, in the tab Cache, I did set the location of the user-repository and pro
 # WSL - Extracting FastQ files from the SRR archives
 
 And now that the tools are set up, I went on to try and extract the FastQ files from my dataset in SRA format. In my Datasets directory, I used the fasterq-dump command together with my dataset as a command-line argument:
-	`fasterq-dump SRR13761520`
+
+```bash
+fasterq-dump SRR13761520
+```
 
 And waited. I was afraid nothing is happening and I just went into some infinite loop, but then I navigated in Windows to the Datasets folder in WSL and saw that a temporary directory had been created. Since the terminal also didn't show me a fresh command prompt, I assumed it was just working intensely in the background to convert the data. Also, my ventilators were going crazy. s, when I checked the Task Manager, I saw that nearly 60% of my memory was in use by a process called "Vmmem". Sure enough, a brief web search uncovered that this happens precisely when using WSL, and is the Windows process responsible for the virtual memory management[[Double check!]]. All of this was happening before switching my RAM chips from a total of 32 GB to a total of 128 GB :) Yes, I am aware that I will need to set up a few more things, such as hyper-threading, for the new RAM to work as effectively as possible, but I was reluctant to do this at first, as my first experience after getting my laptop had been it crashing and refusing to start Windows upon installing a VirtualBox virtual machine and tinkering with the virtualization settings).
 
@@ -111,7 +125,97 @@ I then wanted to get and extract all of the other SRA archives related to the E 
 I checked the progress on occasion via TeamViewer, and saw things moving along through the continual increase in the size of the export folder. As a side note, here I also saw that the WSL virtual machine was still using up almost half of my RAM during this operation, and I think this is due to the limitations that WSL has in terms of memory usage, at least when compared to a virtual machine, so I decided I must take the plunge and create one. (see linked post about VM)
 
 
-# Real solution: Making a VirtualBox virtual machine to run Ubuntu
+# Quality control of FastQ files with the RNA-seq reads (still on WSL)
+## Quality control of individual FastQ files
+For the quality control of this small number of files, I used [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/), which is an open-source tool that checks the reads in FastQ files for various quality parameters, such as sequence quality scores, GC content, sequence duplication levels, or the presence of sequences left behind by the oligonucleotide adapters used for the amplification and actual sequencing of the cDNA fragments. I was pleasantly surprised that opening the application from the Ubuntu command line resulted in a user-friendly GUI, with which I could select the sequences to be analyzed. After analyzing the two FastQ files resulting from the first sequencing run (SRR13761520_1 and SRR13761520_2), I got quite different results. Whereas the file ending in 2 passed the quality checks in all but one department ("Per base sequence content" gave a warning), the file ending in 1 had a few more issues. It failed the "Per base sequence content" testing and gave warnings for "Per sequence GC content" and "Sequence duplication levels". I suppose this difference results from one of the files representing one item from each pair of reads and the other file the sequence complementary to it [source?]. As these two reads stem from two separate sequencing reactions [source], it is normal that one set can have different sequencing quality, based on differences in the reaction setup, base composition, or technically-introduced biases that only happened for one of the two sequencing runs.
+
+Nonetheless, I wanted to understand better what the parameters returned by FastQC are and what they mean for the usability of the data for further analyses. To better understand how this data was pre-processed, I foraged a bit in the Series Matrix file provided on the GEO page of the study, but the authors don't give a lot of details about the handling of the data, aside from `Reads filtering under criteria removing reads with 20% of the base quality lower than 13"`. Considering that FastQC did not indicate the presence of any known adapter sequences in the data and that the files were already clearly sorted by experimental condition and subject, (I hope) it's safe to assume that any necessary demultiplexing and adapter trimming has been performed by the authors of the study/the sequencing facility they worked with, plus applying this quality filter they mention in the Series Matrix file.
+
+To centralize all analysis info for all of the FastQ files generated by FastQC, I settled on [MultiQC](https://academic.oup.com/bioinformatics/article/32/19/3047/2196507?login=false) . I envision myself working with single-cell RNA-seq datasets at a later time point, and MultiQC can, as the name suggests, run the analyses in parallel on many files, making it a lot more efficient in handling large numbers of datasets. MultiQC is a part of the bcbio-nextgen Python package, so I wanted to install it in my Python on the WSL Ubuntu as instructed by the package's GitHub [page](https://bcbio-nextgen.readthedocs.io/en/latest/contents/installation.html#automated). I thought this installed not only the package but also all dependencies (other modules) that are needed for it to run...but it didn't. It told me it was missing crucial data, such as the genome assemblies for mouse and human, which prevented it from running at all.
+
+During the lengthy installation process, I kept getting a message for all packages "Solving environment: failed with initial frozen solve. Retrying with flexible solve.". Thanks to another kind internet [stranger](https://medium.com/floppy-disk-f/linux-ubuntu-how-to-fix-solving-environment-failed-with-initial-frozen-solve-27c53c6de32a), I found that this is a problem that stems from having a version of Python that's newer than what many of these packages are optimized to work with. [what version do i have on my WSL? what versions needed? conda search python, then conda install python=desired_version_number, and then restart Ubuntu and Py, and update bcbio-nextgen package, hoping that this will resolve dependency issues]. However, the installation of bcbio-nextgen was still running (also, still running after 3h with the WSL virtual machine using 85 GB RAM sounds unusual and a bit alarming). 
+
+I realized that this may be due to WSL being less efficient in its memory usage than a full-fledged virtual machine [source?], so I proceeded to kill this process and install Oracle VirtualBox 7 and make an Ubuntu VM on it.
+
+## MultiQC: General quality stats of the pre-eclampsia FastQ files
+
+
+I saw that multiqc takes one full folder as input.  I could call `fastqc` from the command line individually for all of my FastQ files, but...why would I do something rather tedious to do for all of the 16 FastQ files? So I quickly wrote a small Bash script to automate the process:
+
+```bash
+#!/bin/bash
+
+directory="/home/iweber/Documents/ABI_files_NGS/6484_fastq/"
+
+for file in "$directory"/*.fastq; do
+	if [ -f "$file" ]; then
+		fastqc "$file" --outdir /home/iweber/Documents/ABI_files_NGS/FastQC_results
+	fi
+
+done
+```
+
+This simply cycles through all of the files with a .fastq ending in the indicated directory, stores the name of the file in the variable called file, and then calls fastqc to operate on the content of the file name variable ($file), while outputting the result into the FastQC_results folder.
+I made it executable with `chmod` and then ran it, and:
+
+![[2024-05-07_script_FastQC_success.png]]
+
+It worked! Naturally, I then ran MultiQC to summarize all of the reports obtained with FastQC.
+
+![[2024-05-07_MultiQC_res_pre-e_success.png]]
+
+Let's have a more detailed look at the results.
+
+![[2024-05-07_MultiQC_res_pre-e_general_stats.png]]
+So far, so good. Each of the files contains around 21 million reads, with a GC content that's normal for the mouse ([source?]). The amount of sequences flagged as duplicates is around 30%, which is to be expected due to the amplification steps during the library preparation ([quote from Ioana Lemnian]).
+
+The Phred scores are, on average, also good across the entire length of the reads., even though, as usual, the quality at the beginning, in the first 10 nucleotides or so from the 5' end, is a bit lower than in the rest of the sequence.
+![[2024-05-07_MultiQC_res_pre-e_seq_quality.png]]
+
+What looked a bit less rosy was the per base sequence content quantification. For all of the `_2` ending samples, FastQC gave a warning for the nucleotide composition, which should ideally be uniform across the read, with each base keeping its proportion percentage and giving a plot with four parallel lines. It's normal that the beginning of the read is a bit more noisy, up to 10 bases, and that's what we see here. Even for the samples ending in `_1` , that were flagged as "failed", the irregularities are restricted to this area. This looks like a good case for trimming these fragment start regions off in subsequent steps.
+![[2024-05-07_MultiQC_res_pre-e_per-base-seq-content.png]]
+
+The per sequence GC content looked mostly alright (the reads in 11 of the 16 FastQ files passed with no warning), but there were some where FastQC gave a warning, so I know to keep an eye out in case these files cause some strange, systematic error down the line. 
+
+SRR13761520_1
+SRR13761521_1
+SRR13761521_2
+SRR13761522_1
+SRR13761523_1
+![[Pasted image 20240507201249.png]]
+
+The content of bases that could not be unequivocally identified during the sequencing was, fortunately, negligible.
+![[2024-05-07_MultiQC_res_pre-e_per-base-N-content.png]]
+
+Many of the FastQ files were found to contain reads from duplications. These usually result from the PCRs from the library preparation or even during sequencing itself, but the concentration of the second peak at 10x duplication suggests that these all stem from some 10-cycle-PCR. FastQC seems to flag any FastQ files where more than 8% of the reads are duplicates at the >10x mark but only those where the dupes surpass 11% of the read count for the 2x duplication mark [why?].
+
+There were no warnings for overrepresented sequences, and FastQC did not find any of the usual sequences of adapters used in NGS kits in the FastQ files. This tells me that the files were processed before their further use, perhaps directly by the sequencing facility after demultiplexing [maybe ***bcl2fastq*** or ***BCL convert*** can also do this? Or maybe the authors just uploaded the already trimmed reads to GEO.] 
+
+![[2024-05-07_MultiQC_res_pre-e_overrepresented-seqs.png]]
+
+## Summary of initial quality warnings for the reads
+
+> [!Warnings:]
+> Datasets with warnings for GC content: 
+> SRR13761520_1
+> SRR13761521_1
+> SRR13761521_2
+> SRR13761522_1
+> SRR13761523_1
+> 
+> Dupe warnings:
+> SRR13761520_1
+> SRR13761521_1
+> SRR13761522_1
+> SRR13761523_1
+> SRR13761524_1
+> SRR13761525_1
+> SRR13761526_1
+> SRR13761526_2
+> SRR13761527_1
+> SRR13761527_2
+
+# Real solution for space issues: Making a VirtualBox virtual machine to run Ubuntu
 
 Before taking the plunge to make a virtual machine, I made some very thorough backups of my system. I made a restore point, then also used File History and Backup and Restore to make images of my WinOS. Finally, I made a recovery USB in case I wouldn't be able to start the OS after making changes to the BIOS to enable virtualization. Maybe I wouldn't be this paranoid if tinkering with the virtualization options hadn't BSOD-ed my back-then three days old laptop right after setting it up out of the box for the very first time...so better safe than sorry.
 
@@ -140,17 +244,21 @@ After the restart, the terminal still works. I could also `whoami` myself AND `s
 
 I went to the Anaconda website to find out how to download packages that I [previously found out ](https://docs.anaconda.com/free/anaconda/install/linux/)need to be installed for the Anaconda Navigator GUI (anaconda3) to work. The command I used in the terminal was:
 
-`sudo apt-get install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6`
-
+```bash
+sudo apt-get install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6
+```
 and it executed without me seeing any errors.
 
 Tried to download the Anaconda Navigator installer [Anaconda3-2024.02-1-Linux-x86_64.sh](https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh) as recommended by the Anaconda Navigator page by using
 
-`curl -O https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh`
-
+```bash
+curl -O https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh`
+```
 ...and found out I first had to install the curl package (*cry-laugh* ), which I quickly did with
 
-`sudo apt install curl`
+```bash
+sudo apt install curl
+```
 
 I could then finally run the curl command above to get the Anaconda Navigator. What was displayed during the installation was this:
 
@@ -192,8 +300,9 @@ First, installed Git from git-scm using `sudo apt-get install git`. Checked if I
 
 I then started the installation by calling python3 and, using it, the Py script that is supposed to install bcbio-nextgen. I used the options --nodata to do a minimal installation, without genomes etc, and --mamba to use mamba as a package manager. The command looked like:
 
-`python3 bcbio-nextgen-install.py /home/iweber/bcbio --tooldir=/home/iweber/bcbio/tools --nodata --mamba`
-
+```bash
+python3 bcbio-nextgen-install.py /home/iweber/bcbio --tooldir=/home/iweber/bcbio/tools --nodata --mamba
+```
 I noticed it said it was installing mamba, and am not sure why - maybe because I am not installing bcbio within the mamba directory? But I thought that that amounts to installing in the base environment and is not recommended? Either way, the installation did not succeed. It also told me I was using a deprecated version of conda, so I updated it to the last version (24.3 at the time of writing this).
 
 ***LE: I think the Py installer script for bcbio-nextgen installs Miniconda and uses that to solve the environment/package dependencies, and that's why it pops up as deprecated, even though I just installed the most recent version of conda***
@@ -291,12 +400,14 @@ However, upon restarting the virtual machine, Ubuntu still asked me for my passw
 
 ChatGPT's next idea was to create a script that will be automatically run at system startup and will mount the inter-OS shared folder with the appropriate permissions from the get-go. I removed the line I previously added to the fstab file and proceeded to create the new startup file. I created the file directly with nano, `sudo nano /usr/local/bin/mount_shared_folder.sh`, and added to it 
 
-`#!/bin/bash
-`sudo mount -t vboxsf -o uid=1000,gid=1000,dmode=0770,fmode=0770 Win_Ubuntu_shared /mnt-win-ubu-shared`
+```bash
+#!/bin/bash
+sudo mount -t vboxsf -o uid=1000,gid=1000,dmode=0770,fmode=0770 Win_Ubuntu_shared /mnt-win-ubu-shared
+```
 
 I made it executable with `sudo nano /etc/systemd/system/mount_shared_folder.service`, then created a service to run it at startup: `sudo nano /etc/systemd/system/mount_shared_folder.service`, with the contents 
 
-```
+```bash
 [Unit]
 Description=Mount VirtualBox Shared Folder
 After=vboxadd.service
@@ -312,18 +423,18 @@ WantedBy=multi-user.target
 ```
 .
  Then, reloaded the Systemd and enabled the newly created service:
-```
+```bash
 sudo systemctl daemon-reload
 sudo systemctl enable mount_shared_folder.service
 ```
 , which returned 
-```
+```bash
 Created symlink /etc/systemd/system/multi-user.target.wants/mount_shared_folder.service → /etc/systemd/system/mount_shared_folder.service.
 ```
 And I restarted the service with `sudo systemctl start mount_shared_folder.service`, and then the virtual machine itself. And it still doesn't work without punching in my password. So I decided that, for the time being, if I only have to input the password once, at system startup, that's fine and unlikely enough to affect the pipeline that I'm willing to drop it and move onto something more productive.
 
 I added aliases to my .bashrc file to more easily access the folder, if nothing else. I just pasted into it:
-```
+```bash
 alias inter-OS='cd /mnt-win-ubu-shared'
 alias inter-OS_data='cd /mnt-win-ubu-shared/Datasets/'
 ```
@@ -332,70 +443,12 @@ Additionally, I installed conda environment name autocompletion. I first tried i
 , but that ran into an error:
 ![[2024-07-29_bash_autocomplete_installation_error.png]]
 
-The error seems to be related with the Nvidia and Cuda drivers...and I don't have the time to look further into this right now.
+The error seems to be related to the Nvidia and Cuda drivers...and I don't have the time to look further into this right now.
 
 I simply proceeded with `conda install bash-completion` in the base environment. It seems to have completed error-free, and the autocompletion now works without errors.
 ## Updating installation for the SRA toolkit
 
 I had initially worked on the WSL and created the VirtualBox virtual machine later, so of course the SRA toolkit was not working any longer. I created a dedicated conda environment for it called `ncbi_SRA`, and installed the package from Bioconda using `conda install sra-tools` and updated it with `conda update sra-tools`
-
-# Creating a GitHub repository for the project
-
- In order to be able to more easily version my work on the project and to allow my internship supervisor to gain insight into what I was doing, I created a GitHub repo for the newly minted "official project folder" (the shared folder I created above). 
-
-I first created an empty repo on GitHub and also a fine-grained access token for myself, giving myself all of the privileges necessary for using the repo. Then, from Ubuntu, I initialized a new git repo in the inter-OS shared folder with `git init` and pointed its head to the main branch:
-`git symbolic-ref HEAD refs/heads/main`. 
-
-I created the link to the online repo with
-`git remote add origin https://github.com/i-weber/Internship_project_RNAseq`.
-
-I added all of the files in the folder to the current staging area with `git add .`, and that might have been a mistake, given that the FastQ files are pretty large in their uncompressed state - the whole folder is around 170 GB *insert clenched teeth smiley*. Indeed, I then found out one can use the `top` command _**in a new terminal window**_ to check resource usage in Linux, similar to Windows's task manager, and I saw that Git is using 70-80% of all resources of the virtual machine, so I gave it time. Next time, I will use 
-
-`git add . --verbose`
-
-to get a better feel of the progress it is making through the files and folders. Also, can use `iostat -x 1` to investigate disk usage (install with `sudo apt-get install sysstat`) or `htop`, which apparently is `top` on steroids (also needs prior installation with `sudo apt-get install htop
-`).
-
-So far, clocking at half an hour run time for the add command...let's see how long it takes in total.
-At the one hour mark, I decided it was time to stop messing around, so I killed the process and proceeded to add the FastQ files and genomic files to the .gitignore. I created it with nano and added to it:
-
-```         
-Adapters/
-Genomes/
-Nextflow/
-Software/
-Datasets/sra
-Datasets/Pre_eclampsia_mice/Pre_eclampsia_mice_fastq/
-```
-
-to avoid some of the largest and recoverable files from the push and commit.
-
-I then tried to push the .gitignore only, and , after completing the command line sign in, immediately got an error because I had previously set GitHub to block commits that might publicize my email address. So I found out that, in order to avoid this issue, I can use a no-reply address that GitHub itself creates for all of its users as my default email. I ran `git config --global user.email "163516184+i-weber@users.noreply.github.com"` to do so, and deactivated the checkbox in my GitHub email setttings that supposedly protects one from publicizing their email in the commit metadata (I now know that this no-reply address will be used). And I could finally push the .gitignore file and see it on the website!
-
-I then proceeded to add all other files with `git add . --verbose` at 16.48. It crashed around 17.05 because - and I should've thought of this! - I deleted a file from the folder at some point ***facepalm***. One more thing learned...and restarted the same command at 17.06. Annnd it worked!
-
-I proceeded to commit the changes with `git commit -m "All files up to date"`, which returned
-
-```
-[main 3a13867] All files up to date
- 131 files changed, 98102 insertions(+), 1 deletion(-)
-```
-
-It failed, with an error message saying: "Enumerating objects: 129, done. Counting objects: 100% (129/129), done. Delta compression using up to 6 threads Compressing objects: 100% (123/123), done. error: unable to rewind rpc post data - try increasing http.postBuffer error: unable to rewind rpc post data - try increasing http.postBuffer error: RPC failed; HTTP 400 curl 92 Recv failure: Connection reset by peer send-pack: unexpected disconnect while reading sideband packet Writing objects: 100% (127/127), 2.04 GiB | 2.85 MiB/s, done. Total 127 (delta 18), reused 1 (delta 0), pack-reused 0 (from 0) fatal: the remote end hung up unexpectedly Everything up-to-date"
-
-I set the postBuffer to 200 MB using `git config --global http.postBuffer 209715200` , and re-started the commit command at 23:20. 
-
-Aaand...it failed again. The message read just as above (I think - I lost the clipboard because I shut the virtual machine off too soon, apparently...).
-
-My next approach was to try the Git Large File System extension (https://git-lfs.com). I used the command
-
-	`curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash` 
-
-to install the package, as directed by the website that git-lfs directed me towards, https://packagecloud.io/github/git-lfs/install. That didn't cut it, and neither did trying to install git by using `git lfs install`, as I suspect that will only work once lfs is actually on the system (it gives an error saying it doesn't recognize the command). So I downloaded the tar archive, changed the directory to the Downloads folder, and extracted it with tar (v = verbose, x = extract - otherwise, tar tries creating an archive, z = indicate that archive is in gzip format, f = name to use for the extracted file or folder)
-
-	`tar -vxzf git-lfs-linux-amd64-v3.5.1.tar.gz`
-
-I then navigated to the decompressed folder, made the install.sh script file inside of the folder executable with `chmod u+x install.sh`, then navigated to my inter-OS folder and ran the install.sh with sudo permissions (it told me I could not install it where I had downloaded it, the regular Downloads folder of Ubuntu, hence my choice to change to my folder). I tried now to use `git lfs install` and got the same message as before, `Updated Git hooks. Git LFS initialized.` I suspect it is now ready to use.
 
 # New environment, new life: creating dedicated bioinformatics environments using conda
 Since I had all of the aforementioned issues with bcbio, I decided to abandon that approach, and, consequently, deleted the environment with conda, just to be on the safe side that I will have no issues later:
@@ -427,117 +480,479 @@ After that, I wanted to see what options are available for multiqc, so I ran `mu
 ![[2024-05-06_multiqc_help_options_3.png]]
 
 
+# Creating a GitHub repository for the project
+
+ In order to be able to more easily version my work on the project and to allow my internship supervisor to gain insight into what I was doing, I created a GitHub repo for the newly minted "official project folder" (the inter-OS shared folder I created before). Naturally, I should have started a repository much longer ago, but, as the saying goes, "The best time to plant a tree was 20 years ago. The next-best time is now". I started working on this project while my bioinformatics course was still ongoing and we hadn't talked about git yet - now's that next-best time to catch up on this.
+## Making the repo under Linux
+
+I first created an empty repo on GitHub and also a fine-grained access token for myself, giving myself all of the privileges necessary for using the repo. Then, from Ubuntu, I initialized a new git repo in the inter-OS shared folder with `git init` and pointed its head to the main branch:
+`git symbolic-ref HEAD refs/heads/main`. 
+
+I added the online repo with
+`git remote add origin https://github.com/i-weber/Internship_project_RNAseq`.
+
+I added all of the files in the folder to the current staging area with `git add .`, and that might have been a mistake, given that the FastQ files are pretty large in their uncompressed state - the whole folder is around 170 GB *insert clenched teeth smiley*. On the side, I then read one can use the `top` command _**in a new terminal window**_ to check resource usage in Linux, similar to Windows's task manager, and I saw that Git is using 70-80% of all resources of the virtual machine, so I gave it time. Next time, I will use  `git add . --verbose` to get a better feel of the progress it is making through the files and folders. Also, can use `iostat -x 1` to investigate disk usage (install beforehand with `sudo apt-get install sysstat`) or `htop`, which apparently is `top` on steroids (also needs prior installation with `sudo apt-get install htop`).
+
+So far, clocking at half an hour run time for the `add` command...let's see how long it takes in total.
+
+At the one hour mark, I decided it was time to stop messing around, so I killed the process and proceeded to add the FastQ files and genomic files to the .gitignore. I created it with nano and added to it:
+
+```         
+Adapters/
+Genomes/
+Nextflow/
+Software/
+Datasets/sra
+Datasets/Pre_eclampsia_mice/Pre_eclampsia_mice_fastq/
+```
+
+to avoid some of the largest and recoverable files from the push and commit.
+
+> [!For the future:]
+> Note to self: add them without the slashes, I think git was looking for  "empty" name items in these folders and not finding them, without selecting everything *inside* of the folders.
+
+I then tried to push the .gitignore only, and, after completing the command line sign in, immediately got an error because I had previously set GitHub to block commits that might publicize my email address. So I found out that, in order to avoid this issue, I can use a no-reply address that GitHub itself creates for all of its users as my default email. I ran `git config --global user.email "163516184+i-weber@users.noreply.github.com"` to do so, and deactivated the checkbox in my GitHub email setttings that supposedly protects one from publicizing their email in the commit metadata (I now know that this no-reply address will be used). And I could finally push the .gitignore file and see it on the website!
+
+I then proceeded to add all other files with `git add . --verbose` at 16.48. It crashed around 17.05 because - and I should've thought of this! - I deleted a file from the folder at some point ***facepalm***. One more thing learned...and restarted the same command at 17.06. Annnd it worked!
+
+I proceeded to commit the changes with `git commit -m "All files up to date"`, which returned
+
+```bash
+[main 3a13867] All files up to date
+ 131 files changed, 98102 insertions(+), 1 deletion(-)
+```
+
+It failed, with an error message saying: "Enumerating objects: 129, done. Counting objects: 100% (129/129), done. Delta compression using up to 6 threads Compressing objects: 100% (123/123), done. error: unable to rewind rpc post data - try increasing http.postBuffer error: unable to rewind rpc post data - try increasing http.postBuffer error: RPC failed; HTTP 400 curl 92 Recv failure: Connection reset by peer send-pack: unexpected disconnect while reading sideband packet Writing objects: 100% (127/127), 2.04 GiB | 2.85 MiB/s, done. Total 127 (delta 18), reused 1 (delta 0), pack-reused 0 (from 0) fatal: the remote end hung up unexpectedly Everything up-to-date"
+
+I set the postBuffer to 200 MB using `git config --global http.postBuffer 209715200` , and re-started the commit command at 23:20. 
+
+Aaand...it failed again. The message read just as above (I think - I lost the clipboard because I shut the virtual machine off too soon, apparently...).
+
+My next approach was to try the Git Large File System extension (https://git-lfs.com). I used the command
+``
+```bash
+curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh sudo bash
+```
+
+to install the package, as directed by the website that git-lfs directed me towards, https://packagecloud.io/github/git-lfs/install. That didn't cut it, and neither did trying to install git by using `git lfs install`, as I suspect that will only work once lfs is actually on the system (it gives an error saying it doesn't recognize the command). So I downloaded the tar archive, changed the directory to the Downloads folder, and extracted it with tar (v = verbose, x = extract - otherwise, tar tries creating an archive, z = indicate that archive is in gzip format, f = name to use for the extracted file or folder)
+
+	`tar -vxzf git-lfs-linux-amd64-v3.5.1.tar.gz`
+
+I then navigated to the decompressed folder, made the install.sh script file inside of the folder executable with `chmod u+x install.sh`, then navigated to my inter-OS folder and ran the install.sh with sudo permissions (it told me I could not install it where I had downloaded it, the regular Downloads folder of Ubuntu, hence my choice to change to my folder). I tried now to use `git lfs install` and got the same message as before, `Updated Git hooks. Git LFS initialized.` It is now ready to use...but, in the end, does not seem so useful for my plans. I don't have individual files at the moment that are extremely large - I simply have folders with lots of relatively small files in them.
+
+To see which files git is currently tracking, I used ` git ls-files`, `git ls-tree -d HEAD` (directories only) and `git ls-tree -r HEAD` (directories and files contained therein) to make sure I am now really only tracking the files that I want to track, and not the FastQ files or genome files.
+
+![[2024-07-30_git_currently_tracked_dirs_files.png]]
+It looks like I am indeed now avoiding the really large files. I added again everything with `git add .`, then checked the status. It said it has nothing to commit, confirmed when I still tried to commit with `git commit -m "Add remaining changes"` so I went on to push the changes with `git push origin main`. The runtime started at 13:30, this time the "Writing objects" buffer went up to 10%, as opposed to the 7% it used to go up to yesterday. But it crashed again, with the error
+
+"Writing objects: 100% (140/140), 2.04 GiB | 1.08 MiB/s, done.
+Total 140 (delta 26), reused 1 (delta 0), pack-reused 0
+fatal: the remote end hung up unexpectedly
+Everything up-to-date",
+
+so I think I need to reduce the buffer size again. Did it with `git config --global http.postBuffer 157286400`, let's see if this is of any help...nope.
+
+I went through all of the files and removed anything that is not absolutely critical. I then reset the git staging area, and also removed any of the cached versions of any files with `git rm -r --cached .` Then, I used `find . -type f` to find all files that could be added at that moment. I checked the sizes - nothing is above 100 MB at the moment, not even folders.
+
+Tried again to add and push in small batches, e.g., in the Presentations folder, only some of the PNG images. It stopped at 96% in the writing process and would not progress. I increased the http buffer with `git config --global http.postBuffer 524288000` to 500 MB, but it then got stuck at 76% in the writing process.
+
+This is when I gave up and decided to do a fresh start. I deleted the .git folder, everything in the online version of the repository, and all of the data inside the inter-OS shared folder, since I had it backed up in a different location anyway. I re-initialized a git repo inside of the same folder, added the remote repo I had previously created and which was basically empty at this point, and then started adding the files and folders piecemeal back into the inter-OS shared folder, adding them to the staging area, committing, and pushing after each smaller batch of files. Worked like a charm, took maybe 15 min and solved all of my problems. Presentations folder, at 33 MB, took from 21:36 to 21:37 - nothing like the full hour it took in the previous days and earlier today!
+
+## Getting the repo to work under Windows as well
+
+Since I later want to take the data that the analysis pipeline generates and work with it under Windows, where I have R fully set up and ready to rumble, I want to have access to the repo from this OS as well. Additionally, I read that Visual Studio Code allows for a very nice integration with GitHub, including an extension that shows when commits were made and how different branches of a project relate to one another (Git Graph). So I opened the repo in Visual Studio Code, installed the extension, and now can open it with Ctrl+Shift+P --> Git Graph: View Git Graph from the dropdown menu. Now I can very easily track the changes to the repo visually, and also have access to the repo from the Windows side - if I select the folder where the repo is in the Explorer part of VSC, I can perform all of the usual git commands from the terminal.
+
+## Trying to use Git LFS to track FastQ and other large files
+
+As I want to track changes to my FastQ files as well once I start trimming them and processing them, but also to other large files, such as bam files, that I will generate further in the process, I set up Git LFS to track such files.
+
+I had previously installed git LFS on my VM, and I now went to my inter-OS folder and hit `git lfs install` to initialize it (yes, the naming is somewhat confusing). 
+
+I then proceeded to track .fastq files by using `git lfs track "*.fastq"` and it returned `Tracking "*.fastq"`.  I checked which files are now tracked by git LFS using `git lfs ls-files`, and it returned...nothing xD.
+
+![[2024-08-01_git_lfs_not_tracking_yet.png]]
+
+I checked whether the .gitattributes file was correctly created, and it seems so - it is present in my repo and contains `*.fastq filter=lfs diff=lfs merge=lfs -text`, as it should.
+
+I pasted my FastQ files into a raw data folder (Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/), together with the FastQC and MultiQC files that resulted from their analysis. I then created a .gitignore file to, for now, ignore the FastQs but still be able to stage, commit and push the new directory structure. After doing the usual git steps, I had an updated online repo including the FastQC and MultiQC files, but not the .fastq ones.
+
+I removed the .fastq rule from the .gitignore file. When hitting `git status` now, the only files left unchanged were indeed the newly added FastQ ones.
+
+I ran the `git lfs track "*.fastq"` command again, and got a message saying `"*.fastq" already supported`.
+
+I next added the first FastQ file to the staging area, SRR13761520_1.fastq. I started at 12.07, and it took around 5 min to finish. It also took a moment to commit, but, when I tried pushing it to the repo, it failed, saying 
+
+```bash
+[f12181f07712304b1aed2f1876165f549942ad8144457878ca37fbe90356a731] Size must be less than or equal to 2147483648: [422] Size must be less than or equal to 2147483648
+error: failed to push some refs to 'https://github.com/i-weber/Internship_project_RNAseq'
+```
+It sounds to me like git LFS is still not managing the FastQ files as it should. In the previous step, Git tried to push a file larger than 270 MB to the repo, which is clearly not what it should be doing, if git LFS were working. 
+
+> [!What's happening here? There's some logical connection missing.]
+> The solution may involve using [`git lfs migrate`](https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs-migrate.adoc?utm_source=gitlfs_site&utm_medium=doc_man_migrate_link&utm_campaign=gitlfs) to force the objects that are now managed by git to be managed by git LFS instead. I used `git lfs ls-files --all` to understand if git lfs was already tracking anything
+
+2:17 git status
+2:19: It looks like the file that now appears to already be tracked by git lfs does not appear any longer under "untracked files".
+
+
+Tried adding the pair of this FastQ file (the one ending in `_2`) to the staging area and committing. then running `git lfs ls-files --all` to see if git LFS takes over this file after the commit.
+
+![[2024-08-01_git_lfs_success.png]]
+And success! The files now don't show up in the regular git tracked files, but do show up as managed by git LFS! 
+
+So, what have I learned? Git LFS needs a definition of what kinds of files to look for (the pattern specified in the .gitattributes file). It then keeps a lookout for them, and, when such files are added to the staging area, it picks up on them and creates so-called pointers (pointer files) to these files and the changes in them, which are recorded in the repository instead of the files themselves. A bit like a group of elite dogs getting a sniff at a fabric scrap from persons they should track, then alerting when those persons are nearby, staying with their snouts pointed towards them.
+
+However, they still will not be pushed online. So, even with git LFS, the problem seems to be on the side of GitHub. 
+![[2024-08-01_git_lfs_size_fail.png]]
+ChatGPT says that GitHub has a maximal limit of 2 GB even for files managed by git LFS, and this seems to fit the number the push command returns (2147483648 bytes is 2.14 GB).
+
+So I guess I have to add these files to .gitignore and be done with them...
+
+I added `*.fastq` to my .gitignore file, then used `git rm --cached *.fastq` to remove any previously tracked fastq files. That took a few minutes in which git-lfs was using a hefty portion of my CPU (77%). It seems to have worked:
+
+![[2024-08-01_git_rm_fastq_success.png]]
+
+I checked the git status, just in case:
+![[2024-08-01_git_status_after_rm.png]]
+
+It looks like the next commit should delete these files from my staging area, without touching the files per se in my computer. Tried it out, and, indeed, I could still see my files in my file system using the file explorer and `ls -lat`.
+
+I also removed `*.fastq` files from the git LFS tracking using `git lfs untrack "*.fastq"`. Got a message in return saying `Untracking "*.fastq"`, and saw that the .gitattributes file is now also empty again. 
+
+> [!Important to know for the future:]
+> 
+> Apparently, [trying to push files from Windows to GitHub that are larger than 4 GB truncates them and causes them getting corrupted](https://github.com/git-lfs/git-lfs/issues/2434#issuecomment-436341992)!
+
+
+# Setting up Nextflow to run bioinformatic analysis pipelines
 ## Installing Nextflow and nf-core
 First, installed Java:
-`sudo apt install default-jre`
-
-I created a dedicated environment in which i will work with Nextflow, that I called as such, using `conda create Nextflow`.
+```bash
+	sudo apt install default-jre
+```
+I created a dedicated environment in which i will work with Nextflow, that I called as such, using 
+```bash
+conda create Nextflow
+```
 
 After activating it, I installed the actual Nextflow workflow manager with
 `conda install -c bioconda nextflow`, and it worked like a charm. Then, to get access to the curated Nextflow pipelines for bioinformatic analyses, I installed nf-core in the same environment with `conda install nf-core`, which also completed without any overt errors.
 
-I also activated shell completions for nf-core by adding the recommended command to my .bashrc file:
-`eval "$(_NF_CORE_COMPLETE=bash_source nf-core)"`(https://nf-co.re/docs/nf-core-tools/installation#activate-shell-completions-for-nf-coretools), and restarted my shell.
+I also activated shell completions for nf-core by adding the [recommended](https://nf-co.re/docs/nf-core-tools/installation#activate-shell-completions-for-nf-coretools) command to my .bashrc file:
+```bash
+eval "$(_NF_CORE_COMPLETE=bash_source nf-core)"
+```
+and restarted my shell.
 
 And now I could easily list all of the curated pipelines available in nf-core:
 ![[2024-07-27_nf-core_list.png]]
 
 The pipeline I am interested in is called `rnasplice` , and we'll get back to that in a moment.
 
-# Containerization with Docker for nf-core/Nextflow?
+## Containerization with Docker for nf-core/Nextflow?
 
 What caught my eye when reading more about nf-core was the following:
 ![[2024-07-27_nf-core_containerization.png]]
 ![[2024-07-27_nf-core_containerization2.png]]
 
-I started working with conda because everyone in the bioinformatic community swears by it, and so did the economics researchers that I had my very first Python course with. It has served me very well so far, but I do also know that software developers prefer to work with Docker, Singularity, or Kubernetes to create containers so that their software can always be run, at any time, on any machine. However, when reading more into how Docker, Conda, and Nextflow relate to one another, I realized it may not make sense to work with Docker in my current context. Conda is used so widely in the bioinformatic/scientific community because it integrates seamlessly with Python and R and is a more lightweight solution for reproducibility because it manages only the dependencies specifically required by these programming languages. However, Docker containers also incorporate information about the OS and all of the apps and packages installed on it that are required to run a specific program/application. This increases the degree of reproducibility dramatically BUT is also more bulky, because a Docker container then stores all of this extra information related to the OS.
+I started working with conda because everyone in the bioinformatic community swears by it, and so did the economics researchers that I had my very first Python course with. It has served me very well so far, but I do also know [quote Adi Dilita] that software developers prefer to work with Docker, Singularity, or Kubernetes to create containers so that their software can always be run, that is, at any time, on any machine. I read more about how Docker, Conda, and Nextflow relate to one another and found out that conda is used so widely in the bioinformatic/scientific community because it integrates seamlessly with Python and R and is a more lightweight solution for reproducibility. This is due to the fact that it manages only the dependencies specifically required by these programming languages. However, Docker containers also incorporate information about the OS and all of the apps and packages installed on it that are required to run a specific program/application. In essence, Docker containers mirror the environment that the developer of a particular software worked in in order to program that software/app etc _and_ isolate this mirror image within another user's OS. This increases the degree of reproducibility dramatically BUT is also more bulky, because a Docker container then stores all of this extra information related to the OS.
 
-# Quality control of FastQ files with the RNA-seq reads
-## Quality control of individual FastQ files
-For the quality control of this small number of files, I used [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/), which is an open-source tool that checks the reads in FastQ files for various quality parameters, such as sequence quality scores, GC content, sequence duplication levels, or the presence of sequences left behind by the oligonucleotide adapters used for the amplification and actual sequencing of the cDNA fragments. I was pleasantly surprised that opening the application from the Ubuntu command line resulted in a user-friendly GUI, with which I could select the sequences to be analyzed. After analyzing the two FastQ files resulting from the first sequencing run (SRR13761520_1 and SRR13761520_2), I got quite different results. Whereas the file ending in 2 passed the quality checks in all but one department ("Per base sequence content" gave a warning), the file ending in 1 had a few more issues. It failed the "Per base sequence content" testing and gave warnings for "Per sequence GC content" and "Sequence duplication levels". I suppose this difference results from one of the files representing one item from each pair of reads and the other file the sequence complementary to it [source?]. As these two reads stem from two separate sequencing reactions [source], it is normal that one set can have different sequencing quality, based on differences in the reaction setup, base composition, or technically-introduced biases that only happened for one of the two sequencing runs.
+Since I want to try out Docker AND because it might be the less buggy option here, I decided to install it on my Linux virtual machine.
 
-Nonetheless, I wanted to understand better what the parameters returned by FastQC are and what they mean for the usability of the data for further analyses. To better understand how this data was pre-processed, I foraged a bit in the Series Matrix file provided on the GEO page of the study, but the authors don't give a lot of details about the handling of the data, aside from `Reads filtering under criteria removing reads with 20% of the base quality lower than 13"`. Considering that FastQC did not indicate the presence of any known adapter sequences in the data and that the files were already clearly sorted by experimental condition and subject, (I hope) it's safe to assume that any necessary demultiplexing and adapter trimming has been performed by the authors of the study/the sequencing facility they worked with, plus applying this quality filter they mention in the Series Matrix file.
+As per the instructions on the website, I first ran 
+
+```bash
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+```
+ to install the required packages....and it doesn't work. What I get is:
+
+```bash
+Get:1 file:/var/cuda-repo-ubuntu2004-11-7-local  InRelease [1.575 B]
+Get:1 file:/var/cuda-repo-ubuntu2004-11-7-local  InRelease [1.575 B]
+Hit:2 http://de.archive.ubuntu.com/ubuntu jammy InRelease                                               
+Hit:3 https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/ InRelease                              
+Get:4 http://de.archive.ubuntu.com/ubuntu jammy-updates InRelease [128 kB]                              
+Hit:5 https://packages.microsoft.com/repos/code stable InRelease                                        
+Hit:6 http://de.archive.ubuntu.com/ubuntu jammy-backports InRelease                                     
+Hit:7 https://ppa.launchpadcontent.net/c2d4u.team/c2d4u4.0+/ubuntu jammy InRelease                      
+Get:8 http://security.ubuntu.com/ubuntu jammy-security InRelease [129 kB]                   
+Hit:9 https://packagecloud.io/github/git-lfs/ubuntu jammy InRelease             
+Fetched 257 kB in 2s (139 kB/s)
+Reading package lists... Done
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+ca-certificates is already the newest version (20230311ubuntu0.22.04.1).
+ca-certificates set to manually installed.
+curl is already the newest version (7.81.0-1ubuntu1.16).
+The following packages were automatically installed and are no longer required:
+  libwpe-1.0-1 libwpebackend-fdo-1.0-1
+Use 'sudo apt autoremove' to remove them.
+0 upgraded, 0 newly installed, 0 to remove and 11 not upgraded.
+8 not fully installed or removed.
+After this operation, 0 B of additional disk space will be used.
+Do you want to continue? [Y/n] y
+Setting up nvidia-dkms-515 (515.65.01-0ubuntu1) ...
+update-initramfs: deferring update (trigger activated)
+
+A modprobe blacklist file has been created at /etc/modprobe.d to prevent Nouveau
+from loading. This can be reverted by deleting the following file:
+/etc/modprobe.d/nvidia-graphics-drivers.conf
+
+A new initrd image has also been created. To revert, please regenerate your
+initrd by running the following command after deleting the modprobe.d file:
+`/usr/sbin/initramfs -u`
+
+*****************************************************************************
+*** Reboot your computer and verify that the NVIDIA graphics driver can   ***
+*** be loaded.                                                            ***
+*****************************************************************************
+
+INFO:Enable nvidia
+DEBUG:Parsing /usr/share/ubuntu-drivers-common/quirks/lenovo_thinkpad
+DEBUG:Parsing /usr/share/ubuntu-drivers-common/quirks/put_your_quirks_here
+DEBUG:Parsing /usr/share/ubuntu-drivers-common/quirks/dell_latitude
+Removing old nvidia-515.65.01 DKMS files...
+Deleting module nvidia-515.65.01 completely from the DKMS tree.
+Loading new nvidia-515.65.01 DKMS files...
+Building for 6.5.0-44-generic
+Building for architecture x86_64
+Building initial module for 6.5.0-44-generic
+ERROR: Cannot create report: [Errno 17] File exists: '/var/crash/nvidia-dkms-515.0.crash'
+Error! Bad return status for module build on kernel: 6.5.0-44-generic (x86_64)
+Consult /var/lib/dkms/nvidia/515.65.01/build/make.log for more information.
+dpkg: error processing package nvidia-dkms-515 (--configure):
+ installed nvidia-dkms-515 package post-installation script subprocess returned error exit status 10
+dpkg: dependency problems prevent configuration of cuda-drivers-515:
+ cuda-drivers-515 depends on nvidia-dkms-515 (>= 515.65.01); however:
+  Package nvidia-dkms-515 is not configured yet.
+
+dpkg: error processing package cuda-drivers-515 (--configure):
+ dependency problems - leaving unconfigured
+dpkg: dependency problems prevent configuration of cuda-drivers:
+ cuda-drivers depends on cuda-drivers-515 (= 515.65.01-1); however:
+  Package cuda-drivers-515 is not configured yet.
+
+dpkg: error processing package cuda-drivers (--configure):
+ dependency problems - leaving unconfigured
+dpkg: dependency problems prevent configuration of nvidia-driver-515:
+ nvidia-driver-515 depends on nvidia-dkms-515 (= 515.65.01-0ubuntu1); however:
+  Package nvidia-dkms-515 is not configured yet.
+
+dpkg: error processing package nvidia-driver-515 (--configure):
+ dependency problems - leaving unconfigured
+dpkg: dependency problems prevent configuration of cuda-runtime-11-7:
+ cuda-runtime-11-7 depends on cuda-drivers (>No apport report written because the error message indicates its a followup error from a previous failure.
+                                              No apport report written because the error message indicates its a followup error from a previous failure.
+                                               No apport report written because MaxReports is reached already
+    No apport report written because MaxReports is reached already
+                                                                  No apport report written because MaxReports is reached already
+                       No apport report written because MaxReports is reached already
+                                                                                     No apport report written because MaxReports is reached already
+                                          = 515.65.01); however:
+  Package cuda-drivers is not configured yet.
+
+dpkg: error processing package cuda-runtime-11-7 (--configure):
+ dependency problems - leaving unconfigured
+dpkg: dependency problems prevent configuration of cuda-demo-suite-11-7:
+ cuda-demo-suite-11-7 depends on cuda-runtime-11-7; however:
+  Package cuda-runtime-11-7 is not configured yet.
+
+dpkg: error processing package cuda-demo-suite-11-7 (--configure):
+ dependency problems - leaving unconfigured
+dpkg: dependency problems prevent configuration of cuda-11-7:
+ cuda-11-7 depends on cuda-runtime-11-7 (>= 11.7.1); however:
+  Package cuda-runtime-11-7 is not configured yet.
+ cuda-11-7 depends on cuda-demo-suite-11-7 (>= 11.7.91); however:
+  Package cuda-demo-suite-11-7 is not configured yet.
+
+dpkg: error processing package cuda-11-7 (--configure):
+ dependency problems - leaving unconfigured
+dpkg: dependency problems prevent configuration of cuda:
+ cuda depends on cuda-11-7 (>= 11.7.1); however:
+  Package cuda-11-7 is not configured yet.
+
+dpkg: error processing package cuda (--configure):
+ dependency problems - leaving unconfigured
+Processing triggers for initramfs-tools (0.140ubuntu13.4) ...
+update-initramfs: Generating /boot/initrd.img-6.5.0-44-generic
+Errors were encountered while processing:
+ nvidia-dkms-515
+ cuda-drivers-515
+ cuda-drivers
+ nvidia-driver-515
+ cuda-runtime-11-7
+ cuda-demo-suite-11-7
+ cuda-11-7
+ cuda
+E: Sub-process /usr/bin/dpkg returned an error code (1)
+```
+
+I went online to try and find what all of these issues with Nvidia and Cuda are about, and, sure enough, I found an [Nvidia page](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) about it.
+
+I went through the preliminary checks. Yes, I have an OS version that's supported, yes, I have a GPU that supports Cuda. I also have gcc installed and `uname -r` returned "6.5.0-44-generic".
+
+I tried finding this mlnx_ofed driver to install, but it was not available anywhere on the NVIDIA pages. I downloaded the dedicated Linux 64-bit driver for my graphics card (RTX A4000) from the NVIDIA website (it's a bash script) and ran it with sudo, but I got an error saying
+![[2024-07-31_nvidia_driver_installation_fail.png]]
+
+Upon further reading, I saw that Ubuntu is a bit peculiar in the way in which it uses NVIDIA drivers and that, for some stability reasons, it has its own driver, based on the current driver's predecessor (number 535 instead of 550). But, after hitting OK on this error message, I got another one saying:
+
+![[2024-07-31_nvidia_driver_installation_fail2.png]]
+
+I hit "abort installation" and peeked at whether version 515 is indeed the one installed on my system using `ubuntu-drivers list`. Annnnd all I got was![[2024-07-31_nvidia_driver_installation_check.png]]
+
+As far as I understand, the driver list is different from what a normal, non-virtual OS would have.
 
 
-To centralize all analysis info for all of the FastQ files generated by FastQC, I settled on [MultiQC](https://academic.oup.com/bioinformatics/article/32/19/3047/2196507?login=false) . I envision myself working with single-cell RNA-seq datasets at a later time point, and MultiQC can, as the name suggests, run the analyses in parallel on many files, making it a lot more efficient in handling large numbers of datasets. MultiQC is a part of the bcbio-nextgen Python package, so I wanted to install it in my Python on the WSL Ubuntu as instructed by the package's GitHub [page](https://bcbio-nextgen.readthedocs.io/en/latest/contents/installation.html#automated). I thought this installed not only the package but also all dependencies (other modules) that are needed for it to run...but it didn't. It told me it was missing crucial data, such as the genome assemblies for mouse and human, which prevented it from running at all.
+I tried upgrading the driver by running `sudo apt-get install nvidia-driver-515` ....annnnd got the exact same big stream of errors as above, which suggest rebooting computer and making sure NVIDIA graphics driver can be loaded. This seems to be a general issue with trying to run Cuda on a virtual machine, as, as far as my meagre understanding takes me, the virtual machine does not have direct access to the GPU through the host, especially not on VirtualBox virtual machines (apparently, VMWare is somewhat better, but that's not what I have).
 
-During the lengthy installation process, I kept getting a message for all packages "Solving environment: failed with initial frozen solve. Retrying with flexible solve.". Thanks to another kind internet [stranger](https://medium.com/floppy-disk-f/linux-ubuntu-how-to-fix-solving-environment-failed-with-initial-frozen-solve-27c53c6de32a), I found that this is a problem that stems from having a version of Python that's newer than what many of these packages are optimized to work with. [what version do i have on my WSL? what versions needed? conda search python, then conda install python=desired_version_number, and then restart Ubuntu and Py, and update bcbio-nextgen package, hoping that this will resolve dependency issues]. However, the installation of bcbio-nextgen was still running (also, still running after 3h with the WSL virtual machine using 85 GB RAM sounds unusual and a bit alarming). 
+I'm considering trying Singularity instead. Singularity is the containerization app often used on high-performance computing clusters (HPCs), and it makes things a little bit easier because it also does not require root access privileges. 
 
-I realized that this may be due to WSL being less efficient in its memory usage than a full-fledged virtual machine [source?], so I proceeded to kill this process and install Oracle VirtualBox 7 and make an Ubuntu VM on it.
+...apparently, Singularity has changed names and is now called Apptainer. I started following the [installation instructions ](https://github.com/apptainer/apptainer/blob/main/INSTALL.md) , and already the very first step for a setuid installation, `sudo apt install -y software-properties-common` immediately threw the same sequence of errors about NVIDIA and Cuda as above. So I decided the time has come to see if I can clean that up.
 
-## MultiQC: General quality stats of the pre-eclampsia FastQ files
+Before doing so, I backed up all of my conda environments into my GitHub repository. I created a new folder "Conda_environment_yamls", and pushed that to GitHub
+
+I also created a snapshot of my virtual machine in its current state using VirtualBox, and saved my .vbox file in a safe location. Additionally, I saved the entire virtual machine folder in another location, and exported my virtual machine as an OVF/OVA file (in VirtualBox, File --> Export Appliance). Finally, I made a full clone of my virtual machine to test changing the drivers in, so that I can always just remove it and go back to my unchanged version, should major problems arise (did that also from VirtualBox from the machine options).
+
+It seems like I got myself into another technical rabbithole here: apparently, the root of the problems is that VirtualBox cannot take the GPU available to my Windows host and pass it through to my virtual machine. This might just be what is causing all of the issues: given the errors the Docker installation throws, it probably needs to access the GPU itself, because it helps it speed up computation quite a lot (inasmuch as my NVIDIA RTX A4000 can do that - it's a good GPU,  not the top of the tops, but surely better than the virtualized version that VirtualBox creates). And because the Docker containers are so resource-intensive, this is likely why it won't work without it.
+
+I can likely transfer my virtual machine from VirtualBox to another virtual machine software, VMware, but that will likely require some more tweaking as well. For the time being, I will try running the pipeline as is in Nextflow under Conda, and then see about anything else.
+
+## Attempting to transfer entirety of virtual machine to VMware
+
+I took a snapshot of my current VM (2024-08-01) using VirtualBox, and, in the same program, hit "Export appliance" for this very same machine from the File menu. Started around 18:40, reading about the pipeline in parallel. It's mightily slow - at 19.05, so 25 min later, it was at barely 2%, meaning this will probably take until Saturday...
+18:40 - start
+19:05 - 2 %    --> 1%/12.5 min
+19:42 - 4 % --> 1%/18.5 min
+21:00 - 7 % --> 3%/1h15, eq to 1%/25 min
+...somehow, it seems to be slowing down quite a lot. Maybe because I opened more apps. Should be faster over night, when I'm not actively working on the laptop. 
+21:42 - 10% --> 7%/42 min, eq to 1%/6 min
+
+90% more to go. At best, this should take 6x90 min = 9 h. At worst, 25x90 min = 37.5 h ***insert clenched teeth smiley here*** Of course, I closed any app that might be eating any of my laptop's memory/processing power, but the virtual machine was only using 16-30% of my CPU to begin with, so maybe that's not the issue here. Maybe, as with many other things, VirtualBox is rather inefficient in its resource utilization...
+
+## Back to pipelines: the rnasplice pipeline
+
+`rnasplice` is a fairly new pipeline on the nf-core, published just a few months back. This is partially the reason for which I really badly want to run it in a container rather than just in conda: I suspect it probably can still throw a number of bugs when run on a system even remotely different than whatever the developers were using.
+
+While I am trying to transfer the entirety of my virtual machine from VirtualBox to VMware (see section [[#Attempting to transfer entirety of virtual machine to VMware]] ), I read about the pipeline to better understand what the individual steps involve.
+
+### Prerequisites for the rnasplice pipeline
+
+#### **Creating the sample sheet**
+
+***--input samplesheet.csv:*** I will first need to create a sample sheet (a .csv file telling the pipeline what the sample files are called and which ones are from the control and which ones from the treated animals). [Note from "Source configuration": when using FastQ files as input, file must look exactly as shown here] 
+
+> [!straight from the pipeline's "Samplesheet input" tab,]
+>
+>```
+sample,fastq_1,fastq_2,strandedness,condition
+CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz,forward,control
+CONTROL_REP2,AEG588A2_S2_L002_R1_001.fastq.gz,AEG588A2_S2_L002_R2_001.fastq.gz,forward,control
+CONTROL_REP3,AEG588A3_S3_L002_R1_001.fastq.gz,AEG588A3_S3_L002_R2_001.fastq.gz,forward,control```
+> ```
+> 
+> The samplesheet can have as many columns as you desire, however, there is a strict requirement for at least 3 columns to match those defined in the table below. 
+> 
+> | Column              | Description                                                                                                                                                                            |     |
+> | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+> | `sample`            | Custom sample name. This entry will be identical for multiple sequencing libraries/runs from the same sample. Spaces in sample names are automatically converted to underscores (`_`). |     |
+> | `fastq_1`           | Full path to FastQ file for Illumina short reads 1. File has to be gzipped and have the extension “.fastq.gz” or “.fq.gz”.                                                             |     |
+> | `fastq_2`           | Full path to FastQ file for Illumina short reads 2. File has to be gzipped and have the extension “.fastq.gz” or “.fq.gz”.                                                             |     |
+> | `strandedness`      | Sample strand-specificity. Must be one of `unstranded`, `forward` or `reverse`.                                                                                                        |     |
+> | `condition`         | The name of the condition a sample belongs to (e.g. ‘control’, or ‘treatment’) - these labels will be used for downstream analysis.                                                    |     |
+> | `genome_bam`        | Full path to aligned BAM file, derived from splicing aware mapper (STAR, HiSat, etc). File has to be in “.bam” format.                                                                 |     |
+> | `transcriptome_bam` | Full path to aligned transcriptome file, derived from splicing aware mapper (STAR, HiSat, etc). File has to be in “.bam” format.                                                       |     |
+> | `salmon_results`    | Full path to the result folder produced by salmon quantification.                                                                                                                      | "   |
+> 
+
+I created the sample sheet in Notepad++, and I even remembered to set the line breaks to Unix line breaks (LF instead of CR LF).
+  
+| [](https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA703836&o=acc_s%3Aa# "Add all items")[](https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA703836&o=acc_s%3Aa# "Remove all items") | 1<br><br>[Run](https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA703836&o=acc_s%3Aa#) | 2<br><br>[BioSample](https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA703836&o=acc_s%3Aa#) | 5<br><br>[Experiment](https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA703836&o=acc_s%3Aa#) | 6<br><br>GEO_Accession | 9<br><br>tissue                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------- | ---------------------------------------------- |
+| 1                                                                                                                                                                                         | [SRR13761520](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761520)                | [SAMN18024800](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024800)                           | [SRX10148223](https://www.ncbi.nlm.nih.gov/sra/SRX10148223)                                    | GSM5098819             | Cortex offspring from control mother mice      |
+| 2                                                                                                                                                                                         | [SRR13761521](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761521)                | [SAMN18024799](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024799)                           | [SRX10148224](https://www.ncbi.nlm.nih.gov/sra/SRX10148224)                                    | GSM5098820             | Cortex offspring from control mother mice      |
+| 3                                                                                                                                                                                         | [SRR13761522](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761522)                | [SAMN18024798](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024798)                           | [SRX10148225](https://www.ncbi.nlm.nih.gov/sra/SRX10148225)                                    | GSM5098821             | Cortex offspring from control mother mice      |
+| 4                                                                                                                                                                                         | [SRR13761523](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761523)                | [SAMN18024797](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024797)                           | [SRX10148226](https://www.ncbi.nlm.nih.gov/sra/SRX10148226)                                    | GSM5098822             | Cortex offspring from control mother mice      |
+| 5                                                                                                                                                                                         | [SRR13761524](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761524)                | [SAMN18024796](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024796)                           | [SRX10148227](https://www.ncbi.nlm.nih.gov/sra/SRX10148227)                                    | GSM5098823             | Cortex offspring from preeclampsia mother mice |
+| 6                                                                                                                                                                                         | [SRR13761525](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761525)                | [SAMN18024795](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024795)                           | [SRX10148228](https://www.ncbi.nlm.nih.gov/sra/SRX10148228)                                    | GSM5098824             | Cortex offspring from preeclampsia mother mice |
+| 7                                                                                                                                                                                         | [SRR13761526](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761526)                | [SAMN18024794](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024794)                           | [SRX10148229](https://www.ncbi.nlm.nih.gov/sra/SRX10148229)                                    | GSM5098825             | Cortex offspring from preeclampsia mother mice |
+| 8                                                                                                                                                                                         | [SRR13761527](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761527)                | [SAMN18024793](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024793)                           | [SRX10148230](https://www.ncbi.nlm.nih.gov/sra/SRX10148230)                                    | GSM5098826             | Cortex offspring from preeclampsia mother mice |
+
+#### **Stranded information?**
+But where is the strandedness of the libraries indicated? There is no mention of this neither in the publication, nor in its Supplemental Data 1, nor in the Supplementary Materials and Methods. I only found a mention in their regular Materials and Methods section that they used the TruSeq Stranded mRNA Library Prep Kit from Illumina, in whose [protocol](https://support.illumina.com/content/dam/illumina-support/documents/documentation/chemistry_documentation/samplepreps_truseq/truseq-stranded-mrna-workflow/truseq-stranded-mrna-workflow-reference-1000000040498-00.pdf)  I read that it encompasses a first-strand reverse transcription and then the generation of the second strand of the cDNA, complementary to the first. This means that the resulting cDNA has the forward strand identical to the reverse complement of the original mRNA  and so should be treated as "reverse" and specified as such in the subsequent process. However, how can I make super sure that this is true? Giving the wrong strandedness will render the entire analysis essentially useless, so this is highly important.
+
+---
+# ACTIVELY WORKING ON:
 
 
-I saw that multiqc takes one full folder as input.  I could call `fastqc` from the command line individually for all of my FastQ files, but...why would I do something rather tedious to do for all of the 16 FastQ files? So I quickly wrote a small Bash script to automate the process:
+The blessings of online searching pointed me to a Python package called [How are we stranded here](https://github.com/signalbash/how_are_we_stranded_here) , which analyzes fastq files precisely to understand this. The knack: it also needs some additional information about the organism at hand, such as a gtf annotation file and a kallisto transcriptomic index.
 
-`#!/bin/bash
+---
 
-`directory="/home/iweber/Documents/ABI_files_NGS/6484_fastq/"`
 
-`for file in "$directory"/*.fastq; do
-``	if [ -f "$file" ]; then
-``		fastqc "$file" --outdir /home/iweber/Documents/ABI_files_NGS/FastQC_results
-``	fi
 
-`done`
+#### **Configuration of the type of source files**
+Since I have FastQ files, I can leave the source configuration to the default, `--source fastq`.  
 
-This simply cycles through all of the files with a .fastq ending in the indicated directory, stores the name of the file in the variable called file, and then calls fastqc to operate on the content of the file name variable ($file), while outputting the result into the FastQC_results folder.
-I made it executable with `chmod` and then ran it, and:
+### rnasplice: actual pipeline description
+I tried creating an overview here that is somewhat easier to describe with words than the image on the website:
 
-![[2024-05-07_script_FastQC_success.png]]
+![[rnasplice_map.png]]
 
-It worked! Naturally, I then ran MultiQC to summarize all of the reports obtained with FastQC.
 
-![[2024-05-07_MultiQC_res_pre-e_success.png]]
 
-Let's have a more detailed look at the results.
+>***Part 1 of pipeline: preprocessing***
+>>**cat fastq** 
+>>	is something I would use if I had several fastq files per sample, coming from several runs of sequencing. This is usually done to increase sequencing depth, but the SRA archives I downloaded contained precisely two files per sample, containing the two parts of a pair of reads each.
+>>
+>>**FastQC**
+>>_own addition_: **MultiQC**
+>>	I already performed these steps on the WSL, so will not need to do so again. I already know I need to trim 10 bases from the 5' end of the reads in order to solve any problems that the odd per base distribution of the four nucleotides may create.
+>>
+>>>**TrimGalore**!
+>>>	see above - need to trim 10 bases. I previously worked with Trimmomatic for this kind of operation, will need to read up more on TrimGalore's parameters.
+>>>	
+>>>>FastQC
+>>>>_own addition_: MultiQC
+>>>>	these two steps are done to check whether the trimming worked exactly as expected, so, in my case, I'd expect the new report generated by MultiQC to show me 120 bp reads with no more issues at the 5' ends.
+>>>>
+>>>>>input files: fasta and gtf
 
-![[2024-05-07_MultiQC_res_pre-e_general_stats.png]]
-So far, so good. Each of the files contains around 21 million reads, with a GC content that's normal for the mouse ([source?]). The amount of sequences flagged as duplicates is around 30%, which is to be expected due to the amplification steps during the library preparation ([quote from Ioana Lemnian]).
 
-The Phred scores are, on average, also good across the entire length of the reads., even though, as usual, the quality at the beginning, in the first 10 nucleotides or so from the 5' end, is a bit lower than in the rest of the sequence.
-![[2024-05-07_MultiQC_res_pre-e_seq_quality.png]]
+> ***Part 2a of pipeline: read alignment and read count quantification***
+>>**STAR**
+>>>**samtools**
+>>>
+>>>> ***Part 3a of pipeline: actual splicing junction quantification***
+>>>>> **rMATS** = splicing event quantification
+>>>>> 
+>>>>> **HTSEq**
+>>>>>> **DEXSeq** = differential exon usage
+>>>>>> 
+>>>>> **featureCounts**
+>>>>>>**edgeR**
+>>>>> 
+>>>>***Part 4 of pipeline: post-processing after STAR/samtools branch***
+>>>>>**BEDtools** 
+>>>>>>**bedGraphTobigWig**
+>>>>>>
+>>>>>**MISO/Sashimi **
 
-What looked a bit less rosy was the per base sequence content quantification. For all of the `_2` ending samples, FastQC gave a warning for the nucleotide composition, which should ideally be uniform across the read, with each base keeping its proportion percentage and giving a plot with four parallel lines. It's normal that the beginning of the read is a bit more noisy, up to 10 bases, and that's what we see here. Even for the samples ending in `_1` , that were flagged as "failed", the irregularities are restricted to this area. This looks like a good case for trimming these fragment start regions off in subsequent steps.
-![[2024-05-07_MultiQC_res_pre-e_per-base-seq-content.png]]
+> ***Part 2b of pipeline: read alignment and read count quantification***
+>**Salmon**
+>> **tximport**
+>> 
+>>>> ***Part 3b of pipeline: actual splicing junction quantification***
+>>>>> **DRIMSeq**
+>>>>>> **DEXSeq** = differential transcript usage
+>>>>>> 
+>>>>> **SUPPA** = differential event-based splicing
 
-The per sequence GC content looked mostly alright (the reads in 11 of the 16 FastQ files passed with no warning), but there were some where FastQC gave a warning, so I know to keep an eye out in case these files cause some strange, systematic error down the line. 
 
-SRR13761520_1
-SRR13761521_1
-SRR13761521_2
-SRR13761522_1
-SRR13761523_1
-![[Pasted image 20240507201249.png]]
-
-The content of bases that could not be unequivocally identified during the sequencing was, fortunately, negligible.
-![[2024-05-07_MultiQC_res_pre-e_per-base-N-content.png]]
-
-Many of the FastQ files were found to contain reads from duplications. These usually result from the PCRs from the library preparation or even during sequencing itself, but the concentration of the second peak at 10x duplication suggests that these all stem from some 10-cycle-PCR. FastQC seems to flag any FastQ files where more than 8% of the reads are duplicates at the >10x mark but only those where the dupes surpass 11% of the read count for the 2x duplication mark [why?].
-
-There were no warnings for overrepresented sequences, and FastQC did not find any of the usual sequences of adapters used in NGS kits in the FastQ files. This tells me that the files were processed before their further use, perhaps directly by the sequencing facility after demultiplexing [maybe ***bcl2fastq*** or ***BCL convert*** can also do this? Or maybe the authors just uploaded the already trimmed reads to GEO.] 
-
-![[2024-05-07_MultiQC_res_pre-e_overrepresented-seqs.png]]
-
-## Summary of initial quality warnings for the reads
-Datasets with warnings for GC content: 
-SRR13761520_1
-SRR13761521_1
-SRR13761521_2
-SRR13761522_1
-SRR13761523_1
-
-Dupe warnings:
-SRR13761520_1
-SRR13761521_1
-SRR13761522_1
-SRR13761523_1
-SRR13761524_1
-SRR13761525_1
-SRR13761526_1
-SRR13761526_2
-SRR13761527_1
-SRR13761527_2
 
 # Trimming the reads
 
@@ -546,6 +961,7 @@ After MultiQC aggregated the FastQC results, I wanted to look specifically if an
 Then, I wrote a tiny script to run Trimmomatic automatically over all sequences and then have FastQC go over the now-trimmed sequences, plus MultiQC to aggregate the results:
 [adapter trimming? check MultiQC!]
 
+```bash
 `!#/bin/bash
 
 `trimmomatic PE -phred33 *.fastq -baseout "output" LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:3
@@ -553,6 +969,7 @@ Then, I wrote a tiny script to run Trimmomatic automatically over all sequences 
 `fastqc output_* --threads 8 --memory 40000 --outdir FastQC_results
 
 `multiqc FastQC_results/ --outdir MultiQC_results/`
+```
 
 I found out in another analysis that one can create at most 4 threads on an octo-core PC like mine[source with explanation], and that trimmomatic has some restriction that only allows the use of a max of 10 GB of RAM, and not 40, as I had indicated to it here, so I adjusted the parameters for this case. [can max RAM be overridden with some option of trimmomatic?]
 
