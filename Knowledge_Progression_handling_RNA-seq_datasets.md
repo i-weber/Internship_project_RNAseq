@@ -834,11 +834,21 @@ I took a snapshot of my current VM (2024-08-01) using VirtualBox, and, in the sa
 
 90% more to go. At best, this should take 6x90 min = 9 h. At worst, 25x90 min = 37.5 h ***insert clenched teeth smiley here*** Of course, I closed any app that might be eating any of my laptop's memory/processing power, but the virtual machine was only using 16-30% of my CPU to begin with, so maybe that's not the issue here. Maybe, as with many other things, VirtualBox is rather inefficient in its resource utilization...
 
-At around 2 AM, it had finally finished creating the OVF file (the file format of the so-called virtual machine appliance I just created). 
+At around 2 AM, it had finally finished creating the OVF file (the file format of the so-called virtual machine appliance I just created, which is an [universal format]([How To Convert Virtual Machines Between VirtualBox and VMware (howtogeek.com)](https://www.howtogeek.com/125640/how-to-convert-virtual-machines-between-virtualbox-and-vmware/)) and can be shared between different VM software).
 
 After many loopholes, I finally downloaded VMware Workstation Pro, which, to my joy, is now available for free for personal use since May of this year.
 
-I also downloaded the VMware OVF Tool to make sure that the OVF I previously generated with VirtualBox is compatible with VMware Workstation Pro.
+I also downloaded the VMware OVF Tool to make sure that the OVF I previously generated with VirtualBox is compatible with VMware Workstation Pro. I added its installation directory to my PATH variable under Windows, and could then access it from my command line in PowerShell.
+
+I tried converting the old virtual machine OVA file to a VMware-compatible type using " ovftool ubuntu22x64.ova E:\VMware_ubuntu_VM " (into a new directory I created for the purpose), but got an error: "Opening OVA source: ubuntu22x64.ova Opening VMX target: E:\VMware_ubuntu_VM Error: OVF Package is not supported by target: - Line 25: Unsupported hardware family 'virtualbox-2.2'. Completed with errors " 
+
+To convert this hardware family to one that's compatible with VMware Workstation Pro, ChatGPT suggested unpacking the OVA archive and directly editing the OVF file that contains the info. While 7zip was doing the unpacking, I did a [bit more reading online on the topic](How To Convert Virtual Machines Between VirtualBox and VMware (howtogeek.com)](https://www.howtogeek.com/125640/how-to-convert-virtual-machines-between-virtualbox-and-vmware/)). Because this website says it should be possible to open the VM as is in VMware, once it is installed, so I decided to postpone modifying anything in the OVF until I shut off Hyper-V for good with bcdedit, restart my PC, and attempt to install VMware.
+
+7zip kept showing "Unexpected end of data" all the way through.
+
+
+
+
 
 During the installation of VMware Workstation Pro, I got a message saying 
 ![[2024-08-02_vmware_installation_hyper-v.png]]
@@ -864,11 +874,39 @@ While I am trying to transfer the entirety of my virtual machine from VirtualBox
 
 ### Prerequisites for the rnasplice pipeline
 
+#### **Create contrast sheet**
+
+***--contrasts contrastssheet.csv:*** I first need to create a contrast sheet, which tells the pipeline what kind of an experiment has been performed and how the conditions are called. 
+
+> [!Straight from the pipeline's "Contrastsheet input" section:]
+> The contrastsheet has to be a comma-separated file with 3 columns, and a header row as shown in the examples below.
+> 
+> ```
+> contrast,treatment,control
+> TREATMENT_CONTROL,TREATMENT,CONTROL
+> ```
+> 
+> The contrastsheet can have as many columns as you desire, however, there is a strict requirement for the first 3 columns to match those defined in the table below.
+> 
+> | Column      | Description                                                               |
+> | ----------- | ------------------------------------------------------------------------- |
+> | `contrast`  | An arbitrary identifier, will be used to name contrast-wise output files. |
+> | `treatment` | The treatment/target level for the comparison.                            |
+> | `control`   | The control/base level for the comparison.                                |
+> 
+
+Therefore, my `contrastssheet_preeclampsia.csv` looks like:
+
+```csv
+contrast,treatment,control
+PREECLAMPSIA_CONTROL,PREECLAMPSIA,CONTROL
+```
+
 #### **Creating the sample sheet**
 
-***--input samplesheet.csv:*** I will first need to create a sample sheet (a .csv file telling the pipeline what the sample files are called and which ones are from the control and which ones from the treated animals). [Note from "Source configuration": when using FastQ files as input, file must look exactly as shown here] 
+***--input samplesheet.csv:*** Next, I created a sample sheet (a .csv file telling the pipeline what the sample files are called and which ones are from the control and which ones from the treated animals). [Note from "Source configuration": when using FastQ files as input, file must look exactly as shown here] 
 
-> [!straight from the pipeline's "Samplesheet input" tab,]
+> [!straight from the pipeline's "Samplesheet input" section:]
 >
 >```
 sample,fastq_1,fastq_2,strandedness,condition
@@ -904,6 +942,13 @@ I created the sample sheet in Notepad++, and I even remembered to set the line b
 | 7                                                                                                                                                                                         | [SRR13761526](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761526)                | [SAMN18024794](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024794)                           | [SRX10148229](https://www.ncbi.nlm.nih.gov/sra/SRX10148229)                                    | GSM5098825             | Cortex offspring from preeclampsia mother mice |
 | 8                                                                                                                                                                                         | [SRR13761527](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761527)                | [SAMN18024793](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024793)                           | [SRX10148230](https://www.ncbi.nlm.nih.gov/sra/SRX10148230)                                    | GSM5098826             | Cortex offspring from preeclampsia mother mice |
 
+> [!Complete once established]
+> Therefore, my `samplesheet_preeclampsia.csv` looks like:
+> ```csv
+> 
+> ```
+> 
+
 #### **Stranded information?**
 But where is the strandedness of the libraries indicated? There is no mention of this neither in the publication, nor in its Supplemental Data 1, nor in the Supplementary Materials and Methods. I only found a mention in their regular Materials and Methods section that they used the TruSeq Stranded mRNA Library Prep Kit from Illumina, in whose [protocol](https://support.illumina.com/content/dam/illumina-support/documents/documentation/chemistry_documentation/samplepreps_truseq/truseq-stranded-mrna-workflow/truseq-stranded-mrna-workflow-reference-1000000040498-00.pdf)  I read that it encompasses a first-strand reverse transcription and then the generation of the second strand of the cDNA, complementary to the first. This means that the resulting cDNA has the forward strand identical to the reverse complement of the original mRNA  and so should be treated as "reverse" and specified as such in the subsequent process. However, how can I make super sure that this is true? Giving the wrong strandedness will render the entire analysis essentially useless, this is highly important. 
 [explain the underlying biology]
@@ -912,22 +957,29 @@ Side note: how does the kit distinguish between what is the first strand (revers
 
 The blessings of online searching pointed me to a Python package called [How are we stranded here](https://github.com/signalbash/how_are_we_stranded_here) , which analyzes fastq files precisely to understand this. The knack: it also needs some additional information about the organism at hand, such as a gtf annotation file and a kallisto transcriptomic index. This seems like a very complicated option, so I asked Ioana Lemnian whether that is necessary. She said no, because it can only be that the `_R1` FastQ files are reverse and `_R2` files forward, so the strandedness should be specified as `RF`  (she also sent me some useful resources: [this one from ECSeq](https://www.ecseq.com/support/ngs/how-do-strand-specific-sequencing-protocols-work) and [this from the Broad Institute](https://www.broadinstitute.org/videos/strand-specific-rna-seq-preferred)
 
----
-# ACTIVELY WORKING ON:
-
-
-
----
-
-
-#### **Gzipping FastQ files for pipeline**
-
-I noticed in the parameters that the pipeline doesn't work with FastQ files directly, but only with their gzipped versions. 
-
-
 
 #### **Configuration of the type of source files**
 Since I have FastQ files, I can leave the source configuration to the default, `--source fastq`.  
+
+#### **Gzipping FastQ files for pipeline**
+
+I noticed in the parameters that the pipeline doesn't work with FastQ files directly, but only with their gzipped versions. I started the `gzip SRR13761520_1.fastq` command at 13:09, took around 10 min. So I know that doing the same with the remaining 15 files in sequence should take something like 150 minutes ~ 3 h. Which is why I'll only start after my recovery drive is complete, I switch off hyper-V, and I dare to restart my PC to see if it is indeed off and confirm my system didn't turn into blue pulp (BSOD).
+
+The script I use to gzip all files at once: (pigz, which allows hyperthreading, won't work on my VirtualBox VM because of the same issues with GPU passthrough, so I'll have to take this slow route...):
+
+```bash
+gzip_several_fastqs.sh                                                                                                            
+#!/bin/bash
+
+# Specify directory containing FASTQ files
+DIRECTORY="/mnt-win-ubu-shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq"
+
+# Find all .fastq files in the specified directory and subdirectories. Write line by line, pipe each line with one file name into while loop that compresses it.
+find "$DIRECTORY" -type f -name "*.fastq" | while read -r FILE; do
+  echo "Compressing $FILE"
+  gzip "$FILE"
+done
+```
 
 ### rnasplice: actual pipeline description
 I tried creating an overview here that is somewhat easier to describe with words than the image on the website:
@@ -946,6 +998,7 @@ I tried creating an overview here that is somewhat easier to describe with words
 >>
 >>>**TrimGalore**!
 >>>	see above - need to trim 10 bases. I previously worked with Trimmomatic for this kind of operation, will need to read up more on TrimGalore's parameters.
+>>>	
 >>>	
 >>>>FastQC
 >>>>_own addition_: MultiQC
@@ -983,6 +1036,13 @@ I tried creating an overview here that is somewhat easier to describe with words
 >>>>>> 
 >>>>> **SUPPA** = differential event-based splicing
 
+
+---
+# ACTIVELY WORKING ON:
+
+
+
+---
 
 
 # Trimming the reads
