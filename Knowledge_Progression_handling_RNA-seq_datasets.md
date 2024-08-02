@@ -838,22 +838,11 @@ At around 2 AM, it had finally finished creating the OVF file (the file format o
 
 After many loopholes, I finally downloaded VMware Workstation Pro, which, to my joy, is now available for free for personal use since May of this year.
 
-I also downloaded the VMware OVF Tool to make sure that the OVF I previously generated with VirtualBox is compatible with VMware Workstation Pro. I added its installation directory to my PATH variable under Windows, and could then access it from my command line in PowerShell.
-
-I tried converting the old virtual machine OVA file to a VMware-compatible type using " ovftool ubuntu22x64.ova E:\VMware_ubuntu_VM " (into a new directory I created for the purpose), but got an error: "Opening OVA source: ubuntu22x64.ova Opening VMX target: E:\VMware_ubuntu_VM Error: OVF Package is not supported by target: - Line 25: Unsupported hardware family 'virtualbox-2.2'. Completed with errors " 
-
-To convert this hardware family to one that's compatible with VMware Workstation Pro, ChatGPT suggested unpacking the OVA archive and directly editing the OVF file that contains the info. While 7zip was doing the unpacking, I did a [bit more reading online on the topic](How To Convert Virtual Machines Between VirtualBox and VMware (howtogeek.com)](https://www.howtogeek.com/125640/how-to-convert-virtual-machines-between-virtualbox-and-vmware/)). Because this website says it should be possible to open the VM as is in VMware, once it is installed, so I decided to postpone modifying anything in the OVF until I shut off Hyper-V for good with bcdedit, restart my PC, and attempt to install VMware.
-
-7zip kept showing "Unexpected end of data" all the way through.
-
-
-
-
-
 During the installation of VMware Workstation Pro, I got a message saying 
 ![[2024-08-02_vmware_installation_hyper-v.png]]
 
 I researched this further and found that, in my Windows Features, Hyper-V was actually switched off. However, since I had previously used WSL, I suspect this is not entirely true. I went on to fully switch it off in an elevated command prompt using
+
 ```windows
 bcdedit /set hypervisorlaunchtype off
 ```
@@ -865,6 +854,94 @@ bcdedit /set hypervisorlaunchtype auto
 
 which, indeed, completed successfully. I swiftly created another restore point. Additionally, I updated my bootable Windows USB drive, which I had created some time back, to be able to easily boot the system in case I suddenly get a BSOD (this happened to me some years back, on the second day of owning this laptop, when I wanted to set up VirtualBox...better safe than sorry).
 
+I also downloaded the VMware OVF Tool to make sure that the OVF I previously generated with VirtualBox is compatible with VMware Workstation Pro. I added its installation directory to my PATH variable under Windows, and could then access it from my command line in PowerShell.
+
+I tried converting the old virtual machine OVA file to a VMware-compatible type using " ovftool ubuntu22x64.ova E:\VMware_ubuntu_VM " (into a new directory I created for the purpose), but got an error: "Opening OVA source: ubuntu22x64.ova Opening VMX target: E:\VMware_ubuntu_VM Error: OVF Package is not supported by target: - Line 25: Unsupported hardware family 'virtualbox-2.2'. Completed with errors " 
+
+To convert this hardware family to one that's compatible with VMware Workstation Pro, ChatGPT suggested unpacking the OVA archive and directly editing the OVF file that contains the info. While 7zip was doing the unpacking, I did a [bit more reading online on the topic](How To Convert Virtual Machines Between VirtualBox and VMware (howtogeek.com)](https://www.howtogeek.com/125640/how-to-convert-virtual-machines-between-virtualbox-and-vmware/)). Because this website says it should be possible to open the VM as is in VMware, once it is installed, so I decided to postpone modifying anything in the OVF until I shut off Hyper-V for good with bcdedit, restart my PC, and attempt to install VMware.
+
+7zip kept showing "Unexpected end of data" all the way through.
+
+And then I restarted my PC. And got no BSOD, yay! *insert party smiley*
+
+I re-ran the installer for VMware Workstation Pro, and didn't get that error relating to Hyper-V, which means it's now finally switched off and I don't need to worry any longer. I chose to skip adding the optional "Enhanced Keyboard Driver", as I did not find any overtly important reason to do so. The installation completed successfully and I could now finally open the software ***!yay!***
+
+I followed the instructions from How To Geek to import the VM from VirtualBox into VMware. I got the error the website predicted:
+
+![[2024-08-02_vmware_importing_vm_error.png]]
+
+I hit "Retry" as instructed, which, as it says, makes the importing criteria less strict, and the actual import began. Annnnnnnd it worked!
+
+![[2024-08-02_vmware_importing_success.png]]
+
+
+I started the machine and *even conda was still working as expected in the terminal*. What was left to do was to install the VMware Guest Additions from the Linux ISO. For this, with the VM powered off, I went to its settings and added a CD/DVD, which I pointed to the VMware Linux ISO that should contain the additional tools for this Ubuntu virtual machine. The behavior was rather strange after that:
+
+```bash
+(base) iweber@iweber-VirtualBox:~$ vmware-toolbox-cmd -v
+12.3.5.46049 (build-22544099)
+(base) iweber@iweber-VirtualBox:~$ sudo vmware-uninstall-tools.pl
+sudo: vmware-uninstall-tools.pl: command not found
+(base) iweber@iweber-VirtualBox:~$ sudo mount /dev/cdrom /mnt
+mount: /mnt: WARNING: source write-protected, mounted read-only.
+```
+
+Maybe I have a broken installation of the Toolbox, because the option to reinstall it is greyed out in the VM menu, and, while some part of it is installed, returning me some version number, somehow, the uninstallation command isn't. So I tried to remove the Toolbox in its entirety from the system, running these commands one by one:
+
+```bash
+sudo rm -rf /usr/lib/vmware-tools # completed with no errors
+sudo rm -rf /etc/vmware-tools # completed with no errors
+sudo rm -rf /usr/lib/vmware-tools/modules # same
+sudo rm -rf /usr/bin/vmware* # same
+```
+
+I then re-mounted the ISO image with
+```bash
+sudo mount /dev/cdrom /mnt
+```
+, which told me that it's already mounted.
+
+Then, I used tar to extract the archive from the ISO:
+
+```bash
+tar -zxvf /mnt/VMwareTools-*.tar.gz -C /tmp
+```
+, which generated an onslaught of files, but completed fine and gave me a new command prompt.
+
+I changed to the extracted archive directory, made the installation script executable, and ran it. It didn't work, and I realized, based on the messages, that the problem was that the toolbox of VirtualBox was still present on the system:
+![[2024-08-02_vmware_toolbox_issue.png]]
+
+!!! I started this initial kernel driver, but I soon realized this was nonsense, and aborted it. I re-ran the rm operations above to purge any existing installed pieces of VMware Toolbox. Then, I proceeded to remove the open-vm-tools installation:
+
+```bash
+sudo apt-get remove --purge open-vm-tools
+sudo apt-get autoremove
+```
+
+Or...at least I thought I would be doing so. Instead, I got that very same nice error message regarding Nvidia and Cuda that I struggled with on VirtualBox. I tried:
+
+```bash
+sudo dpkg --purge open-vm-tools
+```
+
+and at least this one seems to have worked (I got an active command prompt after this):
+![[2024-08-02_vmware_toolbox_issue_removing_open-vm-tools.png]]
+
+I ran a few more commands ChatGPT suggested to completely purge any pieces left from either Toolbox or open-vm-tools:
+![[2024-08-02_vmware_toolbox_issue_removing_open-vm-tools_purging.png]]
+It seems no piece were left anyway - the system said it failed to find the things that I was trying to delete. Also, my shared clipboard between my Windows host and my VM stopped working, as was to be expected.
+
+I attempted to reinstall VMware tools, when I got an interesting message:
+![[2024-08-02_vmware_toolbox_issue_reinstall_attempt_vmware_tools.png]]
+
+I am postponing decisionmaking about this to tomorrow, I'll have to do a bit more research to confirm. This is the website it is sending me to:  https://knowledge.broadcom.com/external/article?legacyId=2073803 and it is last updated in February of this year, so seems fairly recent...
+
+---
+# ACTIVELY WORKING ON ^seeabove
+
+
+
+---
 
 ## Back to pipelines: the rnasplice pipeline
 
@@ -1036,13 +1113,6 @@ I tried creating an overview here that is somewhat easier to describe with words
 >>>>>> 
 >>>>> **SUPPA** = differential event-based splicing
 
-
----
-# ACTIVELY WORKING ON:
-
-
-
----
 
 
 # Trimming the reads

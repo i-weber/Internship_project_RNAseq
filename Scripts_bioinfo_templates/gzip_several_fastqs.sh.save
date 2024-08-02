@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Directory containing FASTQ files
+DIRECTORY="/path/to/your/fastq/files"
+
+# Find all .fastq files in the specified directory and subdirectories
+find "$DIRECTORY" -type f -name "*.fastq" | while read -r FILE; do
+  echo "Compressing $FILE"
+  gzip "$FILE"
+done
+
+echo "All files compressed."/mnt-win-ubu-shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq
