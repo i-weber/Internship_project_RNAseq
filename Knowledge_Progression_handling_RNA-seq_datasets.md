@@ -834,6 +834,28 @@ I took a snapshot of my current VM (2024-08-01) using VirtualBox, and, in the sa
 
 90% more to go. At best, this should take 6x90 min = 9 h. At worst, 25x90 min = 37.5 h ***insert clenched teeth smiley here*** Of course, I closed any app that might be eating any of my laptop's memory/processing power, but the virtual machine was only using 16-30% of my CPU to begin with, so maybe that's not the issue here. Maybe, as with many other things, VirtualBox is rather inefficient in its resource utilization...
 
+At around 2 AM, it had finally finished creating the OVF file (the file format of the so-called virtual machine appliance I just created). 
+
+After many loopholes, I finally downloaded VMware Workstation Pro, which, to my joy, is now available for free for personal use since May of this year.
+
+I also downloaded the VMware OVF Tool to make sure that the OVF I previously generated with VirtualBox is compatible with VMware Workstation Pro.
+
+During the installation of VMware Workstation Pro, I got a message saying 
+![[2024-08-02_vmware_installation_hyper-v.png]]
+
+I researched this further and found that, in my Windows Features, Hyper-V was actually switched off. However, since I had previously used WSL, I suspect this is not entirely true. I went on to fully switch it off in an elevated command prompt using
+```windows
+bcdedit /set hypervisorlaunchtype off
+```
+
+Seconds later, I realized it was stupid to not make a Windows restore point right before that, and I tried reverting the command using "on" instead of "off", but it just gave me an error message saying "The integer data is not valid as specified.  Run "bcdedit /?" for command line assistance. The parameter is incorrect.". I asked ChatGPT and found I was supposed to run
+```Windows
+bcdedit /set hypervisorlaunchtype auto
+```
+
+which, indeed, completed successfully. I swiftly created another restore point. Additionally, I updated my bootable Windows USB drive, which I had created some time back, to be able to easily boot the system in case I suddenly get a BSOD (this happened to me some years back, on the second day of owning this laptop, when I wanted to set up VirtualBox...better safe than sorry).
+
+
 ## Back to pipelines: the rnasplice pipeline
 
 `rnasplice` is a fairly new pipeline on the nf-core, published just a few months back. This is partially the reason for which I really badly want to run it in a container rather than just in conda: I suspect it probably can still throw a number of bugs when run on a system even remotely different than whatever the developers were using.
@@ -883,15 +905,24 @@ I created the sample sheet in Notepad++, and I even remembered to set the line b
 | 8                                                                                                                                                                                         | [SRR13761527](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761527)                | [SAMN18024793](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024793)                           | [SRX10148230](https://www.ncbi.nlm.nih.gov/sra/SRX10148230)                                    | GSM5098826             | Cortex offspring from preeclampsia mother mice |
 
 #### **Stranded information?**
-But where is the strandedness of the libraries indicated? There is no mention of this neither in the publication, nor in its Supplemental Data 1, nor in the Supplementary Materials and Methods. I only found a mention in their regular Materials and Methods section that they used the TruSeq Stranded mRNA Library Prep Kit from Illumina, in whose [protocol](https://support.illumina.com/content/dam/illumina-support/documents/documentation/chemistry_documentation/samplepreps_truseq/truseq-stranded-mrna-workflow/truseq-stranded-mrna-workflow-reference-1000000040498-00.pdf)  I read that it encompasses a first-strand reverse transcription and then the generation of the second strand of the cDNA, complementary to the first. This means that the resulting cDNA has the forward strand identical to the reverse complement of the original mRNA  and so should be treated as "reverse" and specified as such in the subsequent process. However, how can I make super sure that this is true? Giving the wrong strandedness will render the entire analysis essentially useless, so this is highly important.
+But where is the strandedness of the libraries indicated? There is no mention of this neither in the publication, nor in its Supplemental Data 1, nor in the Supplementary Materials and Methods. I only found a mention in their regular Materials and Methods section that they used the TruSeq Stranded mRNA Library Prep Kit from Illumina, in whose [protocol](https://support.illumina.com/content/dam/illumina-support/documents/documentation/chemistry_documentation/samplepreps_truseq/truseq-stranded-mrna-workflow/truseq-stranded-mrna-workflow-reference-1000000040498-00.pdf)  I read that it encompasses a first-strand reverse transcription and then the generation of the second strand of the cDNA, complementary to the first. This means that the resulting cDNA has the forward strand identical to the reverse complement of the original mRNA  and so should be treated as "reverse" and specified as such in the subsequent process. However, how can I make super sure that this is true? Giving the wrong strandedness will render the entire analysis essentially useless, this is highly important. 
+[explain the underlying biology]
+
+Side note: how does the kit distinguish between what is the first strand (reverse strand) and the forward strand? According to the TruSeq protocol, this is done by using a desoxyribonucleotide in the second-strand preparation that is different from the first-strand preparation (dUTP instead of dTTP for the first strand - they will both hybridize with adenosine, but the presence of Ts in one cDNA strand and the presence of Us in the other makes it possible to tell apart which strand the reads stem from)
+
+The blessings of online searching pointed me to a Python package called [How are we stranded here](https://github.com/signalbash/how_are_we_stranded_here) , which analyzes fastq files precisely to understand this. The knack: it also needs some additional information about the organism at hand, such as a gtf annotation file and a kallisto transcriptomic index. This seems like a very complicated option, so I asked Ioana Lemnian whether that is necessary. She said no, because it can only be that the `_R1` FastQ files are reverse and `_R2` files forward, so the strandedness should be specified as `RF`  (she also sent me some useful resources: [this one from ECSeq](https://www.ecseq.com/support/ngs/how-do-strand-specific-sequencing-protocols-work) and [this from the Broad Institute](https://www.broadinstitute.org/videos/strand-specific-rna-seq-preferred)
 
 ---
 # ACTIVELY WORKING ON:
 
 
-The blessings of online searching pointed me to a Python package called [How are we stranded here](https://github.com/signalbash/how_are_we_stranded_here) , which analyzes fastq files precisely to understand this. The knack: it also needs some additional information about the organism at hand, such as a gtf annotation file and a kallisto transcriptomic index.
 
 ---
+
+
+#### **Gzipping FastQ files for pipeline**
+
+I noticed in the parameters that the pipeline doesn't work with FastQ files directly, but only with their gzipped versions. 
 
 
 
