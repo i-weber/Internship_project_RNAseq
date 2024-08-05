@@ -985,10 +985,52 @@ I then went to [Ubuntu's official Nvidia driver page](https://ubuntu.com/server/
 
 I suspect this won't do much, but, in sheer despair, I tried forcing the installation of an Nvidia driver with `sudo apt-get install nvidia-driver-535` and rebooted with `sudo reboot`. But running `nvidia-smi` to check the driver gave the same message as before the install, "NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver. Make sure that the latest NVIDIA driver is installed and running."
 
----
-# ACTIVELY WORKING ON ^seeabove
+I shut off the virtual machine and went scouting in my BIOS options to see if anything else relating to Intel VT needs switching on, but it does not look like it - "VT-d" is activated in my BIOS setup.
+
+Again out of lack of better options, I tried installing the nvidia-cuda toolkit directly using `sudo apt install nvidia-cuda-toolkit`. Oddly enough, it downloaded all of the packages and completed successfully. I rebooted the machine and typed `nvidia-smi` to check if the GPU is recognized, but got the same error as above, saying it has failed because it couldn't communicate with the NVIDIA driver. 
+
+I also tried installing the CUDA toolkit from https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=22.04&target_type=deb_local , but I do suspect this won't do much if Nvidia can't communicate from my virtual machine with the Nvidia driver.
+
+For the umpteenth time, I purged everything Nvidia related, and  installed the Nvidia driver version 550, apparently the latest recommended by Nvidia for Linux 64-bit systems like my VM (I currently have version 535 installed) - `sudo apt-get install nvidia-driver-550`. I also re-installed the CUDA toolkit according to the link above.
+
+And, again, out of sheer desperation, I tried installing Docker as I had previously done on my old VirtualBox virtual machine with
 
 
+```bash
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+```
+and...it gave no errors?!??
+
+I then ran, as indicated on the Docker website,
+
+```bash
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+```
+
+, which also completed without errors, and, finally:
+```bash
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+It...completed?!?? Miracles????
+
+IT WORKED. It actually worked. The test command completed successfully:
+![[2024-08-05_VMware_docker_install_success.png]]
+
+So...now I have Docker on the system. Will perhaps also the pigz installation work now?
+
+It did. Or a prior installation is now working (it looks rather like it tried to update it but didn't find any more recent version):
+![[2024-08-05_VMware_pigz_install_success.png]]
+
+I ***immediately*** started creating another snapshot of the machine, just in case anything else goes awry.
 
 ---
 
@@ -1096,7 +1138,7 @@ Since I have FastQ files, I can leave the source configuration to the default, `
 
 I noticed in the parameters that the pipeline doesn't work with FastQ files directly, but only with their gzipped versions. I started the `gzip SRR13761520_1.fastq` command at 13:09, took around 10 min. So I know that doing the same with the remaining 15 files in sequence should take something like 150 minutes ~ 3 h. Which is why I'll only start after my recovery drive is complete, I switch off hyper-V, and I dare to restart my PC to see if it is indeed off and confirm my system didn't turn into blue pulp (BSOD).
 
-The script I use to gzip all files at once: (pigz, which allows hyperthreading, won't work on my VirtualBox VM because of the same issues with GPU passthrough, so I'll have to take this slow route...):
+The script I want to use to gzip all files at once: (~~pigz, which allows hyperthreading, won't work on my VirtualBox VM because of the same issues with GPU passthrough, so I'll have to take this slow route...~~):
 
 ```bash
 gzip_several_fastqs.sh                                                                                                            
@@ -1111,6 +1153,24 @@ find "$DIRECTORY" -type f -name "*.fastq" | while read -r FILE; do
   gzip "$FILE"
 done
 ```
+
+Scratch the above, I finally fixed all of these issues and now can use pigz, taking advantage of its parallel processing capabilities. So I need only replace the command with pigz:
+
+```bash
+gzip_several_fastqs.sh                                                                                                            
+#!/bin/bash
+
+# Specify directory containing FASTQ files
+DIRECTORY="/mnt-win-ubu-shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq"
+
+# Find all .fastq files in the specified directory and subdirectories. Write line by line, pipe each line with one file name into while loop that compresses it.
+find "$DIRECTORY" -type f -name "*.fastq" | while read -r FILE; do
+  echo "Compressing $FILE"
+  pigz "$FILE"
+done
+```
+
+
 
 ### rnasplice: actual pipeline description
 I tried creating an overview here that is somewhat easier to describe with words than the image on the website:
