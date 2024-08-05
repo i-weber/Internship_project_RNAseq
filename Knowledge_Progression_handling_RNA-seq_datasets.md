@@ -911,7 +911,7 @@ tar -zxvf /mnt/VMwareTools-*.tar.gz -C /tmp
 I changed to the extracted archive directory, made the installation script executable, and ran it. It didn't work, and I realized, based on the messages, that the problem was that the toolbox of VirtualBox was still present on the system:
 ![[2024-08-02_vmware_toolbox_issue.png]]
 
-!!! I started this initial kernel driver, but I soon realized this was nonsense, and aborted it. I re-ran the rm operations above to purge any existing installed pieces of VMware Toolbox. Then, I proceeded to remove the open-vm-tools installation:
+!!! I started this kernel driver installer, but I soon realized this was nonsense, and aborted it. I re-ran the rm operations above to purge any existing installed pieces of VMware Toolbox. Then, I proceeded to remove the open-vm-tools installation:
 
 ```bash
 sudo apt-get remove --purge open-vm-tools
@@ -935,6 +935,55 @@ I attempted to reinstall VMware tools, when I got an interesting message:
 ![[2024-08-02_vmware_toolbox_issue_reinstall_attempt_vmware_tools.png]]
 
 I am postponing decisionmaking about this to tomorrow, I'll have to do a bit more research to confirm. This is the website it is sending me to:  https://knowledge.broadcom.com/external/article?legacyId=2073803 and it is last updated in February of this year, so seems fairly recent...
+
+After some further research, I see that VMware indeed recommends open vm tools as the open source implementation of... VMware tools. They also recommend installing it as per the instructions of the OS producer.
+
+After reading [this](https://linuxcapable.com/how-to-install-open-vm-tools-on-ubuntu-linux/) , I chose to go with the desktop version of open-vm-tools, as that offers extended capability for GUI-based systems, whereas, apparently, the simple open-vm-tools package is meant for bare-bones Linux servers.
+
+I first checked what packages need updating before that with `sudo apt update` and listed the packages with `sudo apt list --upgradable`. I got this list, and decided to take a snapshot of the system before the update, just in case something destabilizes it: 
+
+![[2024-08-05_installing_updates_after_snapshot.png]]
+
+I hit ` sudo apt upgrade` to upgrade all of the packages listed above, and ran into the same issue with the NVIDIA and Cuda drivers not working. And when I tried the actual command to install open-vm-tools,
+
+```bash
+sudo apt install open-vm-tools-desktop
+```
+
+it happened again...
+
+I had a look in the VMware graphics settings and found that I could change some options regarding 3d acceleration, which I know Nvidia is in charge of, so I switched that on. This is how the updated settings look like:
+![[2024-08-05_VMware_modified_display_settings.png]]
+
+After this, I tried switching the machine back on to see if this maybe allows the use of Nvidia and Cuda and lets me install open-vm-ware....nope. Process failed with same problem. 
+
+Then, I also saw I have direct virtualization options under "Processors" in the virtual machine's settings. I changed those as follows:
+
+![[2024-08-05_VMware_modified_virtualization_settings.png]]
+
+Now, when peeking at the Windows task manager, I can actually see Vmware using the GPU!
+
+But I still can't install anything, not even Ubuntu's very own tool , without the same error about nvidia and cuda popping up again.
+
+I ran
+```bash
+sudo apt-get remove --purge '^nvidia-.*'
+sudo apt-get remove --purge '^cuda-.*'
+sudo apt-get remove --purge '^libcuda-.*'
+sudo apt-get remove --purge '^libnvidia-.*'
+sudo apt-get autoremove --purge
+sudo apt-get clean
+```
+to clear any installation I might have left on the system for any nvidia and cuda-related packages, and start afresh. Confirmed no more packages left  with `lsmod | grep nvidia`, which didn't return anything, and then added the graphics drivers repository to my system with  
+
+```bash
+sudo add-apt-repository ppa:graphics-drivers/ppa
+sudo apt-get update
+```
+
+I then went to [Ubuntu's official Nvidia driver page](https://ubuntu.com/server/docs/nvidia-drivers-installation) to see how they recommend installing these drivers from the command line interface (CLI)...no help there. All i got when checking for the recommended drivers for my machine with `sudo ubuntu-drivers install` is...drumroll...open-vm-tools *laugh-cry*
+
+I suspect this won't do much, but, in sheer despair, I tried forcing the installation of an Nvidia driver with `sudo apt-get install nvidia-driver-535` and rebooted with `sudo reboot`. But running `nvidia-smi` to check the driver gave the same message as before the install, "NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver. Make sure that the latest NVIDIA driver is installed and running."
 
 ---
 # ACTIVELY WORKING ON ^seeabove
@@ -1032,7 +1081,12 @@ But where is the strandedness of the libraries indicated? There is no mention of
 
 Side note: how does the kit distinguish between what is the first strand (reverse strand) and the forward strand? According to the TruSeq protocol, this is done by using a desoxyribonucleotide in the second-strand preparation that is different from the first-strand preparation (dUTP instead of dTTP for the first strand - they will both hybridize with adenosine, but the presence of Ts in one cDNA strand and the presence of Us in the other makes it possible to tell apart which strand the reads stem from)
 
-The blessings of online searching pointed me to a Python package called [How are we stranded here](https://github.com/signalbash/how_are_we_stranded_here) , which analyzes fastq files precisely to understand this. The knack: it also needs some additional information about the organism at hand, such as a gtf annotation file and a kallisto transcriptomic index. This seems like a very complicated option, so I asked Ioana Lemnian whether that is necessary. She said no, because it can only be that the `_R1` FastQ files are reverse and `_R2` files forward, so the strandedness should be specified as `RF`  (she also sent me some useful resources: [this one from ECSeq](https://www.ecseq.com/support/ngs/how-do-strand-specific-sequencing-protocols-work) and [this from the Broad Institute](https://www.broadinstitute.org/videos/strand-specific-rna-seq-preferred)
+The blessings of online searching pointed me to a Python package called [How are we stranded here](https://github.com/signalbash/how_are_we_stranded_here) , which analyzes fastq files precisely to understand this. The knack: it also needs some additional information about the organism at hand, such as a gtf annotation file and a kallisto transcriptomic index. This seems like a very complicated option, so I asked [Ioana Lemnian](https://www.linkedin.com/in/ioana-lemnian-1a2690138/?originalSubdomain=de) whether that is necessary. She said no, because it can only be that the `_R1` FastQ files are reverse and `_R2` files forward, so the strandedness should be specified as `RF`  (she also sent me some useful resources: [this one from ECSeq](https://www.ecseq.com/support/ngs/how-do-strand-specific-sequencing-protocols-work) and [this from the Broad Institute](https://www.broadinstitute.org/videos/strand-specific-rna-seq-preferred)
+
+One question remained in this context, though: how should one specify this in the sample sheet? It  only takes one single indication of strandedness for each sample and both of its `_R1` and `_R2` files with reads together, and that indication can only be either `forward`, `reverse`, or `unstranded`.  I realized nf-core has its very own Slack channel, where I swiftly got a detailed answer from [Thomas Danhorn](https://som.cuanschutz.edu/Profiles/Faculty/Profile/35847) , indicating that the strandedness in this case has to follow that of the R1 file, so, in my case, be `reverse`. 
+
+This is how the sample sheet looks like in the end:
+![[2024-08-05_samplesheet.png]]
 
 
 #### **Configuration of the type of source files**
@@ -1070,15 +1124,33 @@ I tried creating an overview here that is somewhat easier to describe with words
 >>	is something I would use if I had several fastq files per sample, coming from several runs of sequencing. This is usually done to increase sequencing depth, but the SRA archives I downloaded contained precisely two files per sample, containing the two parts of a pair of reads each.
 >>
 >>**FastQC**
->>_own addition_: **MultiQC**
->>	I already performed these steps on the WSL, so will not need to do so again. I already know I need to trim 10 bases from the 5' end of the reads in order to solve any problems that the odd per base distribution of the four nucleotides may create.
+>>_own addition_: **MultiQC** to summarize results
+>>	I already performed these steps on the WSL, so will not need to do so again. I already know I need to trim 10 bases from the 5' end of the reads in order to solve any problems that the suboptimal per-base distribution of the four nucleotides may create.
 >>
->>>**TrimGalore**!
->>>	see above - need to trim 10 bases. I previously worked with Trimmomatic for this kind of operation, will need to read up more on TrimGalore's parameters.
+>>>**TrimGalore**! - [GitHub](https://github.com/FelixKrueger/TrimGalore) and [user guide](https://github.com/FelixKrueger/TrimGalore/blob/master/Docs/Trim_Galore_User_Guide.md)
+>>>	- **COMMAND**: `trim_galore [options] <filename(s)>`
+>>>	- will set `--cores 4` to make maximal use of all of my cores but following the indication on the website that says this is a sweet spot (I set 6 cores to be available to the VM)
+>>>	- will use the `--paired` option because I have paired reads as input
+
+> [!INSTALL]
+> >>>	- However, this requires pigz instead of gzip, so I will have to eventually install it
+
+>>>	- see above - need to trim 10 bases. I previously worked with Trimmomatic for this kind of operation, but TrimGalore also has the option `--clip_R1 10` and `--clip_R2 10`, which will remove these 10 bases from the 5' ends of all of the reads.
+
+> [!INSTALL]
+> >>>	- TrimGalore is a wrapper around FastQC and another program, meant for adapter trimming, `cutadapt`, which needs to be previously installed - DO IT
+
+>>>	- Since it employes FastQC, TrimGalore does an automated check of low quality and trims accordingly. I don't need to specify the Phred score cutoff for base call quality - it automatically sets it to the most modern version, --phred33.
+>>>	- in my previous checks, FastQC did not detect any significant adapter contamination in the reads. If there are any adapters left, they will be of the Illumina type, since this is what kit was employed. However, I am a little reluctant to just use the --illumina parameter, as this trimming is extremely stringent and an overlap of even only 1 base between the end of the read and the adapter sequences will be removed, potentially losing useful information in the process. I will rather let TrimGalore automatically look for potential overlaps with adapter sequences and set `--stringency` to `5` to lose less information, since the risk of real adapter contamination seems extremely low AND I am anyway trimming the 5' ends because of the biased  base distribution
+>>>	-  it also automatically filters the resulting sequences and, if a read is then shorter than 20 bp, it is automatically removed from the results.
+>>>	- output: [***does it also create separate files for reads that could successfully be paired up from the two input FastQ files and those that could not?***]
+>>>	- to run FastQC again on the results, use `--fastqc_args "--outdir /TrimGalore_output" ` (TrimGalore automatically creates the output directory if it doesn't exist)
+>>>	- 
 >>>	
 >>>	
->>>>FastQC
->>>>_own addition_: MultiQC
+>>>	
+>>>>**FastQC**
+>>>>_own addition_: **MultiQC** to summarize results
 >>>>	these two steps are done to check whether the trimming worked exactly as expected, so, in my case, I'd expect the new report generated by MultiQC to show me 120 bp reads with no more issues at the 5' ends.
 >>>>
 >>>>>input files: fasta and gtf
@@ -1103,7 +1175,7 @@ I tried creating an overview here that is somewhat easier to describe with words
 >>>>>>
 >>>>>**MISO/Sashimi **
 
-> ***Part 2b of pipeline: read alignment and read count quantification***
+> ***Part 2b of pipeline: read psued-alignment and read count quantification***
 >**Salmon**
 >> **tximport**
 >> 
