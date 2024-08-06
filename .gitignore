@@ -1,2 +1,5 @@
 *.fastq
 *.fastq.gz
+Adapters
+Genomes
+Mapping_exercise_C_elegans

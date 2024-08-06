@@ -822,7 +822,7 @@ It seems like I got myself into another technical rabbithole here: apparently, t
 
 I can likely transfer my virtual machine from VirtualBox to another virtual machine software, VMware, but that will likely require some more tweaking as well. For the time being, I will try running the pipeline as is in Nextflow under Conda, and then see about anything else.
 
-## Attempting to transfer entirety of virtual machine to VMware
+## Transferring entirety of virtual machine to VMware
 
 I took a snapshot of my current VM (2024-08-01) using VirtualBox, and, in the same program, hit "Export appliance" for this very same machine from the File menu. Started around 18:40, reading about the pipeline in parallel. It's mightily slow - at 19.05, so 25 min later, it was at barely 2%, meaning this will probably take until Saturday...
 18:40 - start
@@ -1032,7 +1032,129 @@ It did. Or a prior installation is now working (it looks rather like it tried to
 
 I ***immediately*** started creating another snapshot of the machine, just in case anything else goes awry.
 
----
+### Ensuring Docker can use GPU
+
+ChatGPT had me test whether Docker can actually use my GPU, in case that's needed (and it likely will be, with the RNA-Seq pipelines) using `sudo docker run --rm --gpus all nvidia/cuda:11.5-base nvidia-smi`, which didn't work ("Unable to find image 'nvidia/cuda:11.5-base' locally docker: Error response from daemon: manifest for nvidia/cuda:11.5-base not found: manifest unknown: manifest unknown. See 'docker run --help'.") - not surprising, considering that `nvidia-smi` still shows the same error message saying "NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver. Make sure that the latest NVIDIA driver is installed and running."
+
+So it suggested installing the nvidia-docker2 package 
+
+```bash
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+sudo apt-get update
+
+sudo apt-get install -y nvidia-docker2
+
+sudo systemctl restart docker
+``` 
+
+and then pulling a Docker image that's easily retrievable to test if the GPU is working:
+
+```bash
+sudo docker pull nvidia/cuda:11.0-base
+sudo docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
+```
+Which...did not work. ChatGPT said the exact name of the docker container (its tag) might be at fault, and I then went on the official [GitLab repo of Nvidia with Docker containers to test different Cuda versions](https://gitlab.com/nvidia/container-images/cuda/blob/master/doc/supported-tags.md) Here, I noticed that the Cuda toolkit version that I have (`nvcc -V` -> "Cuda compilation tools, release 11.5, V11.5.119") is not listed under "Ubuntu 22.04" but under earlier versions. I did install the toolkit as recommended on the [Cuda toolkit website](https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=22.04&target_type=deb_local) but, somehow, still installed version 11.5 instead of 12.6, which seems to be current recommended one. 
+
+How did that happen? I did follow the instructions on the Cuda toolkit website to a T - I cycled back to previous commands, and I for sure ran the commands for version 12.6, the latest recommended one. I now ran, out of curiosity, "sudo apt-get -y install cuda-toolkit-12-6", and what I got back was 
+
+```bash
+[sudo] password for iweber: Reading package lists... Done Building dependency tree... Done Reading state information... Done 
+
+***cuda-toolkit-12-6 is already the newest version (12.6.0-1)***.
+
+The following packages were automatically installed and are no longer required: libatomic1:i386 libdrm-amdgpu1:i386 libdrm-intel1:i386 libdrm-nouveau2:i386 libdrm-radeon1:i386 libdrm2:i386 libedit2:i386 libelf1:i386 libexpat1:i386 libffi8:i386 libgl1:i386 libgl1-mesa-dri:i386 libglapi-mesa:i386 libglvnd0:i386 libglx-mesa0:i386 libglx0:i386 libicu70:i386 libllvm15:i386 libnvidia-egl-wayland1 libnvidia-egl-wayland1:i386 libpciaccess0:i386 libsensors5:i386 libstdc++6:i386 libwayland-client0:i386 libwayland-server0:i386 libx11-xcb1:i386 libxcb-dri2-0:i386 libxcb-dri3-0:i386 libxcb-glx0:i386 libxcb-present0:i386 libxcb-randr0:i386 libxcb-shm0:i386 libxcb-sync1:i386 libxcb-xfixes0:i386 libxfixes3:i386 libxml2:i386 libxshmfence1:i386 libxxf86vm1:i386 nvidia-firmware-550-550.107.02 Use 'sudo apt autoremove' to remove them. 0 upgraded, 0 newly installed, 0 to remove and 3 not upgraded.
+```
+
+Still, when I do the `nvcc -V` check, what I get is that I have `Cuda compilation tools, release 11.5, V11.5.119`. I wondered if it is possible that I have two versions on my system, both 12.6 and 11.5, and, if yes, how I would check that. ChatGPT had me run `ls /usr/local/` to see what Cuda folders and present there, and, lo and behold, it was three: cuda, cuda-12, and cuda-12.6. So it is indeed possible that they're all different versions. However, my system apparently can't access either of them directly, since they seem to not be in the PATH variable - running `echo $PATH | grep -o "/usr/local/cuda[^:]*/bin"` to find anything cuda-related in the PATH didn't return anything.
+
+To add the latest version to the PATH variable, I edited my .bashrc file and added, through the console, the path to the folder of the latest Cuda version: 
+
+```bash
+sudo echo 'export PATH=/usr/local/cuda-12.6/bin${PATH:+:${PATH}}' >> ~/.bashrc
+sudo echo 'export LD_LIBRARY_PATH=/usr/local/cuda-12.6/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}' >> ~/.bashrc
+```
+, then re-loaded my .bashrc with `source ~/.bashrc`.  Now, when running `echo $PATH | grep -o "/usr/local/cuda[^:]*/bin"`, I got back "/usr/local/cuda-12.6/bin" -> success in adding it to the PATH. When I now checked the version with `nvcc -V`, I finally saw 
+
+![[2024-08-06_cuda_toolkit_version_change.png]]
+
+I now tried pulling an existing Cuda Docker container from [their GitLab repository](https://gitlab.com/nvidia/container-images/cuda/-/blob/master/doc/supported-tags.md) using
+
+```bash
+sudo docker pull nvidia/cuda:12.5.1-base-ubuntu22.04
+```
+and saw that it worked:
+![[2024-08-06_docker_download_cuda_image.png]]
+(I didn't see a version for Cuda 12.6, so I chose a container running the latest available version, 12.5)
+
+I next tried running the container to see if GPU usage actually works using
+
+```bash
+sudo docker run --rm --gpus all nvidia/cuda:12.5.1-base-ubuntu22.04 nvidia-smi
+```
+...and it didn't. I restarted the machine, thinking that maybe this will help certain settings load properly, and tried again. I also tried running it without the `nvidia-smi` part. Either way, I got the same error message: "docker: Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: error running hook #0: error running hook: exit status 1, stdout: , stderr: Auto-detected mode as 'legacy'
+nvidia-container-cli: initialization error: nvml error: driver not loaded: unknown."
+
+This is apparently a problem, again, with the Nvidia driver.  I could try pulling some other docker container to test this further, but I suspect it wouldn't change much if `nvidia-smi` doesn't show anything useful. And I could go on and on trying this out, but maybe I'm lucky again and maybe the pipeline works even without the GPU usage. So the next important step is to generate some small test data to run a pilot test with the pipeline.
+
+### Accessing shared folder from VMware virtual machine
+
+I noticed that I could see my former inter-OS shared folder from the VMware virtual machine, but it appeared as empty, even though I set the path to it in the VM settings in VMware Workstation Pro. I unmounted this folder and then checked the [VMware website and ChatGPT](https://docs.vmware.com/en/VMware-Workstation-Pro/17/com.vmware.ws.using.doc/GUID-AB5C80FE-9B8A-4899-8186-3DB8201B1758.html) for how to mount the folder. I realized I need to first [check what Linux kernel version I have](https://linuxize.com/post/how-to-check-the-kernel-version-in-linux/), so I used
+
+```bash
+uname -srm
+```
+so I could confirm I have the `Linux 6.5.0-45-generic x86_64` kernel.
+
+I created a new mount point with
+
+```bash
+sudo mkdir /mnt/mnt-win-ubu-shared
+```
+
+and then, to access my shared folder at this mount point, used:
+```bash
+sudo /usr/bin/vmhgfs-fuse .host:/ /mnt/mnt-win-ubu-shared -o subtype=vmhgfs-fuse,allow_other
+```
+
+I attempted to make the mounted folder not ask me for my password every time by adding this to `/etc/fstab` (sudo access):
+```bash
+.host:/ /mnt/mnt-win-ubu-shared fuse.vmhgfs-fuse defaults,allow_other 0 0
+```
+
+and then finally mounted
+```bash
+sudo mount -a
+```
+
+And restarted my system. I had to go to the mounting point /mnt/mnt-win-ubu-shared from the address bar of my file explorer (ctrl+L) but could then see the folder. I swiftly added it to my bookmarks in the left-hand-side panel.
+![[2024-08-06_shared_folder_success.png]]
+
+I also changed the alias in my .bashrc for the command needed to switch to this inter-OS shared folder:
+![[2024-08-06_shared_folder_alias_bashrc.png]]
+
+I reloaded the .bashrc with `source ~/.bashrc` and set the permissions on the folder for everyone (including my user) to be able to use it:
+
+```bash
+sudo chmod 755 /mnt/mnt-win-ubu-shared
+```
+
+### Making the git repository within the newly mounter inter-OS folder work
+
+I immediately hit `git status` to make sure my git repo still works, and what I got was an error saying "fatal: detected dubious ownership in repository at '/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared' To add an exception for this directory, call: git config --global --add safe.directory /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared". 
+
+To hopefully resolve this, I ran:
+```bash
+git config --global --add safe.directory /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared
+```
+
+and then tested if it pops up as safe using `git config --global --get-all safe.directory` and its address does show up in the list.
+
+Next, I tested if git is running as it should using `git status`, and it does - I immediately got an overview of untracked changes :) (I added the folders relating to my pilot pipeline run,  "Adapters", "Genomes" and "C elegans mapping exercise", to .gitignore because I don't care about tracking them. When I repeated the git status command, they did not show up any longer).
+
+
+
 
 ## Back to pipelines: the rnasplice pipeline
 
@@ -1157,7 +1279,7 @@ done
 Scratch the above, I finally fixed all of these issues and now can use pigz, taking advantage of its parallel processing capabilities. So I need only replace the command with pigz:
 
 ```bash
-gzip_several_fastqs.sh                                                                                                            
+pigz_several_fastqs.sh                                                                                                            
 #!/bin/bash
 
 # Specify directory containing FASTQ files
@@ -1169,6 +1291,8 @@ find "$DIRECTORY" -type f -name "*.fastq" | while read -r FILE; do
   pigz "$FILE"
 done
 ```
+
+
 
 
 
@@ -1244,6 +1368,20 @@ I tried creating an overview here that is somewhat easier to describe with words
 >>>>>> **DEXSeq** = differential transcript usage
 >>>>>> 
 >>>>> **SUPPA** = differential event-based splicing
+
+# Pipeline pilot experiment: *C. elegans* data from the course
+
+In the NGS part of the bioinformatics course, we mapped some reads from the C. elegans genome. I'd like to use these as a test dataset for the pipeline, because the data consisted of far fewer reads than what I have for my mouse experiment, and so I should be able to see fast if the pipeline works or not.
+
+I have the reads files stored as fastq.gz files under
+`/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Mapping_exercise_C_elegans/Fastq_original_C_elegans/`
+
+and the C. elegans genome stored under 
+`/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna`
+
+That means that what I still need for the pipeline to run is a GTF file
+
+
 
 
 
