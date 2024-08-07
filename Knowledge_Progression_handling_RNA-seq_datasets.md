@@ -22,6 +22,23 @@ I focused my investigation on the embryonic cortex data, as this is a system I a
 
 I downloaded the datasets directly from the entry of this study on GEO in SRA format. As I found out, SRA is an NCBI-specific way to compress FastQ files. These are the ones with the raw reads from the sequencers and I learned that these are precisely what I will need for performing differential sequence analysis. The processing of the files to any other format, such as SAM or BAM, or anything else except for basic quality control, may introduce biases that affect subsequent data analyses.
 
+# Downloading genomes
+I knew the next step would be to map the reads to the source genome, and for that I, of course, needed the mouse genome.
+
+I found [here](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/download-and-install/) that NCBI has two command line tools for Linux that ease the download of datasets. From within the NGS environment and in a new folder "Genomes", I used `curl` to get the installers as shown on the NCBI page, and then made the binaries executable as instructed.
+
+I then proceeded to download the genomes that are relevant to me (mouse and human) using the option to find them by accession number. I got the accessions for the latest assemblies [here](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000001405.40/) and [here](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000001635.27/). To be on the safe side, I decided to use the more elaborately curated RefSeq assemblies, so the commands looked as follows:
+
+`(NGS) iweber@iweber-VirtualBox:~/Documents/Genomes$ datasets download genome accession GCF_000001405.40 --filename genome_H_sapiens_GRCh38.zip`
+
+...and got a big, fat load of nothing  xD, because the shell said it can't find the command "datasets". Instead of fumbling to find where the binaries associated with these two tools are, I decided to simply use conda to install them directly into this environment.
+
+`conda create -n ncbi_datasets
+`conda activate ncbi_datasets`
+`conda install -c conda-forge ncbi-datasets-cli`
+![[2024-05-07_conda_install_ncbi_dataset_success.png]]
+
+
 # In the Windows Subsystem for Linux (WSL), getting the SRA Toolkit and SRR run files from the preeclampsia study
 
 Using the documentation at NCBI, I found that one needs a suite of programs called SRA Toolkit in order to losslessly convert the SRA files into FastQ files. I installed the toolkit using the instructions on the GitHub page of the NCBI, https://github.com/ncbi/sra-tools/wiki/ . I decided to do so under Ubuntu running on the Windows Subsystem for Linux (WSL). I have read that, for optimal memory usage, it is preferable to create a virtual machine running a Linux distribution rather than the WSL. However, given that this was my first shot at analyzing a relatively small SRA dataset (~2.8 GB), I concluded that this is good enough for starters.
@@ -122,6 +139,9 @@ Result: successfully changed location, freeing some space on my currently plight
 
 I then wanted to get and extract all of the other SRA archives related to the E 17.5 cortices in this study. To do so, I wrote a Bash script containing the commands for fetching the remaining SRA archives (`prefetch` command of the SRA toolkit) and to unpack them (`fasterq-dump` command), set it to executable, and started it from the shell.
 
+> [!NOTE]
+> script?
+
 I checked the progress on occasion via TeamViewer, and saw things moving along through the continual increase in the size of the export folder. As a side note, here I also saw that the WSL virtual machine was still using up almost half of my RAM during this operation, and I think this is due to the limitations that WSL has in terms of memory usage, at least when compared to a virtual machine, so I decided I must take the plunge and create one. (see linked post about VM)
 
 
@@ -214,6 +234,7 @@ There were no warnings for overrepresented sequences, and FastQC did not find an
 > SRR13761526_2
 > SRR13761527_1
 > SRR13761527_2
+
 
 # Real solution for space issues: Making a VirtualBox virtual machine to run Ubuntu
 
@@ -478,6 +499,7 @@ After that, I wanted to see what options are available for multiqc, so I ran `mu
 ![[2024-05-06_multiqc_help_options.png]]
 ![[2024-05-06_multiqc_help_options_2.png]]
 ![[2024-05-06_multiqc_help_options_3.png]]
+
 
 
 # Creating a GitHub repository for the project
@@ -1156,15 +1178,15 @@ Next, I tested if git is running as it should using `git status`, and it does - 
 
 
 
-## Back to pipelines: the rnasplice pipeline
+# The rnasplice pipeline
 
 `rnasplice` is a fairly new pipeline on the nf-core, published just a few months back. This is partially the reason for which I really badly want to run it in a container rather than just in conda: I suspect it probably can still throw a number of bugs when run on a system even remotely different than whatever the developers were using.
 
 While I am trying to transfer the entirety of my virtual machine from VirtualBox to VMware (see section [[#Attempting to transfer entirety of virtual machine to VMware]] ), I read about the pipeline to better understand what the individual steps involve.
 
-### Prerequisites for the rnasplice pipeline
+## Prerequisites for the rnasplice pipeline
 
-#### **Create contrast sheet**
+### **Create contrast sheet**
 
 ***--contrasts contrastssheet.csv:*** I first need to create a contrast sheet, which tells the pipeline what kind of an experiment has been performed and how the conditions are called. 
 
@@ -1192,7 +1214,7 @@ contrast,treatment,control
 PREECLAMPSIA_CONTROL,PREECLAMPSIA,CONTROL
 ```
 
-#### **Creating the sample sheet**
+### **Creating the sample sheet**
 
 ***--input samplesheet.csv:*** Next, I created a sample sheet (a .csv file telling the pipeline what the sample files are called and which ones are from the control and which ones from the treated animals). [Note from "Source configuration": when using FastQ files as input, file must be structured exactly as shown here] 
 
@@ -1239,7 +1261,7 @@ I created the sample sheet in Notepad++, and I even remembered to set the line b
 > ```
 > 
 
-#### **Stranded information?**
+### **Stranded information?**
 But where is the strandedness of the libraries indicated? There is no mention of this neither in the publication, nor in its Supplemental Data 1, nor in the Supplementary Materials and Methods. I only found a mention in their regular Materials and Methods section that they used the TruSeq Stranded mRNA Library Prep Kit from Illumina, in whose [protocol](https://support.illumina.com/content/dam/illumina-support/documents/documentation/chemistry_documentation/samplepreps_truseq/truseq-stranded-mrna-workflow/truseq-stranded-mrna-workflow-reference-1000000040498-00.pdf)  I read that it encompasses a first-strand reverse transcription and then the generation of the second strand of the cDNA, complementary to the first. This means that the resulting cDNA has the forward strand identical to the reverse complement of the original mRNA  and so should be treated as "reverse" and specified as such in the subsequent process. However, how can I make super sure that this is true? Giving the wrong strandedness will render the entire analysis essentially useless, this is highly important. 
 [explain the underlying biology]
 
@@ -1253,10 +1275,10 @@ This is how the sample sheet looks like in the end:
 ![[2024-08-05_samplesheet.png]]
 
 
-#### **Configuration of the type of source files**
+### **Configuration of the type of source files**
 Since I have FastQ files, I can leave the source configuration to the default, `--source fastq`.  
 
-#### **Gzipping FastQ files for pipeline**
+### **Gzipping FastQ files for pipeline with pigz**
 
 I noticed in the parameters that the pipeline doesn't work with FastQ files directly, but only with their gzipped versions. I started the `gzip SRR13761520_1.fastq` command at 13:09, took around 10 min. So I know that doing the same with the remaining 15 files in sequence should take something like 150 minutes ~ 3 h. Which is why I'll only start after my recovery drive is complete, I switch off hyper-V, and I dare to restart my PC to see if it is indeed off and confirm my system didn't turn into blue pulp (BSOD).
 
@@ -1283,7 +1305,7 @@ pigz_several_fastqs.sh
 #!/bin/bash
 
 # Specify directory containing FASTQ files
-DIRECTORY="/mnt-win-ubu-shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq"
+DIRECTORY="/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/"
 
 # Find all .fastq files in the specified directory and subdirectories. Write line by line, pipe each line with one file name into while loop that compresses it.
 find "$DIRECTORY" -type f -name "*.fastq" | while read -r FILE; do
@@ -1292,14 +1314,20 @@ find "$DIRECTORY" -type f -name "*.fastq" | while read -r FILE; do
 done
 ```
 
+### GTF file for the mouse mm10 genome
 
-#### Genome files and transcriptome indices
-https://nf-co.re/docs/usage/reference_genomes#custom-genomes
+rnasplice also needs a GTF annotation file that indicates where genes, transcripts, exons, etc are located within the mouse genome. Turns out, I had already gotten the mouse gtf a few months back, when I downloaded the mouse genome from NCBI (https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/635/GCF_000001635.27_GRCm39/). This is good because I have the latest assembly of the mouse genome from NCBI, so it is more consistent to also use the NCBI annotations, especially since I am interested in looking at potentially disease-relevant genes, and I know NCBI has very good integration of its genomic data with its clinical databases, whereas Ensembl is somewhat better at having extremely detailed annotations, which come in handy for comparative/evolutionary studies.
+
+However, the annotation file from NCBI is in [GFF3](https://ftp.ncbi.nlm.nih.gov/genomes/README_GFF3.txt) format, so I might need to convert it to GTF. I found an overview of what these two file types are made of at [Ensembl](https://www.ensembl.org/info/website/upload/gff.html), and it seems that GTF2 and GFF2 files are identical.  BUT: reading on on the parameters page, I found that -gff is also an option that allows the use of GFF files instead of GTF, so yay for no conversion needed!
+
+Even better: the GTF file is also included in the NCBI FTP with downloads for this genome assembly.
+
+To get the mouse GTF from the NCBI FTP (already had the genome from them), used `wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/635/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_genomic.gtf.gz` and then `pigz -d` to unzip it.
+
+## Pipeline description for rnasplice
 
 
-### rnasplice: actual pipeline description
-
-Calling the pipeline is as easy as typing 
+Calling the pipeline could be as easy as typing 
 
 ```bash
 nextflow run nf-core/rnasplice \
@@ -1312,11 +1340,12 @@ nextflow run nf-core/rnasplice \
 
 but what does it do, and what other parameters need to be set?
 
+### Graphical overview
 I tried creating an overview here that is somewhat easier to describe with words than the image on the website:
 
 ![[rnasplice_map.png]]
 
-
+### Parts of the pipeline
 
 >***Part 1 of pipeline: preprocessing***
 >>**cat fastq** 
@@ -1343,20 +1372,19 @@ I tried creating an overview here that is somewhat easier to describe with words
 >>>	- in my previous checks, FastQC did not detect any significant adapter contamination in the reads. If there are any adapters left, they will be of the Illumina type, since this is what kit was employed. However, I am a little reluctant to just use the --illumina parameter, as this trimming is extremely stringent and an overlap of even only 1 base between the end of the read and the adapter sequences will be removed, potentially losing useful information in the process. I will rather let TrimGalore automatically look for potential overlaps with adapter sequences and set `--stringency` to `5` to lose less information, since the risk of real adapter contamination seems extremely low AND I am anyway trimming the 5' ends because of the biased  base distribution
 >>>	-  it also automatically filters the resulting sequences and, if a read is then shorter than 20 bp, it is automatically removed from the results.
 >>>	- output: [***does it also create separate files for reads that could successfully be paired up from the two input FastQ files and those that could not?***]
->>>	- to run FastQC again on the results, use `--fastqc_args "--outdir /TrimGalore_output" ` (TrimGalore automatically creates the output directory if it doesn't exist)
+>>>	
+>>>	>>>	
+>>>	
+>>>>**FastQC**
+>>>>- these two steps are done to check whether the trimming worked exactly as expected, so, in my case, I'd expect the new report generated by MultiQC to show me 140 bp reads with no more issues at the 5' ends.
+>>>>- to run FastQC again on the results, use `--fastqc_args "--outdir /TrimGalore_output" ` (TrimGalore automatically creates the output directory if it doesn't exist)
+>>>>-_own addition_: **MultiQC** to summarize results
 
 > [!To do]
 > >>>	
 > >>>	I will then need to add a MultiQC step to summarize the results, but I can do that manually
 
->>>	
->>>	
->>>	
->>>>**FastQC**
->>>>_own addition_: **MultiQC** to summarize results
->>>>	these two steps are done to check whether the trimming worked exactly as expected, so, in my case, I'd expect the new report generated by MultiQC to show me 140 bp reads with no more issues at the 5' ends.
->>>>
->>>>>input files: fasta and gtf
+>>>>>input files: fasta and gtf - see sections [[#Downloading genomes]] and [[#Initial creation of genome and transcriptome indices]]
 
 
 [this certainly needs more research for accuracy!]
@@ -1378,9 +1406,11 @@ The creators of the dataset/authors of the original study used Hisat2 instead of
 >>	aligns the reads
 >>	Parameters to consider:
 >>	- **`--star_index`**: Provide the path to the STAR index built for your reference genome.
-- **`--genome`**: Specify the reference genome (e.g., GRCh38).
-- **`--sjdb_overhang`**: Adjust based on your read length. A common choice is `read_length - 1`.
+>>	- **`--genome`**: Specify the reference genome (e.g., GRCh38).
+>>	- **`--sjdb_overhang`**: Adjust based on your read length. A common choice is `read_length - 1`, or else it defaults to 100 bp. So I will use ***149***, because I am dealing with 150 bp reads.
+>>	- [Here](https://www.reneshbedre.com/blog/star-aligner.html), Renesh Bedre explains more of the other parameters that STAR can use, such as `--runThreadN`, which sets on how many cores the aligner should be run (I'll use 6, because that's how many I have)
 >>	
+
 >>>**samtools**
 >>
 >>
@@ -1421,6 +1451,100 @@ Part 4 of the pipeline does some basic processing of the BAM files resulting fro
 >>>>>> 
 >>>>> **SUPPA** = differential event-based splicing
 
+
+### Initial creation of genome and transcriptome indices
+
+#### STAR mouse genome index
+I decided to create my STAR and Salmon indices in advance in order to remove potential sources of pipeline getting stuck.
+
+[From the ~~horse's~~ scientist's mouth](https://physiology.med.cornell.edu/faculty/skrabanek/lab/angsd/lecture_notes/STARmanual.pdf) who developed STAR, Alexander Dobin, I took the instructions on how to create one's own STAR index, and did so before running the pipeline (see also [here](https://github.com/alexdobin/STAR))
+
+ To first get STAR separately from the Nextflow pipeline, I went into my Nextflow environment and ran:
+ ```bash
+ wget https://github.com/alexdobin/STAR/archive/2.7.11b.tar.gz
+ tar -xzf 2.7.11b.tar.gz
+ cd STAR-2.7.11b/source
+```
+
+Then, as instructed, I ran `make STAR` for the gcc C++ compiler to create a ready-to-run version of STAR on my system. Started around 11:57, took around 3 min to complete. 
+Got a warning "make: warning:  Clock skew detected.  Your build may be incomplete."
+
+I reset my system time with `sudo apt-get install ntp` and  `sudo service ntp restart`, then re-made the STAR build with `make clean` and `make STAR`, which now worked with no further errors.
+
+I had to add the path to the folder where I compiled the executable to the PATH variable, which I did by adding to my .bashrc `export PATH=/home/iweber/Documents/Software/STAR-2.7.11b/source:$PATH`
+
+
+
+To make the mouse STAR index, ran:
+```bash
+STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/STAR_index_M_musculus --genomeFastaFiles /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.fna --sjdbGTFfile /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.gtf --sjdbOverhang 149
+```
+
+Annnnnnnnd success! Took all of 27 min to complete.
+![[2024-08-07_STAR_index_mouse_success.png]]
+#### Salmon mouse transcriptome index
+
+For the Salmon index creation, I first got the latest Salmon version independent of the Nextflow pipeline as instructed on the[ Salmon website](https://salmon.readthedocs.io/en/latest/building.html#installation) using
+
+`wget https://github.com/COMBINE-lab/salmon/releases/download/v1.10.0/salmon-1.10.0_linux_x86_64.tar.gz`
+
+I decompressed the tar archive with `tar -xvzf salmon-1.10.0_linux_x86_64.tar.gz`, and then added the path to Salmon's bin folder to my PATH variable by including `export PATH=/home/iweber/Documents/Software/salmon-latest_linux_x86_64/bin:$PATH` in my .bashrc file. I could then see the command autocomplete, so I knew it works on my system :) `salmon --version` also returned "1.10.0", which is correct.
+
+
+I also tried to get a Docker image with 
+
+`sudo docker pull combinelab/salmon`
+
+> [!NOTE]
+> which...did not seem to download anything to my "Software" folder that I ran the command in ***pondering smiley*** . I'm sure this rather has something to do with me not understanding how the Docker image is supposed to work. 
+
+
+Next, I went looking for information on how to set up the transcriptomic index with Salmon. The [Salmon manual](https://salmon.readthedocs.io/en/latest/salmon.html#using-salmon) sent me to this [RefGenie server/repository](http://refgenomes.databio.org) that has ready-made indices for well-studied species, and it indeed hosts a Salmon index for the mouse, matching the NCBI genome, [here](http://refgenomes.databio.org/v3/genomes/splash/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1). I chose to download the complete[ Salmon index generated with selective alignment method](http://refgenomes.databio.org/v3/assets/splash/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1/salmon_sa_index?tag=default), because the description says that using it will increase the accuracy of quantification.
+
+I made a new folder, Salmon_index_M_musculus_mm10, in the genome folder (/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/), then used wget to download the index from RefGenie:
+
+`wget http://refgenomes.databio.org/v3/assets/archive/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1/salmon_sa_index?tag=default`
+
+which...didn't work. Even though I saw the 12 GB download and it took around 20 min to do so, I had no files at the end in my working directory and only an odd file that popped up with `ls -lha`:
+![[2024-08-07_Salmon_index_mouse_download_fail.png]]
+
+ChatGPT told me that the file with the utterly weird privilege indicators (question marks) and the truncated name is likely the fault of a corrupted download, and that that likely happened because there are special characters (question mark) in the archive name on the website. So it suggested re-downloading the archive with a clearly defined name using
+
+`wget "http://refgenomes.databio.org/v3/assets/archive/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1/salmon_sa_index?tag=default" -O salmon_sa_index.tgz`
+
+...but that only downloaded a tiny file, nothing close to the 12 GB I was expecting from the tgz archive. So I went the new-school way and just downloaded it through the browser *sweat drop smiley*
+
+
+---
+# ACTIVELY WORKING ON ^above
+
+---
+
+## Final setup of the rnasplice pipeline
+
+```bash
+nextflow run nf-core/rnasplice -r 1.0.4
+
+--input samplesheet_preeclampsia.csv 
+--contrasts contrastssheet_preeclampsia.csv
+
+--fasta /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.fna 
+--gtf /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.gtf
+--outdir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_rnasplice_results
+
+
+--aligner star_salmon
+--star_index /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/STAR_index_M_musculus/
+--salmon_index path/to/salmon/index
+--save_align_intermeds true # needed if wanting to use rMATS, because otherwise pipeline does not save SAM files, which rMATS needs
+--save_reference true # saves anything the pipeline downloads by itself, e.g. STAR indices
+
+--salmon_quant_libtype # this might need to go into Salmon's chunk in the workflow AND is optional - Salmon can infer this automatically from the samplesheet information
+
+
+-profile docker # or conda, depending on what works
+```
+
 # Pipeline pilot experiment: *C. elegans* data from the course
 
 In the NGS part of the bioinformatics course, we mapped some reads from the C. elegans genome. I'd like to use these as a test dataset for the pipeline, because the data consisted of far fewer reads than what I have for my mouse experiment, and so I should be able to see fast if the pipeline works or not.
@@ -1431,7 +1555,67 @@ I have the reads files stored as fastq.gz files under
 and the C. elegans genome stored under 
 `/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna`
 
-That means that what I still need for the pipeline to run is a GTF file. 
+To get the GTF file, an annotation file that specifies where genes and other genomic elements start and end within the genome, I went to Ensembl's FTP page and found that the *C. elegans* GTFs are stored under https://ftp.ensembl.org/pub/current_gtf/caenorhabditis_elegans/Caenorhabditis_elegans.WBcel235.112.gtf.gz. I navigated to my *C. elegans* genome folder and downloaded the file with
+
+```bash
+wget  https://ftp.ensembl.org/pub/current_gtf/caenorhabditis_elegans/Caenorhabditis_elegans.WBcel235.112.gtf.gz
+```
+
+For the relatively small *C. elegans* genome, this took all of 1 minute. I then unzipped it with pigz:
+
+```bash
+pigz -d Caenorhabditis_elegans.WBcel235.112.gtf.gz
+```
+
+
+I, of course, still need the sample sheet and the contrast sheet for this experiment as well. I have reads from two samples, CHS_1063 and CHS_1109. I tried searching for their names to see what kind of experiment they stemmed from and couldn't find any info on the quick, so I will simply assume that CHS_1063 is "control" and CHS_1109 is "treatment".
+
+Here's how the sample sheet looks like:
+```
+sample,fastq_1,fastq_2,strandedness,condition
+CONTROL_REP1,CHS_1063_R1.fastq.gz,CHS_1063_R2.fastq.gz,reverse,CONTROL
+TREATMENT_REP1,CHS_1109_R1.fastq.gz,CHS_1109_R1.fastq.gz,reverse,TREATMENT
+```
+
+And the contrasts sheet:
+```
+contrast,treatment,control
+TREATMENT_CONTROL,TREATMENT,CONTROL
+```
+
+I tried to prepared the STAR index for C. elegans using
+```bash
+STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans --genomeFastaFiles /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna --sjdbGTFfile /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/Caenorhabditis_elegans.WBcel235.112.gtf --sjdbOverhang 149
+```
+
+but got an error saying something is not right with the GTF file: "Fatal INPUT FILE error, no valid exon lines in the GTF file: /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/Caenorhabditis_elegans.WBcel235.112.gtf
+Solution: check the formatting of the GTF file. One likely cause is the difference in chromosome naming between GTF and FASTA file."
+
+Soooooo I probably need to use the GFF file from NCBI instead, or, at the very least, rename the chromosomes in the GTF files so that they have the same names as they do in the genome. The STAR manual says that "for GFF3 formatted annotations you need to use --sjdbGTFtagExonParentTranscript Parent."
+
+- rename the chromosomes in the GTF files so that they have the same names as they do in the genome
+- get the GTF and GFF3 files from the [NCBI FTP for C. elegans](https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/002/985/GCF_000002985.6_WBcel235/) with `wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/002/985/GCF_000002985.6_WBcel235/GCF_000002985.6_WBcel235_genomic.gff.gz` and the GTF file from NCBI with `wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/002/985/GCF_000002985.6_WBcel235/GCF_000002985.6_WBcel235_genomic.gtf.gz`, then unzipping both with `pigz`
+
+First, repeated using the GTF file from NCBI:
+
+```bash
+STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans --genomeFastaFiles /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna --sjdbGTFfile /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.gtf --sjdbOverhang 149
+```
+
+It worked, except for a warning: "!!!!! WARNING: --genomeSAindexNbases 14 is too large for the genome size=100286401, which may cause seg-fault at the mapping step. Re-run genome generation with recommended --genomeSAindexNbases 12" 
+
+I looked in the STAR manual to gain a better understanding of why this is happening. Apparently, this is because the C. elegans genome is very small, hence the request to run the index generation again with this parameter set to 12. So I deleted all of the files that STAR generated for the index, and started afresh with:
+
+```bash
+STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans --genomeFastaFiles /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna --sjdbGTFfile /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.gtf --sjdbOverhang 149 --genomeSAindexNbases 12
+```
+
+And ta-da! Two minutes later, with no more warnings, I had the index, a set of files that total some 1.4 GB in size      ***insert meow_party smiley*** 
+
+I had less luck with finding a pre-assembled C. elegans Salmon (transcriptomic) index than I had with the mouse one, so I needed to build this index from scratch.
+
+
+
 
 I pulled the pipeline from nf-core using
 
@@ -1440,16 +1624,47 @@ nextflow pull nf-core/rnasplice
 ```
 ![[2024-08-06_pipeline_pull_success.png]]
 
+To run it for the C. elegans data, I will use
+```bash
+#!/bin/bash
+
+nextflow run nf-core/rnasplice -r 1.0.4
+
+--input samplesheet_C_elegans.csv 
+--contrasts contrastssheet_C_elegans.csv
+
+--fasta /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna
+~~--gtf /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/Caenorhabditis_elegans.WBcel235.112.gtf~~ NO. USE GFF INSTEAD.
+--gff /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/
+
+--save-trimmed true # to save the reads after trimming
+
+--aligner star_salmon
+--star_index path/to/index
+--salmon_index path/to/index
+
+--save-unaligned true # to save, if possible, any reads that couldn't be aligned in the results directory for later inspection
+--save-align-intermeds # to save BAM files separately
+
+--rmats true to 
+--outdir pipeline_test_results 
+-profile docker
+```
+
+
+
 ```bash
 nextflow run nf-core/rnasplice -r 1.0.4 
 --input samplesheet.csv 
 --contrasts contrastsheet.csv
---genome target_genome 
+--genome WBcel235 OR --fasta? as path to genome and --gtf as path to annotation file?
 --outdir my/result/directory
+
 
 --aligner star_salmon
 --star_index /path/to/star/index
 --save_align_intermeds # needed if wanting to use rMATS, because otherwise pipeline does not save SAM files, which rMATS needs
+--save_reference # saves anything the pipeline downloads by itself, e.g. STAR indices
 
 --salmon_quant_libtype # this might need to go into Salmon's chunk in the workflow AND is optional - Salmon can infer this automatically from the samplesheet information
 
@@ -1458,9 +1673,13 @@ nextflow run nf-core/rnasplice -r 1.0.4
 -profile docker
 ```
 
-but what does it do, and what other parameters need to be set?
 
 
+
+---
+# ACTIVELY WORKING ON ^above
+
+---
 
 
 # Trimming the reads
@@ -1487,51 +1706,7 @@ I found out in another analysis that one can create at most 4 threads on an octo
 > Contents
 Since the reads all had issues up to around the 10th base from the 5' end, I set the  
 
-Dupe warnings:
-SRR13761520_1
-SRR13761521_1
-SRR13761522_1
-SRR13761523_1
-SRR13761524_1
-SRR13761525_1
-SRR13761526_1
-SRR13761526_2
-SRR13761527_1
-SRR13761527_2
 
-# Downloading genomes
-I knew the next step would be to map the reads to the source genome, and for that I, of course, needed the mouse genome.
-
-I found [here](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/download-and-install/) that NCBI has two command line tools for Linux that ease the download of datasets. From within the NGS environment and in a new folder "Genomes", I used `curl` to get the installers as shown on the NCBI page, and then made the binaries executable as instructed.
-
-I then proceeded to download the genomes that are relevant to me (mouse and human) using the option to find them by accession number. I got the accessions for the latest assemblies [here](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000001405.40/) and [here](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000001635.27/). To be on the safe side, I decided to use the more elaborately curated RefSeq assemblies, so the commands looked as follows:
-
-`(NGS) iweber@iweber-VirtualBox:~/Documents/Genomes$ datasets download genome accession GCF_000001405.40 --filename genome_H_sapiens_GRCh38.zip`
-
-...and got a big, fat load of nothing  xD, because the shell said it can't find the command "datasets". Instead of fumbling to find where the binaries associated with these two tools are, I decided to simply use conda to install them directly into this environment.
-
-`conda create -n ncbi_datasets
-`conda activate ncbi_datasets`
-`conda install -c conda-forge ncbi-datasets-cli`
-![[2024-05-07_conda_install_ncbi_dataset_success.png]]
-
-# Indexing the mouse genome for RNA-seq
-
-
-
-# Mapping
-
-
-# Installing STAR
-`conda install bioconda::star`
-`conda install bioconda::subread`
-
-R, RStudio
-
-In R:
-`if (!require("BiocManager", quietly = TRUE))
-install.packages(“BiocManager")
-BiocManager::install("DESeq2")`
 
 # Installing R and RStudio on the virtual machine
 From https://cran.r-project.org/
@@ -1547,15 +1722,4 @@ wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sud
 # add the R 4.0 repo from CRAN -- adjust 'focal' to 'groovy' or 'bionic' as needed
 sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
 ```
-
-# Install visual studio code
-I downloaded the Ubuntu installer from https://code.visualstudio.com/download I opened it with an app but it did not  show up as an app afterwards. So, looked for it in the snap store and found the app itself, called Code.
-
-[]img code in snap
-
-...but that gave me an error message.
-
-However, after restarting the installation, it went to 100% and now it appears as an app, which I can open and use.
-
-
 
