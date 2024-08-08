@@ -2,4 +2,6 @@
 *.fastq.gz
 Adapters
 Genomes
-Mapping_exercise_C_elegans
+HCBC_alignment_quantification.pdf
+*tar.gz
+Pipeline_test_C_elegansgit

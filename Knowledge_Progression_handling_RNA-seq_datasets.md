@@ -22,6 +22,13 @@ I focused my investigation on the embryonic cortex data, as this is a system I a
 
 I downloaded the datasets directly from the entry of this study on GEO in SRA format. As I found out, SRA is an NCBI-specific way to compress FastQ files. These are the ones with the raw reads from the sequencers and I learned that these are precisely what I will need for performing differential sequence analysis. The processing of the files to any other format, such as SAM or BAM, or anything else except for basic quality control, may introduce biases that affect subsequent data analyses.
 
+# So what is RNA-seq anyway? And what's the deal with alternative splicing analysis?
+
+> [!To read:]
+> General info on RNA-Seq analysis https://academic.oup.com/bib/article/23/2/bbab563/6514404?login=false
+> 
+> https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4712774/ tximport solves issues with artificially inflated gene counts derived from transcript isoforms
+
 # Downloading genomes
 I knew the next step would be to map the reads to the source genome, and for that I, of course, needed the mouse genome.
 
@@ -1162,7 +1169,7 @@ I reloaded the .bashrc with `source ~/.bashrc` and set the permissions on the fo
 sudo chmod 755 /mnt/mnt-win-ubu-shared
 ```
 
-### Making the git repository within the newly mounted inter-OS folder work
+### Checking that the git repository within the newly mounted inter-OS folder still works
 
 I immediately hit `git status` to make sure my git repo still works, and what I got was an error saying "fatal: detected dubious ownership in repository at '/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared' To add an exception for this directory, call: git config --global --add safe.directory /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared". 
 
@@ -1176,11 +1183,17 @@ and then tested if it pops up as safe using `git config --global --get-all safe.
 Next, I tested if git is running as it should using `git status`, and it does - I immediately got an overview of untracked changes :) (I added the folders relating to my pilot pipeline run,  "Adapters", "Genomes" and "C elegans mapping exercise", to .gitignore because I don't care about tracking them. When I repeated the git status command, they did not show up any longer). Everything was updated as it should on GitHub :) 
 
 
-
-
 # The rnasplice pipeline
 
 `rnasplice` is a fairly new pipeline on the nf-core, published just a few months back. This is partially the reason for which I really badly want to run it in a container rather than just in conda: I suspect it probably can still throw a number of bugs when run on a system even remotely different than whatever the developers were using.
+
+I pulled the pipeline from nf-core using
+
+```bash
+nextflow pull nf-core/rnasplice
+```
+![[2024-08-06_pipeline_pull_success.png]]
+
 
 While I am trying to transfer the entirety of my virtual machine from VirtualBox to VMware (see section [[#Attempting to transfer entirety of virtual machine to VMware]] ), I read about the pipeline to better understand what the individual steps involve.
 
@@ -1390,15 +1403,19 @@ I tried creating an overview here that is somewhat easier to describe with words
 [this certainly needs more research for accuracy!]
 The rest of the pipeline is divided in two branches. Each branch starts with one of two different algorithms, [STAR](https://pubmed.ncbi.nlm.nih.gov/23104886/) and [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html), whose mechanics sound similar at first, but work quite differently. 
 
-As explained [here ](https://www.biostars.org/p/180986/#180993)by Devon Ryan, an aligner like STAR genuinely looks at the base-to-base match of a read to a region in the target genome ("does this read align with this bit of the genome?") and also saves information on whether the read matches the genomic region as-is, from one end of the read to the other, or whether there are gaps or insertions. This means that it it can accurately quantify which genes are expressed at what levels. Additionally, it is built so that it can easily identify reads that span exon-exon boundaries, thereby making it able to distinguish which of the different transcripts that can come from the same genomic locus really aligns to. This information is usually collected in a BAM file.
+As explained [here ](https://www.biostars.org/p/180986/#180993)by Devon Ryan, an aligner like STAR genuinely looks at the base-to-base match of a read to a region in the target genome ("does this read align with this bit of the genome?") and also saves information on whether the read matches the genomic region as-is, from one end of the read to the other, or whether there are gaps or insertions ("does every one of the 150 bases in the read match 150 bases at the location where it's mapped in the genome? Or are, say, only bases 1-57 aligned, with an unmatching portion from bases 58-92, and then 93-150 match again?"). This means that it it can accurately quantify which genes are expressed at what levels. Additionally, it is built so that it can easily identify reads that span exon-exon boundaries, thereby making it able to distinguish which of the different transcripts that can come from the same genomic locus the read could be derived from. This information is usually collected in a BAM file.
 
-Salmon can be used in two different ways: as a pseudo-aligner or as a real aligner. As a pseudo-aligner, it does not care about the exact fit of the read base-to-base, and does a quantification of "is this read likely to come from this genomic feature, usually a gene?" based on some more complex background mathematics. This is called pseudo-alignment, and is much faster than an actual alignment. In this mode, Salmon does not compare the reads to a reference genome but to a reference transcriptome, for which it needs a so-called index of the transcriptome. Often, such reference indices are readily available for download for well-studied organisms such as the mouse. 
+> [!TO DO:]
+> Read more on how Salmon works - the Harvard Chan Bioinfo Core PDF has good visualizations.
+> I found this excellent [RNA-seq analysis course ](https://github.com/hbctraining/Intro-to-rnaseq-hpc-salmon-flipped/blob/main/schedule/links-to-lessons.md)from the Harvard Chan Bioinformatics Core ( [Zenodo](https://doi.org/10.5281/zenodo.5833880)). In the [Salmon lesson](https://github.com/hbctraining/Intro-to-rnaseq-hpc-salmon-flipped/blob/main/lessons/08_quasi_alignment_salmon.md) , they explain how to set the parameters:
 
-Salmon also makes some adjustments for normalizing the read counts, e.g. to the length of the transcript, in order to produce accurate estimates of how abundantly different splice isoforms are expressed from a particular gene. It can take the BAM files generated by STAR in order to give these results, which we will obtain with STAR in the first part of the pipeline.
+STAR is the gold standard of the old school of transcript abundance analysis. Salmon is the new star on the block because it can be used in two different ways: as a pseudo-aligner or as a real aligner. It truly shines as a pseudo-aligner, a mode in which it does not care about the exact fit of the read base-to-base, and does a quantification of "is this read likely to come from this transcript?" based on some more complex background mathematics. This is called pseudo-alignment, and is much faster than an actual base-to-base alignment, like STAR performs. In this mode, Salmon does not compare the reads to a reference genome but to a reference transcriptome, for which it needs a so-called index of the transcriptome. Often, such reference indices are readily available for download for well-studied organisms such as the mouse. 
 
-Salmon can also operate on raw reads from scratch, as an aligner would, and I could theoretically let it start its branch of the pipeline from scratch, based on the raw reads, but I will anyway get the BAM files from the STAR branch, so I could save some time on that.
+Salmon also makes some adjustments for normalizing the read counts, e.g. to the length of the transcript, in order to produce accurate estimates of how abundantly different splice isoforms are expressed from a particular gene. It can take the BAM files generated by STAR in order to give these results, which we will obtain with STAR in the first part of the pipeline. [how does tximport play into this?]
 
-The creators of the dataset/authors of the original study used Hisat2 instead of STAR to align the reads to the mm10 mouse genome, and HTSeq to obtain read counts aka expression levels for the genes in RPKM. The rnasplice pipeline also runs HTSeq after the STAR step, and I am curious how the results will compare to the ones published in the paper.
+Salmon can also operate on raw reads from scratch, as an aligner like STAR would, and I could theoretically let it start its branch of the pipeline from scratch, based on the raw reads, but I will anyway get the BAM files from the STAR branch, so I could save some time on that.
+
+The creators of the dataset/authors of the original study used Hisat2 instead of STAR to align the reads to the mm10 mouse genome, and HTSeq to obtain read counts aka expression levels for the genes. The rnasplice pipeline also runs HTSeq after the STAR step, and I am curious how the results will compare to the ones published in the paper.
 
 
 > ***Part 2a of pipeline: read alignment and read count quantification starting with STAR***
@@ -1444,6 +1461,7 @@ Part 4 of the pipeline does some basic processing of the BAM files resulting fro
 > ***Part 2b of pipeline: read psued-alignment and read count quantification per transcript using Salmon***
 >**Salmon**
 >> **tximport**
+>> 	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4712774/ tximport solves issues with artificially inflated gene counts derived from transcript isoforms
 >> 
 >>>> ***Part 3b of pipeline: actual splicing junction quantification***
 >>>>> **DRIMSeq**
@@ -1454,8 +1472,9 @@ Part 4 of the pipeline does some basic processing of the BAM files resulting fro
 
 ### Initial creation of genome and transcriptome indices
 
-#### STAR mouse genome index
-I decided to create my STAR and Salmon indices in advance in order to remove potential sources of pipeline getting stuck.
+#### STAR independent installation and mouse genome index
+
+I decided to create my STAR and Salmon indices in advance in order to remove potential sources of pipeline getting stuck, so I had to install both independent of the pipeline.
 
 [From the ~~horse's~~ scientist's mouth](https://physiology.med.cornell.edu/faculty/skrabanek/lab/angsd/lecture_notes/STARmanual.pdf) who developed STAR, Alexander Dobin, I took the instructions on how to create one's own STAR index, and did so before running the pipeline (see also [here](https://github.com/alexdobin/STAR))
 
@@ -1482,7 +1501,7 @@ STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared
 
 Annnnnnnnd success! Took all of 27 min to complete.
 ![[2024-08-07_STAR_index_mouse_success.png]]
-#### Salmon mouse transcriptome index
+#### Salmon installation and mouse transcriptome index
 
 For the Salmon index creation, I first got the latest Salmon version independent of the Nextflow pipeline as instructed on the[ Salmon website](https://salmon.readthedocs.io/en/latest/building.html#installation) using
 
@@ -1505,7 +1524,7 @@ I made a new folder, Salmon_index_M_musculus_mm10, in the genome folder (/mnt/mn
 
 `wget http://refgenomes.databio.org/v3/assets/archive/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1/salmon_sa_index?tag=default`
 
-which...didn't work. Even though I saw the 12 GB download and it took around 20 min to do so, I had no files at the end in my working directory and only an odd file that popped up with `ls -lha`:
+which...didn't work. Even though I saw the 12 GB download and it took around 30 min to do so, I had no files at the end in my working directory and only an odd file that popped up with `ls -lha`:
 ![[2024-08-07_Salmon_index_mouse_download_fail.png]]
 
 ChatGPT told me that the file with the utterly weird privilege indicators (question marks) and the truncated name is likely the fault of a corrupted download, and that that likely happened because there are special characters (question mark) in the archive name on the website. So it suggested re-downloading the archive with a clearly defined name using
@@ -1514,11 +1533,7 @@ ChatGPT told me that the file with the utterly weird privilege indicators (quest
 
 ...but that only downloaded a tiny file, nothing close to the 12 GB I was expecting from the tgz archive. So I went the new-school way and just downloaded it through the browser *sweat drop smiley*
 
-
----
-# ACTIVELY WORKING ON ^above
-
----
+***Side note***: *I found out later that RefGenie is actually a Python package that allows downloading files related to some reference genome assemblies from the command line; [here's how to use it ](https://refgenie.databio.org/en/latest/)for further reference.*
 
 ## Final setup of the rnasplice pipeline
 
@@ -1547,6 +1562,7 @@ nextflow run nf-core/rnasplice -r 1.0.4
 
 # Pipeline pilot experiment: *C. elegans* data from the course
 
+## The C. elegans data
 In the NGS part of the bioinformatics course, we mapped some reads from the C. elegans genome. I'd like to use these as a test dataset for the pipeline, because the data consisted of far fewer reads than what I have for my mouse experiment, and so I should be able to see fast if the pipeline works or not.
 
 I have the reads files stored as fastq.gz files under
@@ -1555,6 +1571,7 @@ I have the reads files stored as fastq.gz files under
 and the C. elegans genome stored under 
 `/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna`
 
+## C. elegans GTF file
 To get the GTF file, an annotation file that specifies where genes and other genomic elements start and end within the genome, I went to Ensembl's FTP page and found that the *C. elegans* GTFs are stored under https://ftp.ensembl.org/pub/current_gtf/caenorhabditis_elegans/Caenorhabditis_elegans.WBcel235.112.gtf.gz. I navigated to my *C. elegans* genome folder and downloaded the file with
 
 ```bash
@@ -1566,6 +1583,302 @@ For the relatively small *C. elegans* genome, this took all of 1 minute. I then 
 ```bash
 pigz -d Caenorhabditis_elegans.WBcel235.112.gtf.gz
 ```
+
+
+## STAR index for C. elegans
+
+I tried to prepared the STAR index for C. elegans using
+```bash
+STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans --genomeFastaFiles /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna --sjdbGTFfile /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/Caenorhabditis_elegans.WBcel235.112.gtf --sjdbOverhang 149
+```
+
+but got an error saying something is not right with the GTF file: "Fatal INPUT FILE error, no valid exon lines in the GTF file: /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/Caenorhabditis_elegans.WBcel235.112.gtf
+Solution: check the formatting of the GTF file. One likely cause is the difference in chromosome naming between GTF and FASTA file."
+
+As I learned from the Harvard Chan Bioinformatics Core [course on RNA-Seq](https://github.com/hbctraining/Intro-to-rnaseq-hpc-salmon-flipped/blob/main/lectures/alignment_quantification.pdf),  I need to use the GFF file from NCBI instead, or, at the very least, rename the chromosomes in the GTF files so that they have the same names as they do in the genome. GTF files and genomic files need to be not only from the same build of the genome (so mm10, hg38, etc) but also from the same source, such as NCBI or Ensembl, because the different databases have somewhat different ways of formatting the names of elements in their genomes, such as the names of chromosomes.  
+
+So I got the GTF file from NCBI with `wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/002/985/GCF_000002985.6_WBcel235/GCF_000002985.6_WBcel235_genomic.gtf.gz`, then unzipped it with `pigz`.  I then repeated the index creation using the GTF file from NCBI:
+
+```bash
+STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans --genomeFastaFiles /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna --sjdbGTFfile /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.gtf --sjdbOverhang 149
+```
+
+It worked, except for a warning: "!!!!! WARNING: --genomeSAindexNbases 14 is too large for the genome size=100286401, which may cause seg-fault at the mapping step. Re-run genome generation with recommended --genomeSAindexNbases 12" 
+
+I looked in the STAR manual to gain a better understanding of why this is happening. Apparently, this is because the C. elegans genome is very small, hence the request to run the index generation again with this parameter set to 12. So I deleted all of the files that STAR generated for the index, and started afresh with:
+
+```bash
+STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans --genomeFastaFiles /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna --sjdbGTFfile /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.gtf --sjdbOverhang 149 --genomeSAindexNbases 12
+```
+
+And ta-da! Two minutes later, with no more warnings, I had the index, a set of files that total some 1.4 GB in size      ***insert meow_party smiley*** 
+
+
+## Salmon index for C. elegans
+I had less luck with finding a pre-assembled C. elegans Salmon (transcriptomic) index than I had with the mouse one, so I needed to build this index from scratch.
+
+### Getting transcriptome file for C. elegans
+For this, according to the Salmon manual, I need a file with all of the annotated C. elegans transcripts, so something with RNA or cDNA in the name. I went to NCBI's [genome FTP repository for C. elegans](https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/002/985/GCF_000002985.6_WBcel235/) and found two files, called "[GCF_000002985.6_WBcel235_rna.fna.gz](https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/002/985/GCF_000002985.6_WBcel235/GCF_000002985.6_WBcel235_rna.fna.gz)" and "[GCF_000002985.6_WBcel235_rna_from_genomic.fna.gz](https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/002/985/GCF_000002985.6_WBcel235/GCF_000002985.6_WBcel235_rna_from_genomic.fna.gz)", 13 and 14 MB in size, respectively. Which one to use, though? I checked the [FTP FAQ page](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/policies-annotation/genomeftp/) of the NCBI, but the descriptions about the two files are not necessarily helpful. Since this is just a pilot experiment, I decided to go with the simple rna.fna.gz file and downloaded it with wget.
+
+> [!TO DO:]
+> clarify this for the future
+
+### Getting dependencies for index building
+
+#### MashMap
+To create the index, the Salmon manual talks about two ways to build a so-called *decoy-aware* transcriptome, and, for that, it first needs to build something called a *decoy file*. To do so, it needs a tool called [MashMap](https://github.com/marbl/MashMap.git).  I already had GCC and g++, which are needed for compiling the MashMap binaries, but didn't have cmake. 
+
+##### cmake
+To get an installation script, I ran 
+
+`wget https://github.com/Kitware/CMake/releases/download/v3.30.2/cmake-3.30.2-linux-x86_64.sh`
+
+ then set the script to executable with `chmod u+x`, ran it with `./cmake-3.30.2-linux-x86_64.sh`, and added the path to the newly created binaries file to my PATH variable in .bashrc. I could then call it from the command line.
+
+##### GNU GSL
+MashMap also needs the GNU GSL tool, which I got in its latest stable version, 2.8, from https://www.gnu.org/software/gsl/ as a tar archive, and immdiately unpacked it. I went to the folder that generated, ran `./configure` to read my system properties, `make` to make a configuration suited to my system, which...took a moment, and many lines of code running in the background. It ended with the lines "`make[2]: Leaving directory '/home/iweber/Documents/Software/gsl-2.8'
+`make[1]: Leaving directory '/home/iweber/Documents/Software/gsl-2.8`, and, finally, `sudo make install` to run the installation program that was just compiled. I now have access to `gsl-config --version`, for instance :) The binary is in /usr/local/bin, so I did not need to add it to my PATH variable.
+
+##### Building MashMap
+I downloaded MashMap from its git repository with `git clone https://github.com/marbl/MashMap.git` and went into the newly-created directory. Then, as per the [instructions](https://github.com/marbl/MashMap/blob/master/INSTALL.txt) on MashMap's GitHub repo, typed `cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release` and then `cmake --build build`. This is what I got:
+
+![[2024-08-08_MashMap_build_success.png]]
+
+Looking into the MashMap folders, I saw a /bin folder and added it to my PATH variable, and now I can call it from the command line.
+
+#### Get BedTools
+
+Got the archive with 
+
+`wget https://github.com/arq5x/bedtools2/releases/download/v2.31.1/bedtools-2.31.1.tar.gz` and unpacked it with `tar -vxzf`. I changed into the bedtools2 folder and compiled it with `make`. I got an error ending with 
+```
+cram/cram_io.c:57:10: fatal error: bzlib.h: No such file or directory
+   57 | #include <bzlib.h>
+      |          ^~~~~~~~~
+compilation terminated.
+make[1]: *** [Makefile:103: cram/cram_io.o] Error 1
+make[1]: Leaving directory '/home/iweber/Documents/Software/bedtools2/src/utils/htslib'
+make: *** [src/utils/htslib/htslib.mk:153: src/utils/htslib/libhts.a] Error 2```
+```
+
+So I knew I had to get this bzlib. I tried with
+```bash
+sudo apt-get update
+sudo apt-get install libbz2-dev
+```
+
+and it seems to have worked, even though it increased my anxiety when I saw it was also getting something related to CUDA...no error messages or warnings in the end.
+
+I cleaned up the previous build with `make clean`, restarted my terminal, and restarted the build with `make`. And got the same issue but for a different library, lzma.h. Got annoyed, cleaned the build, and, as per the[ installation page of bedtools](https://bedtools.readthedocs.io/en/latest/content/installation.html), decided to just go with a pre-compiled version, which I got using `sudo apt-get install bedtools`, which worked like a charm and installed it into my user binaries (/usr/bin/, as I found out with `which bedtools.
+
+
+### Building the decoys for *C. elegans*
+#### Get SalmonTools
+
+To create the decoys, I got  SalmonTools from GitHub with `git clone https://github.com/COMBINE-lab/SalmonTools.git` and went into the newly created directory, SalmonTools. ChatGPT advised to make a separate directory for building the compiled tool, so I did with `mkdir build` and changed into it. I configured the build with `cmake ..`, and then made it with `make`. It was indeed made, but with quite some errors:
+
+```bash
+[  7%] Creating directories for 'libspdlog'
+[ 15%] Performing download step for 'libspdlog'
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100  147k    0  147k    0     0   121k      0 --:--:--  0:00:01 --:--:--  922k
+spdlog-v0.12.0.tar.gz: OK
+[ 23%] No update step for 'libspdlog'
+[ 30%] No patch step for 'libspdlog'
+[ 38%] No configure step for 'libspdlog'
+[ 46%] No build step for 'libspdlog'
+[ 53%] Performing install step for 'libspdlog'
+[ 61%] Completed 'libspdlog'
+[ 61%] Built target libspdlog
+[ 69%] Building CXX object src/CMakeFiles/salmon_tools_core.dir/FastxParser.cpp.o
+[ 76%] Building CXX object src/CMakeFiles/salmon_tools_core.dir/ExtractUnmapped.cpp.o
+In file included from /home/iweber/Documents/Software/SalmonTools/include/zstr.hpp:16,
+                 from /home/iweber/Documents/Software/SalmonTools/src/ExtractUnmapped.cpp:10:
+/home/iweber/Documents/Software/SalmonTools/include/strict_fstream.hpp: In static member function ‘static void strict_fstream::detail::static_method_holder::check_peek(std::istream*, const string&, std::ios_base::openmode)’:
+/home/iweber/Documents/Software/SalmonTools/include/strict_fstream.hpp:128:39: warning: catching polymorphic type ‘class std::ios_base::failure’ by value [-Wcatch-value=]
+  128 |         catch (std::ios_base::failure e) {}
+      |                                       ^
+/home/iweber/Documents/Software/SalmonTools/src/ExtractUnmapped.cpp: In function ‘void ExtractUnmapped(const string&, std::vector<std::__cxx11::basic_string<char> >::const_iterator, std::vector<std::__cxx11::basic_string<char> >::const_iterator)’:
+/home/iweber/Documents/Software/SalmonTools/src/ExtractUnmapped.cpp:210:18: warning: catching polymorphic type ‘class args::Help’ by value [-Wcatch-value=]
+  210 |     catch (args::Help)
+      |                  ^~~~
+/home/iweber/Documents/Software/SalmonTools/src/ExtractUnmapped.cpp:215:29: warning: catching polymorphic type ‘class args::ParseError’ by value [-Wcatch-value=]
+  215 |     catch (args::ParseError e)
+      |                             ^
+In file included from /home/iweber/Documents/Software/SalmonTools/src/ExtractUnmapped.cpp:8:
+/home/iweber/Documents/Software/SalmonTools/include/sparsepp/spp.h: In instantiation of ‘void spp::sparsetable<T, Alloc>::resize(spp::sparsetable<T, Alloc>::size_type) [with T = std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >; Alloc = spp::libc_allocator<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> > >; spp::sparsetable<T, Alloc>::size_type = long unsigned int]’:
+/home/iweber/Documents/Software/SalmonTools/include/sparsepp/spp.h:2942:25:   required from ‘void spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::_move_from(spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::MoveDontCopyT, spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>&, spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::size_type) [with Value = std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >; Key = std::__cxx11::basic_string<char>; HashFcn = spp::spp_hash<std::__cxx11::basic_string<char> >; ExtractKey = spp::sparse_hash_map<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >::SelectKey; SetKey = spp::sparse_hash_map<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >::SetKey; EqualKey = std::equal_to<std::__cxx11::basic_string<char> >; Alloc = spp::libc_allocator<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> > >; spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::size_type = long unsigned int]’
+/home/iweber/Documents/Software/SalmonTools/include/sparsepp/spp.h:3093:9:   required from ‘spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::sparse_hashtable(spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::MoveDontCopyT, spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>&, spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::size_type) [with Value = std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >; Key = std::__cxx11::basic_string<char>; HashFcn = spp::spp_hash<std::__cxx11::basic_string<char> >; ExtractKey = spp::sparse_hash_map<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >::SelectKey; SetKey = spp::sparse_hash_map<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >::SetKey; EqualKey = std::equal_to<std::__cxx11::basic_string<char> >; Alloc = spp::libc_allocator<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> > >; spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::size_type = long unsigned int]’
+/home/iweber/Documents/Software/SalmonTools/include/sparsepp/spp.h:2881:26:   required from ‘bool spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::_resize_delta(spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::size_type) [with Value = std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >; Key = std::__cxx11::basic_string<char>; HashFcn = spp::spp_hash<std::__cxx11::basic_string<char> >; ExtractKey = spp::sparse_hash_map<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >::SelectKey; SetKey = spp::sparse_hash_map<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >::SetKey; EqualKey = std::equal_to<std::__cxx11::basic_string<char> >; Alloc = spp::libc_allocator<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> > >; spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::size_type = long unsigned int]’
+/home/iweber/Documents/Software/SalmonTools/include/sparsepp/spp.h:3413:21:   required from ‘spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::value_type& spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::find_or_insert(const key_type&) [with DefaultValue = spp::sparse_hash_map<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >::DefaultValue; Value = std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >; Key = std::__cxx11::basic_string<char>; HashFcn = spp::spp_hash<std::__cxx11::basic_string<char> >; ExtractKey = spp::sparse_hash_map<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >::SelectKey; SetKey = spp::sparse_hash_map<std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >::SetKey; EqualKey = std::equal_to<std::__cxx11::basic_string<char> >; Alloc = spp::libc_allocator<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> > >; spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::value_type = std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >; spp::sparse_hashtable<Value, Key, HashFcn, ExtractKey, SetKey, EqualKey, Alloc>::key_type = std::__cxx11::basic_string<char>]’
+/home/iweber/Documents/Software/SalmonTools/include/sparsepp/spp.h:3933:57:   required from ‘spp::sparse_hash_map<Key, T, HashFcn, EqualKey, Alloc>::mapped_type& spp::sparse_hash_map<Key, T, HashFcn, EqualKey, Alloc>::operator[](const key_type&) [with Key = std::__cxx11::basic_string<char>; T = std::__cxx11::basic_string<char>; HashFcn = spp::spp_hash<std::__cxx11::basic_string<char> >; EqualKey = std::equal_to<std::__cxx11::basic_string<char> >; Alloc = spp::libc_allocator<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> > >; spp::sparse_hash_map<Key, T, HashFcn, EqualKey, Alloc>::mapped_type = std::__cxx11::basic_string<char>; spp::sparse_hash_map<Key, T, HashFcn, EqualKey, Alloc>::key_type = std::__cxx11::basic_string<char>]’
+/home/iweber/Documents/Software/SalmonTools/src/ExtractUnmapped.cpp:117:31:   required from here
+/home/iweber/Documents/Software/SalmonTools/include/sparsepp/spp.h:2214:23: warning: ‘void* memcpy(void*, const void*, size_t)’ writing to an object of type ‘spp::sparsetable<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >, spp::libc_allocator<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> > > >::group_type’ {aka ‘class spp::sparsegroup<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >, spp::libc_allocator<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> > > >’} with no trivial copy-assignment; use copy-initialization instead [-Wclass-memaccess]
+ 2214 |                 memcpy(first, _first_group, sizeof(*first) * (std::min)(sz, old_sz));
+      |                 ~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /home/iweber/Documents/Software/SalmonTools/src/ExtractUnmapped.cpp:8:
+/home/iweber/Documents/Software/SalmonTools/include/sparsepp/spp.h:1027:7: note: ‘spp::sparsetable<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >, spp::libc_allocator<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> > > >::group_type’ {aka ‘class spp::sparsegroup<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> >, spp::libc_allocator<std::pair<const std::__cxx11::basic_string<char>, std::__cxx11::basic_string<char> > > >’} declared here
+ 1027 | class sparsegroup
+      |       ^~~~~~~~~~~
+[ 84%] Linking CXX static library libsalmon_tools_core.a
+[ 84%] Built target salmon_tools_core
+[ 92%] Building CXX object src/CMakeFiles/salmontools.dir/SalmonTools.cpp.o
+/home/iweber/Documents/Software/SalmonTools/src/SalmonTools.cpp: In function ‘int main(int, char**)’:
+/home/iweber/Documents/Software/SalmonTools/src/SalmonTools.cpp:39:18: warning: catching polymorphic type ‘class args::Help’ by value [-Wcatch-value=]
+   39 |     catch (args::Help) {
+      |                  ^~~~
+/home/iweber/Documents/Software/SalmonTools/src/SalmonTools.cpp:43:24: warning: catching polymorphic type ‘class args::Error’ by value [-Wcatch-value=]
+   43 |     catch (args::Error e) {
+      |                        ^
+[100%] Linking CXX executable salmontools
+[100%] Built target salmontools
+```
+
+
+#### Build decoys
+
+I moved to the "scripts" folder in the main SalmonTools directory to find the script needed to build the decoys, "generateDecoyTranscriptome.sh". I gave myself execution privileges with `chmod u+x`.
+
+To run the script, I used
+```bash
+cd /home/iweber/Documents/Software/SalmonTools/scripts/
+./generateDecoyTranscriptome.sh -g /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna -t /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_rna.fna -a /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.gtf -m /home/iweber/Documents/Software/MashMap/build/bin/mashmap -b /usr/bin/bedtools -o /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/Salmon_decoys_C_elegans
+```
+
+This...kept not working. I got an error from MashMap saying
+
+```bash
+****************
+*** getDecoy ***
+****************
+-g <Genome fasta> = /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna
+-t <Transcriptome fasta> = /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_rna.fna
+-a <Annotation GTF file> = /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.gtf
+-m <mashmap binary> = /home/iweber/Documents/Software/MashMap/build/bin/mashmap
+-b <bedtools binary> = /usr/bin/bedtools
+-o <Output files Path> = /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/Salmon_decoys_C_elegans
+[1/10] Extracting exonic features from the gtf
+[2/10] Masking the genome fasta
+[3/10] Aligning transcriptome to genome
+/home/iweber/Documents/Software/MashMap/build/bin/mashmap: error while loading shared libraries: libgsl.so.28: cannot open shared object file: No such file or directory
+
+***************
+*** ABORTED ***
+***************
+
+An error occurred. Exiting...
+```
+
+Even after getting that library separately, knowing it's on my system with `find /usr -name "libgsl.so.28"` at `/usr/local/lib/libgsl.so.28`, adding that to my library PATH in .bashrc with `echo 'export LD_LIBRARY_PATH=/usr/local/lib/libgsl.so.28:$LD_LIBRARY_PATH' >> ~/.bashrc`, restarting the terminal, and re-building MashMap, it still would not find it and give the exact same error as above.
+
+I then checked out this other [tutorial](https://combine-lab.github.io/alevin-tutorial/2019/selective-alignment/) from Salmon/Alevin, a tool that's part of Salmon. I tried a similar command to the suggested one:
+
+```bash
+grep "^>" GCF_000002985.6_WBcel235_rna.fna | cut -d " " -f 1 | sed 's/>//g' > decoys.txt
+```
+and got a text file, decoys.txt, filled with one NCBI transcript identifier per row (NM_...).
+
+Then, I adapted the command for the second file:
+
+```bash
+cat GCF_000002985.6_WBcel235_rna.fna GCF_000002985.6_WBcel235_genomic.fna | pigz > gentrome.fa.gz
+```
+
+### Building the decoy-aware transcriptome index for *C. elegans*
+
+
+As on the [Alevin/Salmon tutorial page](https://combine-lab.github.io/alevin-tutorial/2019/selective-alignment/), I ran
+```bash
+salmon index -t gentrome.fa.gz -d decoys.txt -p 12 -i salmon_index --gencode
+```
+
+Which gave me many warnings identical to "[2024-08-08 14:09:10.141] [puff::index::jointLog] [warning] Entry with header [NR_131692.1], had length less than equal to the k-mer length of 31 (perhaps after poly-A clipping)" and one critical error saying "[2024-08-08 14:09:10.573] [puff::index::jointLog] [critical] Observed a non-decoy sequence [NC_003279.8] after having already observed a decoy. However, it is required that any decoy target records appear, consecutively, at the end of the input fasta file.  Please re-format your input file so that all decoy records appear contiguously at the end of the file, after all valid (non-decoy) records". 
+
+This has something to do with the Note on the Alevin page mentioned above: "the genome targets (decoys) should come after the transcriptome targets in the reference"
+
+I installed an app called Seqkit, which eases the handling of FastA and FastQ files (and a language it needs, Go: `sudo apt-get install golang`)
+```bash
+wget https://github.com/shenwei356/seqkit/releases/download/v2.8.2/seqkit_linux_amd64.tar.gz
+tar -vxzf seqkit_linux_amd64.tar.gz
+```
+This immediately popped out the executable for seqkit, so I added the path to it to the PATH variable.
+
+With Seqkit, I performed
+```bash
+seqkit grep -v -f decoys.txt gentrome.fa.gz -o non_decoy.fa
+```
+to extract the non-decoy information from the compressed file I created before, and
+
+```bash
+seqkit grep -f decoys.txt gentrome.fa.gz -o decoy.fa
+```
+to extract specifically the decoys.
+
+To re-assemble the compressed file in the correct order, I ran
+```bash
+cat non_decoy.fa decoy.fa | pigz > gentrome_corrected.fa.gz
+```
+
+And then attempted to build the index with the corrected file:
+```bash
+salmon index -t gentrome_corrected.fa.gz -d decoys.txt -p 12 -i salmon_index
+```
+(I chose to remove the  --gencode option - the [Alevin/Salmon tutorial page](https://combine-lab.github.io/alevin-tutorial/2019/selective-alignment/) I got the command from says "NOTE: `--gencode` flag is for removing extra metdata in the target header separated by `|` from the gencode reference. You can skip it if using other references.", and I am using NCBI, not GENCODE references, so it should be safe? )
+
+> [!To ask Ioana]
+> ask if removing the GENCODE flag was indeed the correct move
+
+The index creation took off at around 2:30 and mightily strained my CPU (~70% usage by the virtual machine, with occasional GPU use), but was done in less than 3 minutes, and I now have a folder called "salmon_index" at around 500 MB size.
+
+> [!If pipeline doesn't work, figure out in more detail what's happening here]
+> 
+> 
+> The index finished building with the messages
+> "[2024-08-08 14:29:48.453] [puff::index::jointLog] [info] Replaced 0 non-ATCG nucleotides
+>  [2024-08-08 14:29:48.453] [puff::index::jointLog] [info] Clipped poly-A tails from 22 transcripts wrote 37798 cleaned references [2024-08-08 14:29:51.446] [puff::index::jointLog] [info] Filter size not provided; estimating from number of distinct k-mers [2024-08-08 14:30:02.884] [puff::index::jointLog] [info] ntHll estimated 97277338 distinct k-mers, setting filter size to 2^31 Threads = 12 Vertex length = 31 Hash functions = 5 Filter size = 2147483648 Capacity = 2 Files: salmon_index/ref_k31_fixed.fa -------------------------------------------------------------------------------- Round 0, 0:2147483648 Pass Filling Filtering 1 6 16 2 3 1 True junctions count = 522768 False junctions count = 794481 Hash table size = 1317249 Candidate marks count = 4277706 -------------------------------------------------------------------------------- TBB Warning: The number of workers is currently limited to 5. The request for 11 workers is ignored. Further requests for more workers will be silently ignored until the limit changes. Reallocating bifurcations time: 0 True marks count: 2839486 Edges construction time: 165 -------------------------------------------------------------------------------- Distinct junctions = 522768 TwoPaCo::buildGraphMain:: allocated with scalable_malloc; freeing. TwoPaCo::buildGraphMain:: Calling scalable_allocation_command(TBBMALLOC_CLEAN_ALL_BUFFERS, 0); allowedIn: 15 Max Junction ID: 523362 seen.size():4186905 kmerInfo.size():523363 approximateContigTotalLength: 38939053 counters for complex kmers: (prec>1 & succ>1)=28528 | (succ>1 & isStart)=70 | (prec>1 & isEnd)=77 | (isStart & isEnd)=31 contig count: 779268 element count: 120440207 complex nodes: 28706 # of ones in rank vector: 779267 [2024-08-08 14:33:20.452] [puff::index::jointLog] [info] Starting the Pufferfish indexing by reading the GFA binary file. [2024-08-08 14:33:20.452] [puff::index::jointLog] [info] Setting the index/BinaryGfa directory salmon_index size = 120440207 ----------------------------------------- | Loading contigs | Time = 33 ms ----------------------------------------- size = 120440207 ----------------------------------------- | Loading contig boundaries | Time = 17.347 ms ----------------------------------------- Number of ones: 779267 Number of ones per inventory item: 512 Inventory entries filled: 1523 779267 [2024-08-08 14:33:20.629] [puff::index::jointLog] [info] Done wrapping the rank vector with a rank9sel structure. [2024-08-08 14:33:20.635] [puff::index::jointLog] [info] contig count for validation: 779,267 [2024-08-08 14:33:20.719] [puff::index::jointLog] [info] Total # of Contigs : 779,267 [2024-08-08 14:33:20.719] [puff::index::jointLog] [info] Total # of numerical Contigs : 779,267 [2024-08-08 14:33:20.729] [puff::index::jointLog] [info] Total # of contig vec entries: 2,890,699 [2024-08-08 14:33:20.729] [puff::index::jointLog] [info] bits per offset entry 22 [2024-08-08 14:33:20.765] [puff::index::jointLog] [info] Done constructing the contig vector. 779268 [2024-08-08 14:33:21.424] [puff::index::jointLog] [info] # segments = 779,267 [2024-08-08 14:33:21.424] [puff::index::jointLog] [info] total length = 120,440,207 [2024-08-08 14:33:21.437] [puff::index::jointLog] [info] Reading the reference files ... [2024-08-08 14:33:21.922] [puff::index::jointLog] [info] positional integer width = 27 [2024-08-08 14:33:21.922] [puff::index::jointLog] [info] seqSize = 120,440,207 [2024-08-08 14:33:21.922] [puff::index::jointLog] [info] rankSize = 120,440,207 [2024-08-08 14:33:21.922] [puff::index::jointLog] [info] edgeVecSize = 0 [2024-08-08 14:33:21.922] [puff::index::jointLog] [info] num keys = 97,062,197 for info, total work write each : 2.331 total work inram from level 3 : 4.322 total work raw : 25.000 [Building BooPHF] 100 % elapsed: 0 min 4 sec remaining: 0 min 0 sec Bitarray 508580416 bits (100.00 %) (array + ranks ) final hash 0 bits (0.00 %) (nb in final hash 0) [2024-08-08 14:33:25.534] [puff::index::jointLog] [info] mphf size = 60.6275 MB [2024-08-08 14:33:25.626] [puff::index::jointLog] [info] chunk size = 10,036,684 [2024-08-08 14:33:25.626] [puff::index::jointLog] [info] chunk 0 = [0, 10,036,684) [2024-08-08 14:33:25.626] [puff::index::jointLog] [info] chunk 1 = [10,036,684, 20,073,368) [2024-08-08 14:33:25.626] [puff::index::jointLog] [info] chunk 2 = [20,073,368, 30,110,075) [2024-08-08 14:33:25.626] [puff::index::jointLog] [info] chunk 3 = [30,110,075, 40,146,759) [2024-08-08 14:33:25.626] [puff::index::jointLog] [info] chunk 4 = [40,146,759, 50,183,443) [2024-08-08 14:33:25.626] [puff::index::jointLog] [info] chunk 5 = [50,183,443, 60,220,129) [2024-08-08 14:33:25.627] [puff::index::jointLog] [info] chunk 6 = [60,220,129, 70,256,813) [2024-08-08 14:33:25.627] [puff::index::jointLog] [info] chunk 7 = [70,256,813, 80,293,497) [2024-08-08 14:33:25.627] [puff::index::jointLog] [info] chunk 8 = [80,293,497, 90,330,181) [2024-08-08 14:33:25.627] [puff::index::jointLog] [info] chunk 9 = [90,330,181, 100,366,865) [2024-08-08 14:33:25.627] [puff::index::jointLog] [info] chunk 10 = [100,366,865, 110,403,549) [2024-08-08 14:33:25.627] [puff::index::jointLog] [info] chunk 11 = [110,403,549, 120,440,177) [2024-08-08 14:33:29.572] [puff::index::jointLog] [info] finished populating pos vector [2024-08-08 14:33:29.572] [puff::index::jointLog] [info] writing index components [2024-08-08 14:33:29.987] [puff::index::jointLog] [info] finished writing dense pufferfish index [2024-08-08 14:33:30.022] [jLog] [info] done building index ",
+> 
+> but I had a lot of warnings of the form 
+> "R_131708.1], had length less than equal to the k-mer length of 31 (perhaps after poly-A clipping)",
+> 
+> and, at the end, the warnings 
+> 
+> "[2024-08-08 14:29:48.451] [puff::index::jointLog] [warning] Removed 221 transcripts that were sequence duplicates of indexed transcripts. [2024-08-08 14:29:48.451] [puff::index::jointLog] [warning] If you wish to retain duplicate transcripts, please use the `--keepDuplicates` flag [2024-08-08 14:29:48.451] [puff::index::jointLog] [warning] There were 221 duplicate decoy sequences.". 
+> 
+> I asked ChatGPT: where do these warnings come from, and is this index safe to use? Its answer was:
+> 
+> ### Understanding the Warnings During Salmon Indexing
+> 
+> The warnings you encountered during the Salmon indexing process provide information about potential issues or optimizations that Salmon performed on the input sequences. Let's break them down:
+> 
+> 1. **Warnings about Sequences Shorter than K-mer Length:**
+>    - **Warning:** `R_131708.1], had length less than or equal to the k-mer length of 31 (perhaps after poly-A clipping)`
+>    - **Explanation:** Salmon uses k-mers (subsequences of length 31 by default) to build its index. If a sequence is shorter than this k-mer length (or exactly equal to it), it cannot be effectively used in the indexing process. This often happens with very short sequences or those that are clipped due to poly-A tail removal. Salmon flags these sequences because they might not contribute useful information to the index.
+>    - **Impact:** These sequences are ignored in the index, but this generally shouldn't be an issue unless these sequences are critical to your analysis. The fact that they are clipped or short suggests they might not be biologically significant or that their inclusion wouldn't provide meaningful quantification data.
+> 
+> 2. **Warnings about Duplicate Transcripts and Decoys:**
+>    - **Warning:** `Removed 221 transcripts that were sequence duplicates of indexed transcripts.` and `There were 221 duplicate decoy sequences.`
+>    - **Explanation:** During indexing, Salmon detected sequences that were exact duplicates either within the transcriptome or between the transcriptome and the decoy sequences. By default, Salmon removes these duplicates to avoid redundancy in the index.
+>    - **Impact:** Removing duplicates typically optimizes the index by reducing its size and improving performance. However, if retaining these duplicates is important for your specific analysis, you can use the `--keepDuplicates` flag to prevent their removal.
+> 
+> ### Is the Index Safe to Use?
+> 
+> Given the details you provided, the index should generally be safe to use. The warnings indicate that Salmon performed optimizations by removing duplicates and ignoring sequences that couldn't be indexed due to their short length. These are standard procedures that should not negatively impact the majority of analyses.
+> 
+> However, consider the following:
+> 
+> - **Short Sequences:** If the sequences flagged for being shorter than the k-mer length are crucial to your research, you might want to review those sequences to ensure they are not important.
+>   
+> - **Duplicate Sequences:** If the presence of duplicate sequences (either in the transcriptome or decoys) is critical to your analysis, consider re-running the index with the `--keepDuplicates` flag.
+> 
+> ### Summary of Steps to Proceed:
+> - **Proceed with the Current Index:** If the warnings do not raise concerns for your specific analysis, proceed with using the current index.
+> - **Rebuild with Adjustments:** If you believe the short or duplicate sequences might be important, consider adjusting the Salmon command by including flags like `--keepDuplicates` and possibly revisiting the input FASTA files to ensure no critical sequences were removed.
+> 
+> You can now proceed with your analysis, but keep these considerations in mind if you encounter unexpected results or if the removed sequences were critical to your research objectives."
+
+## Sample sheet and contrasts sheet
 
 
 I, of course, still need the sample sheet and the contrast sheet for this experiment as well. I have reads from two samples, CHS_1063 and CHS_1109. I tried searching for their names to see what kind of experiment they stemmed from and couldn't find any info on the quick, so I will simply assume that CHS_1063 is "control" and CHS_1109 is "treatment".
@@ -1583,47 +1896,8 @@ contrast,treatment,control
 TREATMENT_CONTROL,TREATMENT,CONTROL
 ```
 
-I tried to prepared the STAR index for C. elegans using
-```bash
-STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans --genomeFastaFiles /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna --sjdbGTFfile /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/Caenorhabditis_elegans.WBcel235.112.gtf --sjdbOverhang 149
-```
 
-but got an error saying something is not right with the GTF file: "Fatal INPUT FILE error, no valid exon lines in the GTF file: /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/Caenorhabditis_elegans.WBcel235.112.gtf
-Solution: check the formatting of the GTF file. One likely cause is the difference in chromosome naming between GTF and FASTA file."
-
-Soooooo I probably need to use the GFF file from NCBI instead, or, at the very least, rename the chromosomes in the GTF files so that they have the same names as they do in the genome. The STAR manual says that "for GFF3 formatted annotations you need to use --sjdbGTFtagExonParentTranscript Parent."
-
-- rename the chromosomes in the GTF files so that they have the same names as they do in the genome
-- get the GTF and GFF3 files from the [NCBI FTP for C. elegans](https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/002/985/GCF_000002985.6_WBcel235/) with `wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/002/985/GCF_000002985.6_WBcel235/GCF_000002985.6_WBcel235_genomic.gff.gz` and the GTF file from NCBI with `wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/002/985/GCF_000002985.6_WBcel235/GCF_000002985.6_WBcel235_genomic.gtf.gz`, then unzipping both with `pigz`
-
-First, repeated using the GTF file from NCBI:
-
-```bash
-STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans --genomeFastaFiles /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna --sjdbGTFfile /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.gtf --sjdbOverhang 149
-```
-
-It worked, except for a warning: "!!!!! WARNING: --genomeSAindexNbases 14 is too large for the genome size=100286401, which may cause seg-fault at the mapping step. Re-run genome generation with recommended --genomeSAindexNbases 12" 
-
-I looked in the STAR manual to gain a better understanding of why this is happening. Apparently, this is because the C. elegans genome is very small, hence the request to run the index generation again with this parameter set to 12. So I deleted all of the files that STAR generated for the index, and started afresh with:
-
-```bash
-STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans --genomeFastaFiles /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna --sjdbGTFfile /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.gtf --sjdbOverhang 149 --genomeSAindexNbases 12
-```
-
-And ta-da! Two minutes later, with no more warnings, I had the index, a set of files that total some 1.4 GB in size      ***insert meow_party smiley*** 
-
-I had less luck with finding a pre-assembled C. elegans Salmon (transcriptomic) index than I had with the mouse one, so I needed to build this index from scratch.
-
-
-
-
-I pulled the pipeline from nf-core using
-
-```bash
-nextflow pull nf-core/rnasplice
-```
-![[2024-08-06_pipeline_pull_success.png]]
-
+## Pipeline parameters for C. elegans
 To run it for the C. elegans data, I will use
 ```bash
 #!/bin/bash
@@ -1722,4 +1996,8 @@ wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sud
 # add the R 4.0 repo from CRAN -- adjust 'focal' to 'groovy' or 'bionic' as needed
 sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
 ```
+
+
+# License
+http://creativecommons.org/licenses/by/4.0/ probably best, version with attribution
 
