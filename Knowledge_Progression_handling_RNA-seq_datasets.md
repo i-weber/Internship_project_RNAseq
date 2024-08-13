@@ -26,6 +26,7 @@ I downloaded the datasets directly from the entry of this study on GEO in SRA fo
 
 > [!To read:]
 > General info on RNA-Seq analysis https://academic.oup.com/bib/article/23/2/bbab563/6514404?login=false
+> general info RNA-seq, inc long read (third-gen) https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10043755/
 > 
 > https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4712774/ tximport solves issues with artificially inflated gene counts derived from transcript isoforms
 
@@ -652,6 +653,9 @@ I also removed `*.fastq` files from the git LFS tracking using `git lfs untrack 
 > 
 > Apparently, [trying to push files from Windows to GitHub that are larger than 4 GB truncates them and causes them getting corrupted](https://github.com/git-lfs/git-lfs/issues/2434#issuecomment-436341992)!
 
+# What is Nextflow?
+
+https://github.com/chlazaris/Nextflow_training/blob/main/nextflow_cheatsheet.md
 
 # Setting up Nextflow to run bioinformatic analysis pipelines
 ## Installing Nextflow and nf-core
@@ -1897,63 +1901,363 @@ TREATMENT_CONTROL,TREATMENT,CONTROL
 ```
 
 
-## Pipeline parameters for C. elegans
+## Running pipeline for the *C. elegans *data
+
 To run it for the C. elegans data, I will use
 ```bash
-#!/bin/bash
-
-nextflow run nf-core/rnasplice -r 1.0.4
-
---input samplesheet_C_elegans.csv 
---contrasts contrastssheet_C_elegans.csv
+sudo nextflow run nf-core/rnasplice -r 1.0.4 
+--input /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/samplesheet_C_elegans.csv 
+--contrasts /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/contrastssheet_C_elegans.csv
 
 --fasta /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna
-~~--gtf /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/Caenorhabditis_elegans.WBcel235.112.gtf~~ NO. USE GFF INSTEAD.
+~~--gtf /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/Caenorhabditis_elegans.WBcel235.112.gtf~~ # NO. USE GFF INSTEAD, because it's for sure from NCBI as well.
 --gff /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/
 
 --save-trimmed true # to save the reads after trimming
 
 --aligner star_salmon
---star_index path/to/index
---salmon_index path/to/index
+--star_index /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans/
+--salmon_index /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/salmon_index/
 
 --save-unaligned true # to save, if possible, any reads that couldn't be aligned in the results directory for later inspection
 --save-align-intermeds # to save BAM files separately
 
---rmats true to 
---outdir pipeline_test_results 
+--rmats true # to run rMATS part of pipeline
+--outdir p/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/Nextflow_results_test_pipeline/ 
 -profile docker
 ```
 
+In compact form:
+```bash
+sudo nextflow run nf-core/rnasplice -r 1.0.4 --input /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/samplesheet_C_elegans.csv --contrasts /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/contrastssheet_C_elegans.csv --fasta /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna --gff /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.gff --save-trimmed true --aligner star_salmon --star_index /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans/ --salmon_index /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/salmon_index/ --save-unaligned true --save-align-intermeds true --rmats true --outdir p/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/Nextflow_results_test_pipeline/ -profile docker
+```
 
+I had to run the pipeline with sudo, likely because the data and workflow are located in my inter-OS shared folder. I got some errors saying "ERROR ~ .nextflow/plr/9b802ca2-0d20-4b86-8169-d1dc8af33a6e/nf-validation-1.1.3: Operation not supported",  [suggesting that it cannot create so-called symlinks](https://github.com/nf-core/fetchngs/issues/272), and that may be due to the owner of the inter-OS folder being root, not my user. That didn't fix it, so I had to run the pipeline in my regular Documents folder in the Ubuntu OS, which then did run.
+
+The pipeline ran for a moment and then, predictably, crashed :)
+
+The first time when it crashed, I got an error . Some research in the GitHub issues of Nextflow revealed that this likely has something to do with Nextflow not being able to create 
+
+It took me a fine moment to scroll through all of the output to the end and see the error...
+![[2024-08-08_first_pilot_pipeline_run_9.png]]
+
+Embarassing, but true: I had created the sample sheet for this pilot experiment in Notepad++ and forgot to hit save after changing the file names to the ones from the C. elegans experiment ***insert monkey covering its eyes smiley*** I hit save, and ran the same command again....
+
+(Now, the .csv samplesheet looks as such:
+
+```
+sample,fastq_1,fastq_2,strandedness,condition
+CONTROL_REP1,/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/Fastq_original_C_elegans/CHS_1063_R1.fastq.gz,/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/Fastq_original_C_elegans/CHS_1063_R2.fastq.gz,reverse,CONTROL
+TREATMENT_REP1,/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/Fastq_original_C_elegans/CHS_1109_R1.fastq.gz,/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/Fastq_original_C_elegans/CHS_1109_R2.fastq.gz,reverse,TREATMENT
+```
+
+)
+
+The next error on the line was "ERROR ~ Error executing process > 'NFCORE_RNASPLICE:RNASPLICE:FASTQ_FASTQC_UMITOOLS_TRIMGALORE:TRIMGALORE (CONTROL_REP1)'
+
+Caused by:
+  Process requirement exceeds available CPUs -- req: 12; avail: 6
+
+
+Command executed:
+
+  [ ! -f  CONTROL_REP1_1.fastq.gz ] && ln -s CHS_1063_R1.fastq.gz CONTROL_REP1_1.fastq.gz
+  [ ! -f  CONTROL_REP1_2.fastq.gz ] && ln -s CHS_1063_R2.fastq.gz CONTROL_REP1_2.fastq.gz
+  trim_galore \
+      --fastqc \
+      --cores 8 \
+      --paired \
+      --gzip \
+      CONTROL_REP1_1.fastq.gz \
+      CONTROL_REP1_2.fastq.gz
+  
+  cat <<-END_VERSIONS > versions.yml
+  "NFCORE_RNASPLICE:RNASPLICE:FASTQ_FASTQC_UMITOOLS_TRIMGALORE:TRIMGALORE":
+      trimgalore: $(echo $(trim_galore --version 2>&1) | sed 's/^.*version //; s/Last.*$//')
+      cutadapt: $(cutadapt --version)
+  END_VERSIONS
+
+Command exit status:
+  -
+
+Command output:
+  (empty)
+
+Work dir:
+  /home/iweber/Documents/work/28/40f5dd10796fb6d7bf9a03cf39569b
+
+Tip: you can replicate the issue by changing to the process work dir and entering the command `bash .command.run`
+
+ -- Check '.nextflow.log' file for details
+"
+
+This clearly says that, normally, the pipeline would try to use 12 cores, and I only have 6 available on my virtual machine. Therefore, I need to limit the number of cores for all processes using `--max_cpus 6`:
 
 ```bash
-nextflow run nf-core/rnasplice -r 1.0.4 
---input samplesheet.csv 
---contrasts contrastsheet.csv
---genome WBcel235 OR --fasta? as path to genome and --gtf as path to annotation file?
---outdir my/result/directory
+sudo nextflow run nf-core/rnasplice -r 1.0.4 --input /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/samplesheet_C_elegans.csv --contrasts /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/contrastssheet_C_elegans.csv --fasta /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna --gff /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.gff --save-trimmed true --aligner star_salmon --star_index /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans/ --salmon_index /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/salmon_index/ --save-unaligned true --save-align-intermeds true --rmats true --outdir p/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/Nextflow_results_test_pipeline/ --max-cpus 6 -profile docker 
+```
+
+This did not work, raising the exact same error as before. I read on [Nextflow's website that this means I will have to modify its configuration files](https://www.nextflow.io/docs/latest/config.html), and, since the page relates to the latest version of the program, I figured that, before that, I'd rather heed its warning to update the software in its entirety (when running the pipelines, it kept telling me I'm running a version 3 versions older than the current one, 24.04). I used `sudo nextflow self-update`, and it worked. 
+
+### Configuration to use fewer cores
+
+Nextflow has a basic configuration file, but can use customized configuration files as well to get parameters for how it runs pipelines. 
+
+In the so-called scopes, Nextflow can get grouped info about the variables related to a certain topic. For example, there is a scope/group of variables pertaining specifically controls [conda-related variables](https://www.nextflow.io/docs/latest/config.html#scope-conda) when running the pipeline in conda. However, what I am likely needing are the variables related to the [executor scope](https://www.nextflow.io/docs/latest/config.html#scope-executor). Specifically, I need to set `executor.cpus = 6` and `executor.memory = 94 GB`. There are other neat settings that only work on HPCs managed by, for example, the [SLURM](https://slurm.schedmd.com/documentation.html) resource manager, such as executor.perCpuMemAllocation.
+
+I also noticed that Nextflow tried to run each workflow three times. This is likely set by executor.retry.maxAttempt, that has a default of 3. However, I'm pretty sure that, if my PC can't handle something in the first go, it also won't in the second or third, so I will set `executor.retry.maxAttempt = 1`.
+
+What could also be interesting is the [timeline scope](https://www.nextflow.io/docs/latest/config.html#scope-timeline). Here, one can ask for an execution timeline file to be generated with ` timeline.enabled = true`, and that might give me more information 
+
+So, to sum up, what I need to change is:
+```Groovy
+executor{
+	$local{
+		cpus = 6
+		memory = '94 GB'
+		retry.maxAttempt = 1
+	}
+}
+
+timeline.enabled = true
+```
+( I could also write this in the dot notation as executor.$local.cpus = 6, but why type more :) 
+
+Where does one find the configuration file of an nf-core pipeline, though? I checked here https://nf-co.re/docs/usage/getting_started/configuration (and I wish I had done sooner, I just saw now that there is the possibility to test pipelines with a minimal or large public dataset, using profile `test` or profile `test_full`). 
+
+When looking for the config files, I remembered I had also seen some warnings related to invalid options: 
+
+```
+WARN: The following invalid input values have been detected:
+
+* --save-trimmed: true
+* --saveTrimmed: true
+* --save-unaligned: true
+* --saveUnaligned: true
+* --save-align-intermeds: true
+* --saveAlignIntermeds: true
+* --max-cpus: 6
+* --maxCpus: 6
+```
+
+For some reason, some of the underscores in the options have been replaced by regular dashes! So there's actually no need to tinker with the configuration file, just to use the correct parameter names **facepalm**
+
+I restarted the pipeline at 8:54 with:
+
+```bash
+sudo nextflow run nf-core/rnasplice -r 1.0.4 --input /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/samplesheet_C_elegans.csv --contrasts /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/contrastssheet_C_elegans.csv --fasta /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna --gff /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.gff --save_trimmed true --aligner star_salmon --star_index /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/STAR_index_C_elegans/ --salmon_index /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_C_elegans/salmon_index/ --save_unaligned true --save_align_intermeds true --rmats true --outdir p/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pipeline_test_C_elegans/Nextflow_results_test_pipeline/ --max_cpus 6 -profile docker 
+```
+
+It ran for around half an hour and failed at the edgeR step, I believe because of the GTF annotation file (GCF_000002985.6_WBcel235_genomic.gtf).  The error message said:
+
+```Groovy
+ERROR ~ Error executing process > 'NFCORE_RNASPLICE:RNASPLICE:EDGER_DEU:SUBREAD_FLATTENGTF (GCF_000002985.6_WBcel235_genomic.gtf)'
+
+Caused by:
+  Process `NFCORE_RNASPLICE:RNASPLICE:EDGER_DEU:SUBREAD_FLATTENGTF (GCF_000002985.6_WBcel235_genomic.gtf)` terminated with an error exit status (1)
 
 
---aligner star_salmon
---star_index /path/to/star/index
---save_align_intermeds # needed if wanting to use rMATS, because otherwise pipeline does not save SAM files, which rMATS needs
---save_reference # saves anything the pipeline downloads by itself, e.g. STAR indices
+Command executed:
 
---salmon_quant_libtype # this might need to go into Salmon's chunk in the workflow AND is optional - Salmon can infer this automatically from the samplesheet information
+  flattenGTF -t exon -g gene_id -C -a GCF_000002985.6_WBcel235_genomic.gtf -o annotation.saf
+  
+  cat <<-END_VERSIONS > versions.yml
+  "NFCORE_RNASPLICE:RNASPLICE:EDGER_DEU:SUBREAD_FLATTENGTF":
+      subread: $( echo $(flattenGTF -v 2>&1) | sed -e "s/flattenGTF v//g")
+  END_VERSIONS
 
---gtf /path/to/annotations.gtf
+Command exit status:
+  1
 
--profile docker
+Command output:
+  (empty)
+
+Command error:
+  Unable to find image 'quay.io/biocontainers/subread:2.0.1--hed695b0_0' locally
+  2.0.1--hed695b0_0: Pulling from biocontainers/subread
+  1dbcab28ce46: Already exists
+  cfb1ba34637d: Already exists
+  ace2d8a63dd5: Already exists
+  75c080ef15eb: Already exists
+  316957f8baaf: Already exists
+  dbd31e1d863d: Already exists
+  2f8531d5a6ec: Already exists
+  1dbcab28ce46: Already exists
+  2e178fd72baf: Already exists
+  2912e793bf3d: Pulling fs layer
+  2912e793bf3d: Download complete
+  2912e793bf3d: Pull complete
+  Digest: sha256:ccee1f6ebb924fd0b3b6db646a51dabc905697aa25be132386dd490c2318286c
+  Status: Downloaded newer image for quay.io/biocontainers/subread:2.0.1--hed695b0_0
+  
+  Flattening GTF file: GCF_000002985.6_WBcel235_genomic.gtf
+  Output SAF file: annotation.saf
+  
+  Looking for 'exon' features... (grouped by 'gene_id')
+  
+  
+  ERROR: failed to find the gene identifier attribute in the 9th column of the provided GTF file.
+  The specified gene identifier attribute is 'gene_id'.
+  An example of attributes included in your GTF annotation is 'transcript_id "id-CELE_T22C1.13"; gene_name "mir-8209";'.
+  The program has to terminate.
+  
+  ERROR: Unable to open the GTF file.
+
+Work dir:
+  /home/iweber/work/b5/5edcfd637a9a3d52ac7d2a792c1227
+
+Tip: you can replicate the issue by changing to the process work dir and entering the command `bash .command.run`
+
+ -- Check '.nextflow.log' file for details
+````
+
+
+### Fixing GTF file
+
+I also saw a message saying "unable to open the GTF file" above. To address this, I decided to copy the contents of my Genomes folder into my Documents folder so that Nextflow can run without any further issues of not being able to create symlinks or opening files.
+
+I used my tried and tested friend, [FreeFileSync](https://freefilesync.org/) (open source, with nice perks upon donation of any amount).
+
+I tried running the pipeline with the GTF file instead of GFF
+
+```bash
+sudo nextflow run nf-core/rnasplice -r 1.0.4 \
+--max_cpus 6 \
+-w /home/iweber/Documents/Backup_shared_folder/Pipeline_test_C_elegans/ \
+--outdir /home/iweber/Documents/Backup_shared_folder/Pipeline_test_C_elegans/Nextflow_results_test_pipeline/ \
+--input /home/iweber/Documents/Backup_shared_folder/Pipeline_test_C_elegans/samplesheet_C_elegans.csv \
+--contrasts /home/iweber/Documents/Backup_shared_folder/Pipeline_test_C_elegans/contrastssheet_C_elegans.csv \
+--fasta /home/iweber/Documents/Backup_shared_folder/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.fna \
+--gtf /home/iweber/Documents/Backup_shared_folder/Genomes/genome_C_elegans/GCF_000002985.6_WBcel235_genomic.gtf \
+--save_trimmed true \
+--aligner star_salmon \
+--star_index /home/iweber/Documents/Backup_shared_folder/Genomes/genome_C_elegans/STAR_index_C_elegans \
+--salmon_index /home/iweber/Documents/Backup_shared_folder/Genomes/genome_C_elegans/salmon_index \
+--save_unaligned true \
+--save_align_intermeds true \
+--rmats true \
+-profile docker 
+```
+
+Annnd it still didn't work. BUT. Knowing that the pipeline works in principle, I think I can now move on with my main mouse pipeline.
+
+
+
+> [!In case still needed:]
+> So, how do I need to modify the GTF file to continue?
+> 
+> I found this [Biostars thread](https://www.biostars.org/p/432735/) that shares several possible solutions (also, the problem is apparently in featureCounts, not edgeR).
+> 
+> The first (and easiest) proposed solution is to remove any empty fields in the gene_id columns.
+
+
+# Running pipeline for actual experiment
+
+## Pigz compression of FastQ files
+
+I used the script mentioned [[#**Gzipping FastQ files for pipeline with pigz**]] with minor alterations for the new location: /home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/
+
+```bash
+gzip_several_fastqs.sh                                                                                                            
+#!/bin/bash
+
+# Specify directory containing FASTQ files
+DIRECTORY="/mnt-win-ubu-shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq"
+
+# Find all .fastq files in the specified directory and subdirectories. Write line by line, pipe each line with one file name into while loop that compresses it.
+find "$DIRECTORY" -type f -name "*.fastq" | while read -r FILE; do
+  echo "Compressing $FILE"
+  gzip "$FILE"
+done
+```
+
+It completed succesfully, and now I have .fastq.gz files instead of the FastQ ones. I also updated the sample sheet:
+
+```
+sample,fastq_1,fastq_2,strandedness,condition
+CONTROL_REP1,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761520_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761520_1.fastq.gz,reverse,CONTROL
+CONTROL_REP2,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761521_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761521_2.fastq.gz,reverse,CONTROL
+CONTROL_REP3,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761522_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761522_2.fastq.gz,reverse,CONTROL
+CONTROL_REP4,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761523_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761523_2.fastq.gz,reverse,CONTROL
+PREECLAMPSIA_REP1,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761524_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761524_2.fastq.gz,reverse,PREECLAMPSIA
+PREECLAMPSIA_REP2,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761525_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761525_2.fastq.gz,reverse,PREECLAMPSIA
+PREECLAMPSIA_REP3,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761526_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761526_2.fastq.gz,reverse,PREECLAMPSIA
+PREECLAMPSIA_REP4,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761527_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761527_2.fastq.gz,reverse,PREECLAMPSIA
 ```
 
 
+## Unzipping .tgz Salmon index and BSOD
 
+I realized that the Salmon index I had downloaded for the mouse was still stored as a .tgz archive, and I started unpacking it with the usual `tar -vxzf` command. I am not sure if it was connected, but, at some point in the process, my PC crashed with a BSOD. This time, space was not the issue - I still have 458 GB free on the partition I allotted to the virtual machine, and I can't believe the index is that large (compressed, it was around 12 GB, so I suspect it will be at most around 50 GB unzipped).
+
+I made backups of everything:
+
+1. restore points for ~~Windows OS partition, VM partition, and data drive~~
+2. ~~File History~~
+3. Windows recovery drive
+4. Folder backups external HDD
+
+I also changed the VM settings:
+- Hardware -> Processors: for reasons I can't explain (probably transferred from VirtualBox), I had these options set to 6 processors and 1 core per processor. However, in reality, I have only 1 processor, the one from my laptop, with its 8 cores and 16 threads, so I set the options to "Number of processors: 1" and "Number of cores per processor: 6"
+- Options -> Advanced -> activated "Log virtual machine progress periodically"
+- Display -> Graphics memory: downsized max amount of guest memory that can be used for graphics memory from 8 GB to 4 GB
+- 
+
+In general VM settings ( Edit -> Preferences):
+- Memory -> Additional memory: activated "fit all virtual machine memory into reserved host RAM"
+- Memory -> Reserved memory: downsized from 114432 MB to 98000 MB (98 GB)
+
+Things I DID NOT change yet, because they seem too risky:
+- there is a possibility to limit the number of disk input/output operations to prevent the VM from overwhelming the disk it operates on (which, in this case, is the same disk that my Windows host is running on - I really should get a second ultrafast 2+ TB SSD and move it to this one...). This would involve changing the virtual machine's .vmx file and adding a line to limit the operations (disk.maxIOPS = "500")
+
+I tried unzipping the file again with the new settings: `tar -vxzf` and it worked! No more BSOD, and I now have a folder called "default" with all of the index components. 
+
+
+## Pipeline parameters
+
+I changed:
+- --max_memory 90GB to make sure the pipeline leaves 5 GB for Ubuntu to run properly (apparently, [Linux needs far less RAM than Windows](https://raspberrytips.com/how-much-ram-for-ubuntu/) - I know this being news to me probably makes the Linux pros smile)
+- to cap Nextflow resource usage overall and be on the safe side, I followed the instructions from the [rnasplice parameters page](https://nf-co.re/rnasplice/1.0.4/docs/usage/#running-the-pipeline) and added to my .bashrc `NXF_OPTS='-Xms1g -Xmx4g'`
+```bash
+sudo nextflow run nf-core/rnasplice -r 1.0.4 \
+--max_cpus 6 \
+--max_memory 90GB \
+-w /home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_Nextflow_work_folder \
+--outdir /home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_rnasplice_results \
+--input /home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/samplesheet_preeclampsia.csv \
+--contrasts /home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/contrastssheet_preeclampsia.csv \
+--fasta /home/iweber/Documents/Backup_shared_folder/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.fna \
+--gtf /home/iweber/Documents/Backup_shared_folder/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.gtf \
+--save_trimmed true \
+--aligner star_salmon \
+--star_index /home/iweber/Documents/Backup_shared_folder/Genomes/genome_M_musculus/GCF_000001635.27/STAR_index_M_musculus/ \
+--salmon_index /home/iweber/Documents/Backup_shared_folder/Genomes/genome_M_musculus/GCF_000001635.27/correct_Salmon_index_M_musculus_mm10/default \
+--save_unaligned true \
+--save_align_intermeds true \
+--rmats true \
+-profile docker 
+```
+
+IF NEEDED LATER: `-resume [run name]` to not repeat already finalized analysis steps! [Documentation for -resume](https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html)
 
 ---
 # ACTIVELY WORKING ON ^above
 
 ---
+
+# Other useful Nextflow parameters
+How Nextflow interprets strings in scripts:
+https://www.nextflow.io/docs/latest/script.html#string-interpolation 
+basics:
+1. double quotation marks, but not single, allow Nextflow to read values stored in variables, e.g. $my_variable
+2. using `\` at the end of a line is a non-breakable space -> can be used to spread a command across multiple lines while Nextflow still interprets it as one single line
+3. blocks of text spanning several lines can be put in triple quotation marks
+4. it also, of course, supports regular expressions https://www.nextflow.io/docs/latest/script.html#regular-expressions
+
+The names of parameters that Nextflow knows and that can be set in scripts or otherwise: https://www.nextflow.io/docs/latest/script.html#regular-expressions launchDir, projectDir
+
+For parameters to be used in case one ever publishes a pipeline, even if only just on GitHub or some other repository: https://www.nextflow.io/docs/latest/config.html#scope-manifest
+
 
 
 # Trimming the reads
@@ -1999,5 +2303,5 @@ sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_
 
 
 # License
-http://creativecommons.org/licenses/by/4.0/ probably best, version with attribution
+http://creativecommons.org/licenses/by/4.0/ probably best, version with attribution.
 
