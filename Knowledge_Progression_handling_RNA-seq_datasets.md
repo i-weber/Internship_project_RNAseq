@@ -654,8 +654,12 @@ I also removed `*.fastq` files from the git LFS tracking using `git lfs untrack 
 > Apparently, [trying to push files from Windows to GitHub that are larger than 4 GB truncates them and causes them getting corrupted](https://github.com/git-lfs/git-lfs/issues/2434#issuecomment-436341992)!
 
 # What is Nextflow?
+![[2024-08-14_nextflow_general_principle.png]] from the [Nextflow training page](https://training.nextflow.io/basic_training/intro/#execution-abstraction)
+
+a [domain-specific programming language,](https://en.wikipedia.org/wiki/Domain-specific_language) as opposed to C++, Python, etc, which are general-purpose programming languages
 
 https://github.com/chlazaris/Nextflow_training/blob/main/nextflow_cheatsheet.md
+https://github.com/danrlu/Nextflow_cheatsheet/blob/main/nextflow_cheatsheet.pdf
 
 # Setting up Nextflow to run bioinformatic analysis pipelines
 ## Installing Nextflow and nf-core
@@ -1129,7 +1133,7 @@ sudo docker run --rm --gpus all nvidia/cuda:12.5.1-base-ubuntu22.04 nvidia-smi
 ...and it didn't. I restarted the machine, thinking that maybe this will help certain settings load properly, and tried again. I also tried running it without the `nvidia-smi` part. Either way, I got the same error message: "docker: Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: error running hook #0: error running hook: exit status 1, stdout: , stderr: Auto-detected mode as 'legacy'
 nvidia-container-cli: initialization error: nvml error: driver not loaded: unknown."
 
-This is apparently a problem, again, with the Nvidia driver.  I could try pulling some other docker container to test this further, but I suspect it wouldn't change much if `nvidia-smi` doesn't show anything useful. And I could go on and on trying this out, but maybe I'm lucky again and maybe the pipeline works even without the GPU usage. So the next important step is to generate some small test data to run a pilot test with the pipeline.
+This is apparently a problem, again, with the Nvidia driver.  I could try pulling some other docker container to test this further, but I suspect it wouldn't change much if `nvidia-smi` doesn't show anything useful. And I could go on and on trying this out, but maybe I'm lucky again and maybe the pipeline works even without the GPU usage. So the next important step is to generate some small test data to run a pilot test with the pipeline (see [[#Pipeline pilot experiment *C. elegans* data from the course]] )
 
 ### Accessing shared folder from VMware virtual machine
 
@@ -1201,7 +1205,625 @@ nextflow pull nf-core/rnasplice
 
 While I am trying to transfer the entirety of my virtual machine from VirtualBox to VMware (see section [[#Attempting to transfer entirety of virtual machine to VMware]] ), I read about the pipeline to better understand what the individual steps involve.
 
-## Prerequisites for the rnasplice pipeline
+## Pipeline description for rnasplice
+
+
+Calling the pipeline could be as easy as typing 
+
+```bash
+nextflow run nf-core/rnasplice \
+--input samplesheet.csv \ 
+--contrasts contrastsheet.csv \ 
+--genome GRCh37 \ 
+--outdir my/result/directory \ 
+-profile docker
+```
+
+but what does it do, and what other parameters need to be set?
+
+### Graphical overview
+I tried creating an overview here that is somewhat easier to describe with words than the image on the website:
+
+![[rnasplice_map.png]]
+
+### Parts of the pipeline
+
+Also described well at https://github.com/zifornd/rnasplice/blob/dev/docs/output.md
+
+>***Part 1 of pipeline: preprocessing***
+>>**cat fastq** 
+>>	is something I would use if I had several fastq files per sample, coming from several runs of sequencing. This is usually done to increase sequencing depth, but the SRA archives I downloaded contained precisely two files per sample, containing the two parts of a pair of reads each.
+>>
+>>**FastQC**
+>>_own addition_: **MultiQC** to summarize results
+>>	I already performed these steps on the WSL, so will not need to do so again. I already know I need to trim 10 bases from the 5' end of the reads in order to solve any problems that the suboptimal per-base distribution of the four nucleotides may create.
+>>
+>>>**TrimGalore**! - [GitHub](https://github.com/FelixKrueger/TrimGalore) and [user guide](https://github.com/FelixKrueger/TrimGalore/blob/master/Docs/Trim_Galore_User_Guide.md)
+>>>	- **COMMAND**: `trim_galore [options] <filename(s)>`
+>>>	- will set `--cores 4` to make maximal use of all of my cores but following the indication on the website that says this is a sweet spot (I set 6 cores to be available to the VM)
+>>>	- will use the `--paired` option because I have paired reads as input
+>>>	- see above - need to trim 10 bases. I previously worked with Trimmomatic for this kind of operation, but TrimGalore also has the option `--clip_R1 10` and `--clip_R2 10`, which will remove these 10 bases from the 5' ends of all of the reads.
+>>>	- Since it employes FastQC, TrimGalore does an automated check of low quality and trims accordingly. I don't need to specify the Phred score cutoff for base call quality - it automatically sets it to the most modern version, --phred33.
+>>>	- in my previous checks, FastQC did not detect any significant adapter contamination in the reads. If there are any adapters left, they will be of the Illumina type, since this is what kit was employed. However, I am a little reluctant to just use the --illumina parameter, as this trimming is extremely stringent and an overlap of even only 1 base between the end of the read and the adapter sequences will be removed, potentially losing useful information in the process. I will rather let TrimGalore automatically look for potential overlaps with adapter sequences and set `--stringency` to `5` to lose less information, since the risk of real adapter contamination seems extremely low AND I am anyway trimming the 5' ends because of the biased  base distribution
+>>>	-  it also automatically filters the resulting sequences and, if a read is then shorter than 20 bp, it is automatically removed from the results.
+>>>	- output: [***does it also create separate files for reads that could successfully be paired up from the two input FastQ files and those that could not?***]
+>>>	
+>>>	>>>	
+>>>	
+>>>>**FastQC**
+>>>>- these two steps are done to check whether the trimming worked exactly as expected, so, in my case, I'd expect the new report generated by MultiQC to show me 140 bp reads with no more issues at the 5' ends.
+>>>>- to run FastQC again on the results, use `--fastqc_args "--outdir /TrimGalore_output" ` (TrimGalore automatically creates the output directory if it doesn't exist)
+>>>>-_own addition_: **MultiQC** to summarize results
+
+> [!To do]
+> >>>	
+> >>>	I will then need to add a MultiQC step to summarize the results, but I can do that manually
+
+>>>>>input files: fasta and gtf - see sections [[#Downloading genomes]] and [[#Initial creation of genome and transcriptome indices]]
+
+
+[this certainly needs more research for accuracy!] also see https://github.com/zifornd/rnasplice/blob/dev/docs/output.md#star-and-salmon
+The rest of the pipeline is divided in two branches. Each branch starts with one of two different algorithms, [STAR](https://pubmed.ncbi.nlm.nih.gov/23104886/) and [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html), whose mechanics sound similar at first, but work quite differently. 
+
+As explained [here ](https://www.biostars.org/p/180986/#180993)by Devon Ryan, an aligner like STAR genuinely looks at the base-to-base match of a read to a region in the target genome ("does this read from the sequencing rn align with this bit of the genome?") and also saves information on whether the read matches the genomic region as-is, from one end of the read to the other, or whether there are gaps or insertions ("does every one of the 150 bases in the read match 150 bases at the location where it's mapped in the genome? Or are, say, only bases 1-57 aligned, with an unmatching portion from bases 58-92, and then 93-150 match again?"). This means that it can later be used to accurately quantify which genes are expressed at what levels. Additionally, it is built so that it can easily identify reads that span exon-exon boundaries, thereby making it able to distinguish which of the different transcripts that can come from the same genomic locus the read could be derived from. This information is usually collected in a SAM file (human-readable) and then, for space reasons, converted into a BAM file (non-human-readable).
+
+> [!TO DO:]
+> Read more on how Salmon works - the Harvard Chan Bioinfo Core PDF has good visualizations.
+> I found this excellent [RNA-seq analysis course ](https://github.com/hbctraining/Intro-to-rnaseq-hpc-salmon-flipped/blob/main/schedule/links-to-lessons.md)from the Harvard Chan Bioinformatics Core ( [Zenodo](https://doi.org/10.5281/zenodo.5833880)). In the [Salmon lesson](https://github.com/hbctraining/Intro-to-rnaseq-hpc-salmon-flipped/blob/main/lessons/08_quasi_alignment_salmon.md) , they explain how to set the parameters:
+
+STAR is the gold standard of the old school of transcript abundance analysis when looking to map reads in a splice-aware manner. Salmon is the new star on the block because it can be used in two different ways: as a pseudo-aligner or as a real aligner. It truly shines as a pseudo-aligner, a mode in which it does not care about the exact fit of the read base-to-base, and does a quantification of "is this read likely to come from this transcript?" based on some more complex background mathematics. This is called pseudo-alignment, and is much faster than an actual base-to-base alignment, like STAR performs. In this mode, Salmon does not compare the reads to a reference genome but to a reference transcriptome, for which it needs a so-called index of the transcriptome. Often, such reference indices are readily available for download for well-studied organisms, such as the mouse (see[[#Salmon installation and mouse transcriptome index]] for how I downloaded it). 
+
+Salmon also makes some adjustments for normalizing the read counts, e.g. to the length of the transcript, in order to produce accurate estimates of how abundantly different splice isoforms are expressed from a particular gene. It can take the BAM files generated by STAR in order to give these results, which we will obtain with STAR in the first part of the pipeline. [how does tximport play into this?]
+
+Salmon can also operate on raw reads from scratch, as an aligner like STAR would, and I could theoretically let it start its branch of the pipeline from scratch, based on the raw reads, but I will anyway get the BAM files from the STAR branch, [so I could save some time on that.] ***does this really save time? pseudo-alignment is much faster - maybe it's better for accuracy, but not time***
+
+The creators of the dataset/authors of the original study used Hisat2 instead of STAR to align the reads to the mm10 mouse genome, and HTSeq to obtain read counts aka expression levels for the genes. The rnasplice pipeline also runs HTSeq after the STAR step, and I am curious how the results will compare to the ones published in the paper.
+
+
+> ***Part 2a of pipeline: read alignment and read count quantification starting with STAR***
+>>**STAR**
+>>	aligns the reads
+>>	Parameters to consider:
+>>	- **`--star_index`**: Provide the path to the STAR index built for your reference genome.
+>>	- --genome: Specify the reference genome (e.g., GRCh38) (but only if using the AWS iGenomes, which seem to be very out of date [source: warning from nextflow pages])
+>>	- **`--sjdb_overhang`**: Adjust based on your read length. A common choice is `read_length - 1`, or else it defaults to 100 bp. So I will use ***149***, because I am dealing with 150 bp reads.
+>>	- `--save_unaligned true` if wanting to get insight into which reads *weren't* aligned - this will give me an idea of whether the alignment in general is working reliably
+>>	- [Here](https://www.reneshbedre.com/blog/star-aligner.html), Renesh Bedre explains more of the other parameters that STAR can use, such as `--runThreadN`, which sets on how many cores the aligner should be run (I'll use 6, because that's how many I have)
+>>	-  "if `--aligner star_salmon` is specified then all the downstream results will be placed in the `star_salmon/` directory." (https://github.com/zifornd/rnasplice/blob/dev/docs/output.md#alignment-post-processing )
+>>	
+
+>>>**samtools**
+>>	- https://www.htslib.org/doc/
+>>	- https://www.htslib.org/doc/samtools.html
+>>	is a set of programs used, in this pipeline, to process the BAM files for further use. The mapped reads are sorted by coordinate and the BAM files are processed to generate mapping statistics.
+>>
+>>>> ***Part 3a of pipeline: splicing quantification with edgeR, DEXSeq***
+>>>>> **rMATS** = splicing event quantification
+>>>>> 	- activated by default in pipeline
+>>>>> 	**`--rmats_threads`**: Set the number of threads to use for `rMATS` [is this really necessary?]
+>>>>> 	
+>>>
+>>>
+>>>>Then follow two branches that deal with finding differentially expressed exons in the data: 
+>>>>
+>>>>> **HTSEq** - part of the DEXSeq package
+>>>>>> **DEXSeq** = differential exon usage
+>>>>>> 	https://genome.cshlp.org/content/22/10/2008 
+>>>>>> 	- R/Bioconductor package, always active in the pipeline due to the parameter `--dexseq_exon` set to true by default
+>>>>>> 	- "Using the `--aggregation` parameter the pipeline will combine overlapping genes into a single aggregate gene. This approach can alternatively be skipped and any exons that overlap other exons from different genes will be skipped. Other important options to take note of are the `--alignment_quality` parameter which can be set by the user and defines the minimum alignment quality required for reads to be included (defined in 5th column of a given SAM file) (default: 10). Prior to quantification, DEXSeq provides an annotation preparation script which takes a GTF file as input and returns a GFF file. Users may instead wish to define their own GFF file and skip this annotation preparation skip by supplying it using the `--gff_dexseq` parameter."
+>>>>>> 
+>>>>> **featureCounts**
+>>>>> 	- provides a quantification that edgeR requires
+>>>>> 	- " is activated when the parameter `--edger_exon` is enabled. Please note that as this is aimed at differential exon usage feature type is set as `exon` and cannot be changed. Please take care to use a suitable attribute to categorize the featureCounts attribute type in your GTF using the option `--gtf_group_features` (default: `gene_id`)."
+>>>>> 	- 
+>>>>>>**edgeR** provides info on differential exon usage, based on featureCounts
+
+
+Part 4 of the pipeline does some processing of the BAM files resulting from STAR in order to quantify splicing events and resulting transcript variants and make them easy to display in a genome browser. This last step is performed by [MISO, which creates so-called Sashimi plots with read densities across the exons and their junctions.][sure-sure?]
+
+>>>>***Part 4 of pipeline: post-processing after STAR/samtools branch***
+>>>>>**BEDtools** 
+>>>>>>**bedGraphTobigWig**
+>>>>>>	- https://github.com/zifornd/rnasplice/blob/dev/docs/output.md#bedtools-and-bedgraphtobigwig
+>>>>>>	- the bigWig format is an even further compressed format than BAM, based on the BAM file generated by STAR. The bigWig file produced by the pipeline can be used in genome browsers such as the IGV genome browser to visualize the read mapping density across the genome
+>>>>>>
+>>>>>**MISO/Sashimi**
+>>>>>	- MISO (Mixture of ISOforms) quantifies expression levels of different transcripts resulting from the alternative splicing of a pre-mRNA derived from one gene ([source](https://miso.readthedocs.io/en/fastmiso/index.html#what-is-miso)). It actually performs a Monte Carlo Markov chain estimation [source explaining this concept!]. 
+>>>>>	- like SUPPA, it can also quantify either full transcript variants with all of their splicing particularities, or individual events, such as how frequently one particular exon is included in a type of sample. See [Katz et al](http://www.nature.com/nmeth/journal/v7/n12/full/nmeth.1528.html) for the source publication.
+>>>>>	- MISO contains an utility called [sashimi_plot](https://miso.readthedocs.io/en/fastmiso/sashimi.html) (automatically active in the rnasplice pipeline), which creates easy-to-understand plots showing both read densities across certain sequences and also the counts of how often certain splice junctions are paired with each other. This gives information on how frequently parts of a pre-mRNA are included in transcripts or skipped and how the resulting transcripts are structured. Also see [Katz et al](http://biorxiv.org/content/early/2014/02/11/002576)
+>>>>>	- the MISO/Sashimi part of the pipeline has two parameters with which users can specify exactly which genes to create the plots for, `miso_genes` for a list of individual identifiers, given as a 'string in single quotes',  and `miso_genes_file`, where one can give a list of identifiers stored in a file. I presume these options come in handy once the analysis is completed and I can look into the genes with the strongest alterations in splicing patterns in the pre-eclampsia mice in comparison to the control ones. See the [pipeline parameters page](https://nf-co.re/rnasplice/1.0.4/parameters#miso) and [this page for potential errors/bugs.](https://github.com/nf-core/rnasplice/issues/72#issuecomment-1643637616)
+
+
+
+> ***Part 2b of pipeline: read pseudo-alignment and/or read count quantification per transcript using Salmon***
+>**Salmon**
+>> **tximport**
+>> 	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4712774/ 
+>> 	- tximport solves issues with artificially inflated gene counts due to transcript isoforms derived from the same gene
+>> 
+>>>> ***Part 3b of pipeline: actual splicing junction quantification***
+>>>>> **DRIMSeq**
+>>>>	- https://f1000research.com/articles/5-1356/v2
+>>>>		- an R/Bioconductor package that quantifies changes between experimental conditions in the relative abundance of all of the possible transcript isoforms resulting from a genomic locus, and also monitors SNPs that can lead to such abundance changes (splicing quantitative trait loci, sQTLs)
+>>>>		- it also [filters low-abundance transcripts](https://github.com/zifornd/rnasplice/blob/dev/docs/output.md) and some other categories before we use DEXSeq (see below)
+>>>>
+>>>>>> **DEXSeq** = in this case, used for differential transcript usage
+>>>>>> 	- activated by default in the pipeline due to the parameter `--dexseq_dtu` being set to true ([[Knowledge_Progression_handling_RNA-seq_datasets#Config file for the rnasplice pipeline with absolutely all of the default parameters]])
+>>>>>> 	- 
+>>>>> **SUPPA** = differential event-based alternative splicing analysis
+>>>>> 	https://github.com/comprna/SUPPA
+>>>>> 	- can work in two different ways: detecting either
+>>>>> 		- individual splicing events, e.g. inclusion or skipping of a particular exon, ( Skipping Exon = SE,  Alternative 5'/3' Splice Sites = A5/A3 (generated together with the option SS), Mutually Exclusive Exons = MX, Retained Intron = RI, Alternative First/Last Exons = AF/AL (generated together with the option FL),
+>>>>> 		- or can quantify the abundance of different transcript variants, with their specific composition of exons or retained introns, alternative splice sites, etc.
+>>>>> 	- both ways are activated by default in the pipeline ([[Knowledge_Progression_handling_RNA-seq_datasets#Config file for the rnasplice pipeline with absolutely all of the default parameters]])
+
+### Config file for the rnasplice pipeline with absolutely all of the default parameters
+
+Taken directly from https://github.com/nf-core/rnasplice/blob/1.0.4/nextflow.config
+
+```Groovy
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    nf-core/rnasplice Nextflow config file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Default config options for all compute environments
+----------------------------------------------------------------------------------------
+*/
+
+// Global default params, used in configs
+params {
+
+    // Input options
+    input                      = null
+    contrasts                  = null
+    source                     = 'fastq'
+
+    // References
+    genome                     = null
+    transcript_fasta           = null
+    gtf_extra_attributes       = 'gene_name'
+    gtf_group_features         = 'gene_id'
+    gencode                    = false
+    save_reference             = false
+    igenomes_base              = 's3://ngi-igenomes/igenomes/'
+    igenomes_ignore            = false
+
+    // Trimming
+    clip_r1                    = null
+    clip_r2                    = null
+    three_prime_clip_r1        = null
+    three_prime_clip_r2        = null
+    trim_nextseq               = null
+    save_trimmed               = false
+    skip_trimming              = false
+    skip_trimgalore_fastqc     = false
+    min_trimmed_reads          = 10000
+
+    // Alignment
+    aligner                    = 'star_salmon'
+    pseudo_aligner             = 'salmon'
+    bam_csi_index              = false
+    seq_center                 = null
+    salmon_quant_libtype       = null
+    star_ignore_sjdbgtf        = false
+    skip_alignment             = false
+    save_unaligned             = false
+    save_align_intermeds       = false
+    save_merged_fastq          = false
+
+    // QC
+    skip_bigwig                = true
+    skip_fastqc                = false
+
+    // rMATs
+    rmats                      = true
+    rmats_splice_diff_cutoff   = 0.0001
+    rmats_paired_stats         = true
+    rmats_read_len             = 40
+    rmats_novel_splice_site    = false
+    rmats_min_intron_len       = 50
+    rmats_max_exon_len         = 500
+
+    // DEXSeq DEU
+    dexseq_exon                = true
+    save_dexseq_annotation     = false
+    gff_dexseq                 = null
+    alignment_quality          = 10
+    aggregation                = true
+    save_dexseq_plot           = true
+    n_dexseq_plot              = 10
+
+    // edgeR DEU
+    edger_exon                 = true
+    save_edger_plot            = true
+    n_edger_plot               = 10
+
+    // DEXSeq DTU
+    dexseq_dtu                 = true
+    dtu_txi                    = 'dtuScaledTPM'
+
+    // Miso
+    sashimi_plot               = true
+    miso_genes                 = 'ENSG00000004961, ENSG00000005302, ENSG00000147403'
+    miso_genes_file            = null
+    miso_read_len              = 75
+    fig_width                  = 7
+    fig_height                 = 7
+
+    // DRIMSeq Filtering
+    min_samps_feature_expr     =  2
+    min_samps_feature_prop     =  2
+    min_samps_gene_expr        =  4
+    min_feature_expr           =  10
+    min_feature_prop           =  0.1
+    min_gene_expr              =  10
+
+    // SUPPA options
+    suppa                      = true
+    suppa_per_local_event      = true
+    suppa_per_isoform          = true
+    suppa_tpm                  = null
+
+    // SUPPA Generate events options
+    generateevents_pool_genes  = true
+    generateevents_event_type  = 'SE SS MX RI FL'
+    generateevents_boundary    = 'S'
+    generateevents_threshold   = 10
+    generateevents_exon_length = 100
+    psiperevent_total_filter   = 0
+
+    // SUPPA Diffsplice options
+    diffsplice_local_event     = true
+    diffsplice_isoform         = true
+    diffsplice_method          = 'empirical'
+    diffsplice_area            = 1000
+    diffsplice_lower_bound     = 0
+    diffsplice_gene_correction = true
+    diffsplice_paired          = true
+    diffsplice_alpha           = 0.05
+    diffsplice_median          = false
+    diffsplice_tpm_threshold   = 0
+    diffsplice_nan_threshold   = 0
+
+    // SUPPA Cluster options
+    clusterevents_local_event  = true
+    clusterevents_isoform      = true
+    clusterevents_sigthreshold = null
+    clusterevents_dpsithreshold= 0.05
+    clusterevents_eps          = 0.05
+    clusterevents_metric       = 'euclidean'
+    clusterevents_separation   = null
+    clusterevents_min_pts      = 20
+    clusterevents_method       = 'DBSCAN'
+
+    // MultiQC options
+    multiqc_config             = null
+    multiqc_title              = null
+    multiqc_logo               = null
+    max_multiqc_email_size     = '25.MB'
+    multiqc_methods_description = null
+
+    // Boilerplate options
+    outdir                     = null
+    publish_dir_mode           = 'copy'
+    email                      = null
+    email_on_fail              = null
+    plaintext_email            = false
+    monochrome_logs            = false
+    hook_url                   = null
+    help                       = false
+    version                    = false
+
+    // Config options
+    config_profile_name        = null
+    config_profile_description = null
+    custom_config_version      = 'master'
+    custom_config_base         = "https://raw.githubusercontent.com/nf-core/configs/${params.custom_config_version}"
+    config_profile_contact     = null
+    config_profile_url         = null
+
+    // Max resource options
+    // Defaults only, expecting to be overwritten
+    max_memory                 = '128.GB'
+    max_cpus                   = 16
+    max_time                   = '240.h'
+
+    // Schema validation default options
+    validationFailUnrecognisedParams = false
+    validationLenientMode            = false
+    validationSchemaIgnoreParams     = 'genomes,igenomes_base'
+    validationShowHiddenParams       = false
+    validate_params                  = true
+
+}
+
+// Load base.config by default for all pipelines
+includeConfig 'conf/base.config'
+
+// Load nf-core custom profiles from different Institutions
+try {
+    includeConfig "${params.custom_config_base}/nfcore_custom.config"
+} catch (Exception e) {
+    System.err.println("WARNING: Could not load nf-core/config profiles: ${params.custom_config_base}/nfcore_custom.config")
+}
+
+// Load nf-core/rnasplice custom profiles from different institutions.
+// Warning: Uncomment only if a pipeline-specific instititutional config already exists on nf-core/configs!
+// try {
+//   includeConfig "${params.custom_config_base}/pipeline/rnasplice.config"
+// } catch (Exception e) {
+//   System.err.println("WARNING: Could not load nf-core/config/rnasplice profiles: ${params.custom_config_base}/pipeline/rnasplice.config")
+// }
+
+profiles {
+    debug {
+        dumpHashes             = true
+        process.beforeScript   = 'echo $HOSTNAME'
+        cleanup                = false
+        nextflow.enable.configProcessNamesValidation = true
+    }
+    conda {
+        conda.enabled          = true
+        docker.enabled         = false
+        singularity.enabled    = false
+        podman.enabled         = false
+        shifter.enabled        = false
+        charliecloud.enabled   = false
+        apptainer.enabled      = false
+    }
+    mamba {
+        conda.enabled          = true
+        conda.useMamba         = true
+        docker.enabled         = false
+        singularity.enabled    = false
+        podman.enabled         = false
+        shifter.enabled        = false
+        charliecloud.enabled   = false
+        apptainer.enabled      = false
+    }
+    docker {
+        docker.enabled         = true
+        conda.enabled          = false
+        singularity.enabled    = false
+        podman.enabled         = false
+        shifter.enabled        = false
+        charliecloud.enabled   = false
+        apptainer.enabled      = false
+        docker.runOptions      = '-u $(id -u):$(id -g)'
+    }
+    arm {
+        docker.runOptions      = '-u $(id -u):$(id -g) --platform=linux/amd64'
+    }
+    singularity {
+        singularity.enabled    = true
+        singularity.autoMounts = true
+        conda.enabled          = false
+        docker.enabled         = false
+        podman.enabled         = false
+        shifter.enabled        = false
+        charliecloud.enabled   = false
+        apptainer.enabled      = false
+    }
+    podman {
+        podman.enabled         = true
+        conda.enabled          = false
+        docker.enabled         = false
+        singularity.enabled    = false
+        shifter.enabled        = false
+        charliecloud.enabled   = false
+        apptainer.enabled      = false
+    }
+    shifter {
+        shifter.enabled        = true
+        conda.enabled          = false
+        docker.enabled         = false
+        singularity.enabled    = false
+        podman.enabled         = false
+        charliecloud.enabled   = false
+        apptainer.enabled      = false
+    }
+    charliecloud {
+        charliecloud.enabled   = true
+        conda.enabled          = false
+        docker.enabled         = false
+        singularity.enabled    = false
+        podman.enabled         = false
+        shifter.enabled        = false
+        apptainer.enabled      = false
+    }
+    apptainer {
+        apptainer.enabled      = true
+        apptainer.autoMounts   = true
+        conda.enabled          = false
+        docker.enabled         = false
+        singularity.enabled    = false
+        podman.enabled         = false
+        shifter.enabled        = false
+        charliecloud.enabled   = false
+    }
+    gitpod {
+        executor.name          = 'local'
+        executor.cpus          = 4
+        executor.memory        = 8.GB
+    }
+    test                   { includeConfig 'conf/test.config'                   }
+    test_full              { includeConfig 'conf/test_full.config'              }
+    test_edger             { includeConfig 'conf/test_edger.config'             }
+    test_rmats             { includeConfig 'conf/test_rmats.config'             }
+    test_dexseq            { includeConfig 'conf/test_dexseq.config'            }
+    test_suppa             { includeConfig 'conf/test_suppa.config'             }
+    test_fastq             { includeConfig 'conf/test_fastq.config'             }
+    test_genome_bam        { includeConfig 'conf/test_genome_bam.config'        }
+    test_transcriptome_bam { includeConfig 'conf/test_transcriptome_bam.config' }
+    test_salmon_results    { includeConfig 'conf/test_salmon_results.config'    }
+}
+
+// Set default registry for Apptainer, Docker, Podman and Singularity independent of -profile
+// Will not be used unless Apptainer / Docker / Podman / Singularity are enabled
+// Set to your registry if you have a mirror of containers
+apptainer.registry   = 'quay.io'
+docker.registry      = 'quay.io'
+podman.registry      = 'quay.io'
+singularity.registry = 'quay.io'
+
+// Nextflow plugins
+plugins {
+    id 'nf-validation@1.1.3' // Validation of pipeline parameters and creation of an input channel from a sample sheet
+}
+
+// Load igenomes.config if required
+if (!params.igenomes_ignore) {
+    includeConfig 'conf/igenomes.config'
+} else {
+    params.genomes = [:]
+}
+
+// Export these variables to prevent local Python/R libraries from conflicting with those in the container
+// The JULIA depot path has been adjusted to a fixed path `/usr/local/share/julia` that needs to be used for packages in the container.
+// See https://apeltzer.github.io/post/03-julia-lang-nextflow/ for details on that. Once we have a common agreement on where to keep Julia packages, this is adjustable.
+
+env {
+    PYTHONNOUSERSITE = 1
+    R_PROFILE_USER   = "/.Rprofile"
+    R_ENVIRON_USER   = "/.Renviron"
+    JULIA_DEPOT_PATH = "/usr/local/share/julia"
+}
+
+// Capture exit codes from upstream processes when piping
+process.shell = ['/bin/bash', '-euo', 'pipefail']
+
+// Disable process selector warnings by default. Use debug profile to enable warnings.
+nextflow.enable.configProcessNamesValidation = false
+
+def trace_timestamp = new java.util.Date().format( 'yyyy-MM-dd_HH-mm-ss')
+timeline {
+    enabled = true
+    file    = "${params.outdir}/pipeline_info/execution_timeline_${trace_timestamp}.html"
+}
+report {
+    enabled = true
+    file    = "${params.outdir}/pipeline_info/execution_report_${trace_timestamp}.html"
+}
+trace {
+    enabled = true
+    file    = "${params.outdir}/pipeline_info/execution_trace_${trace_timestamp}.txt"
+}
+dag {
+    enabled = true
+    file    = "${params.outdir}/pipeline_info/pipeline_dag_${trace_timestamp}.html"
+}
+
+manifest {
+    name            = 'nf-core/rnasplice'
+    author          = """Ben Southgate, James Ashmore"""
+    homePage        = 'https://github.com/nf-core/rnasplice'
+    description     = """Alternative splicing analysis using RNA-seq."""
+    mainScript      = 'main.nf'
+    nextflowVersion = '!>=23.04.0'
+    version         = '1.0.4'
+    doi             = '10.5281/zenodo.8424632'
+}
+
+// Load modules.config for DSL2 module specific options
+includeConfig 'conf/modules.config'
+
+// Function to ensure that resource requirements don't go beyond
+// a maximum limit
+def check_max(obj, type) {
+    if (type == 'memory') {
+        try {
+            if (obj.compareTo(params.max_memory as nextflow.util.MemoryUnit) == 1)
+                return params.max_memory as nextflow.util.MemoryUnit
+            else
+                return obj
+        } catch (all) {
+            println "   ### ERROR ###   Max memory '${params.max_memory}' is not valid! Using default value: $obj"
+            return obj
+        }
+    } else if (type == 'time') {
+        try {
+            if (obj.compareTo(params.max_time as nextflow.util.Duration) == 1)
+                return params.max_time as nextflow.util.Duration
+            else
+                return obj
+        } catch (all) {
+            println "   ### ERROR ###   Max time '${params.max_time}' is not valid! Using default value: $obj"
+            return obj
+        }
+    } else if (type == 'cpus') {
+        try {
+            return Math.min( obj, params.max_cpus as int )
+        } catch (all) {
+            println "   ### ERROR ###   Max cpus '${params.max_cpus}' is not valid! Using default value: $obj"
+            return obj
+        }
+    }
+}
+```
+### Initial creation of genome and transcriptome indices
+
+#### STAR independent installation and mouse genome index
+
+I decided to create my STAR and Salmon indices in advance in order to remove potential sources of pipeline getting stuck, so I had to install both independent of the pipeline.
+
+[From the ~~horse's~~ scientist's mouth](https://physiology.med.cornell.edu/faculty/skrabanek/lab/angsd/lecture_notes/STARmanual.pdf) who developed STAR, Alexander Dobin, I took the instructions on how to create one's own STAR index, and did so before running the pipeline (see also [here](https://github.com/alexdobin/STAR))
+
+ To first get STAR separately from the Nextflow pipeline, I went into my Nextflow environment and ran:
+ ```bash
+ wget https://github.com/alexdobin/STAR/archive/2.7.11b.tar.gz
+ tar -xzf 2.7.11b.tar.gz
+ cd STAR-2.7.11b/source
+```
+
+Then, as instructed, I ran `make STAR` for the gcc C++ compiler to create a ready-to-run version of STAR on my system. Started around 11:57, took around 3 min to complete. 
+Got a warning "make: warning:  Clock skew detected.  Your build may be incomplete."
+
+I reset my system time with `sudo apt-get install ntp` and  `sudo service ntp restart`, then re-made the STAR build with `make clean` and `make STAR`, which now worked with no further errors.
+
+I had to add the path to the folder where I compiled the executable to the PATH variable, which I did by adding to my .bashrc `export PATH=/home/iweber/Documents/Software/STAR-2.7.11b/source:$PATH`
+
+To make the mouse STAR index, I ran:
+```bash
+STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/STAR_index_M_musculus --genomeFastaFiles /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.fna --sjdbGTFfile /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.gtf --sjdbOverhang 149
+```
+
+Annnnnnnnd success! Took all of 27 min to complete.
+![[2024-08-07_STAR_index_mouse_success.png]]
+#### Salmon installation and mouse transcriptome index
+
+For the Salmon index creation, I first got the latest Salmon version independent of the Nextflow pipeline as instructed on the[ Salmon website](https://salmon.readthedocs.io/en/latest/building.html#installation) using
+
+`wget https://github.com/COMBINE-lab/salmon/releases/download/v1.10.0/salmon-1.10.0_linux_x86_64.tar.gz`
+
+I decompressed the tar archive with `tar -xvzf salmon-1.10.0_linux_x86_64.tar.gz`, and then added the path to Salmon's bin folder to my PATH variable by including `export PATH=/home/iweber/Documents/Software/salmon-latest_linux_x86_64/bin:$PATH` in my .bashrc file. I could then see the command autocomplete, so I knew it works on my system :) `salmon --version` also returned "1.10.0", which is correct.
+
+
+I also tried to get a Docker image with 
+
+`sudo docker pull combinelab/salmon`
+
+> [!NOTE]
+> which...did not seem to download anything to my "Software" folder that I ran the command in ***pondering smiley*** . I'm sure this rather has something to do with me not understanding how the Docker image is supposed to work. 
+
+
+Next, I went looking for information on how to set up the transcriptomic index with Salmon. The [Salmon manual](https://salmon.readthedocs.io/en/latest/salmon.html#using-salmon) sent me to this [RefGenie server/repository](http://refgenomes.databio.org) that has ready-made indices for well-studied species, and it indeed hosts a Salmon index for the mouse, matching the NCBI genome, [here](http://refgenomes.databio.org/v3/genomes/splash/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1). I chose to download the complete[ Salmon index generated with selective alignment method](http://refgenomes.databio.org/v3/assets/splash/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1/salmon_sa_index?tag=default), because the description says that using it will increase the accuracy of quantification.
+
+I made a new folder, Salmon_index_M_musculus_mm10, in the genome folder (/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/), then used wget to download the index from RefGenie:
+
+`wget http://refgenomes.databio.org/v3/assets/archive/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1/salmon_sa_index?tag=default`
+
+which...didn't work. Even though I saw the 12 GB download and it took around 30 min to do so, I had no files at the end in my working directory and only an odd file that popped up with `ls -lha`:
+![[2024-08-07_Salmon_index_mouse_download_fail.png]]
+
+ChatGPT told me that the file with the utterly weird privilege indicators (question marks) and the truncated name is likely the fault of a corrupted download, and that that likely happened because there are special characters (question mark) in the archive name on the website. So it suggested re-downloading the archive with a clearly defined name using
+
+`wget "http://refgenomes.databio.org/v3/assets/archive/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1/salmon_sa_index?tag=default" -O salmon_sa_index.tgz`
+
+...but that only downloaded a tiny file, nothing close to the 12 GB I was expecting from the tgz archive. So I went the new-school way and just downloaded it through the browser *sweat drop smiley*
+
+***Side note***: *I found out later that RefGenie is actually a Python package that allows downloading files related to some reference genome assemblies from the command line; [here's how to use it ](https://refgenie.databio.org/en/latest/)for further reference.*
+
+## Prerequisites for running the rnasplice pipeline
 
 ### **Create contrast sheet**
 
@@ -1271,12 +1893,20 @@ I created the sample sheet in Notepad++, and I even remembered to set the line b
 | 7                                                                                                                                                                                         | [SRR13761526](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761526)                | [SAMN18024794](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024794)                           | [SRX10148229](https://www.ncbi.nlm.nih.gov/sra/SRX10148229)                                    | GSM5098825             | Cortex offspring from preeclampsia mother mice |
 | 8                                                                                                                                                                                         | [SRR13761527](https://trace.ncbi.nlm.nih.gov/Traces/sra?run=SRR13761527)                | [SAMN18024793](https://www.ncbi.nlm.nih.gov/biosample/SAMN18024793)                           | [SRX10148230](https://www.ncbi.nlm.nih.gov/sra/SRX10148230)                                    | GSM5098826             | Cortex offspring from preeclampsia mother mice |
 
-> [!Complete once established]
-> Therefore, my `samplesheet_preeclampsia.csv` looks like:
-> ```csv
-> 
-> ```
-> 
+
+ Therefore, my `samplesheet_preeclampsia.csv` looks like:
+```cs
+sample,fastq_1,fastq_2,strandedness,condition
+CONTROL_REP1,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761520_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761520_1.fastq.gz,reverse,CONTROL
+CONTROL_REP2,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761521_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761521_2.fastq.gz,reverse,CONTROL
+CONTROL_REP3,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761522_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761522_2.fastq.gz,reverse,CONTROL
+CONTROL_REP4,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761523_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761523_2.fastq.gz,reverse,CONTROL
+PREECLAMPSIA_REP1,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761524_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761524_2.fastq.gz,reverse,PREECLAMPSIA
+PREECLAMPSIA_REP2,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761525_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761525_2.fastq.gz,reverse,PREECLAMPSIA
+PREECLAMPSIA_REP3,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761526_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761526_2.fastq.gz,reverse,PREECLAMPSIA
+PREECLAMPSIA_REP4,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761527_1.fastq.gz,/home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/SRR13761527_2.fastq.gz,reverse,PREECLAMPSIA
+```
+
 
 ### **Stranded information?**
 But where is the strandedness of the libraries indicated? There is no mention of this neither in the publication, nor in its Supplemental Data 1, nor in the Supplementary Materials and Methods. I only found a mention in their regular Materials and Methods section that they used the TruSeq Stranded mRNA Library Prep Kit from Illumina, in whose [protocol](https://support.illumina.com/content/dam/illumina-support/documents/documentation/chemistry_documentation/samplepreps_truseq/truseq-stranded-mrna-workflow/truseq-stranded-mrna-workflow-reference-1000000040498-00.pdf)  I read that it encompasses a first-strand reverse transcription and then the generation of the second strand of the cDNA, complementary to the first. This means that the resulting cDNA has the forward strand identical to the reverse complement of the original mRNA  and so should be treated as "reverse" and specified as such in the subsequent process. However, how can I make super sure that this is true? Giving the wrong strandedness will render the entire analysis essentially useless, this is highly important. 
@@ -1341,230 +1971,15 @@ Even better: the GTF file is also included in the NCBI FTP with downloads for th
 
 To get the mouse GTF from the NCBI FTP (already had the genome from them), used `wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/635/GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_genomic.gtf.gz` and then `pigz -d` to unzip it.
 
-## Pipeline description for rnasplice
-
-
-Calling the pipeline could be as easy as typing 
-
-```bash
-nextflow run nf-core/rnasplice \
---input samplesheet.csv \ 
---contrasts contrastsheet.csv \ 
---genome GRCh37 \ 
---outdir my/result/directory \ 
--profile docker
-```
-
-but what does it do, and what other parameters need to be set?
-
-### Graphical overview
-I tried creating an overview here that is somewhat easier to describe with words than the image on the website:
-
-![[rnasplice_map.png]]
-
-### Parts of the pipeline
-
->***Part 1 of pipeline: preprocessing***
->>**cat fastq** 
->>	is something I would use if I had several fastq files per sample, coming from several runs of sequencing. This is usually done to increase sequencing depth, but the SRA archives I downloaded contained precisely two files per sample, containing the two parts of a pair of reads each.
->>
->>**FastQC**
->>_own addition_: **MultiQC** to summarize results
->>	I already performed these steps on the WSL, so will not need to do so again. I already know I need to trim 10 bases from the 5' end of the reads in order to solve any problems that the suboptimal per-base distribution of the four nucleotides may create.
->>
->>>**TrimGalore**! - [GitHub](https://github.com/FelixKrueger/TrimGalore) and [user guide](https://github.com/FelixKrueger/TrimGalore/blob/master/Docs/Trim_Galore_User_Guide.md)
->>>	- **COMMAND**: `trim_galore [options] <filename(s)>`
->>>	- will set `--cores 4` to make maximal use of all of my cores but following the indication on the website that says this is a sweet spot (I set 6 cores to be available to the VM)
->>>	- will use the `--paired` option because I have paired reads as input
-
-> [!INSTALL]
-> >>>	- However, this requires pigz instead of gzip, so I will have to eventually install it
-
->>>	- see above - need to trim 10 bases. I previously worked with Trimmomatic for this kind of operation, but TrimGalore also has the option `--clip_R1 10` and `--clip_R2 10`, which will remove these 10 bases from the 5' ends of all of the reads.
-
-> [!INSTALL]
-> >>>	- TrimGalore is a wrapper around FastQC and another program, meant for adapter trimming, `cutadapt`, which needs to be previously installed - DO IT
-
->>>	- Since it employes FastQC, TrimGalore does an automated check of low quality and trims accordingly. I don't need to specify the Phred score cutoff for base call quality - it automatically sets it to the most modern version, --phred33.
->>>	- in my previous checks, FastQC did not detect any significant adapter contamination in the reads. If there are any adapters left, they will be of the Illumina type, since this is what kit was employed. However, I am a little reluctant to just use the --illumina parameter, as this trimming is extremely stringent and an overlap of even only 1 base between the end of the read and the adapter sequences will be removed, potentially losing useful information in the process. I will rather let TrimGalore automatically look for potential overlaps with adapter sequences and set `--stringency` to `5` to lose less information, since the risk of real adapter contamination seems extremely low AND I am anyway trimming the 5' ends because of the biased  base distribution
->>>	-  it also automatically filters the resulting sequences and, if a read is then shorter than 20 bp, it is automatically removed from the results.
->>>	- output: [***does it also create separate files for reads that could successfully be paired up from the two input FastQ files and those that could not?***]
->>>	
->>>	>>>	
->>>	
->>>>**FastQC**
->>>>- these two steps are done to check whether the trimming worked exactly as expected, so, in my case, I'd expect the new report generated by MultiQC to show me 140 bp reads with no more issues at the 5' ends.
->>>>- to run FastQC again on the results, use `--fastqc_args "--outdir /TrimGalore_output" ` (TrimGalore automatically creates the output directory if it doesn't exist)
->>>>-_own addition_: **MultiQC** to summarize results
-
-> [!To do]
-> >>>	
-> >>>	I will then need to add a MultiQC step to summarize the results, but I can do that manually
-
->>>>>input files: fasta and gtf - see sections [[#Downloading genomes]] and [[#Initial creation of genome and transcriptome indices]]
-
-
-[this certainly needs more research for accuracy!]
-The rest of the pipeline is divided in two branches. Each branch starts with one of two different algorithms, [STAR](https://pubmed.ncbi.nlm.nih.gov/23104886/) and [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html), whose mechanics sound similar at first, but work quite differently. 
-
-As explained [here ](https://www.biostars.org/p/180986/#180993)by Devon Ryan, an aligner like STAR genuinely looks at the base-to-base match of a read to a region in the target genome ("does this read align with this bit of the genome?") and also saves information on whether the read matches the genomic region as-is, from one end of the read to the other, or whether there are gaps or insertions ("does every one of the 150 bases in the read match 150 bases at the location where it's mapped in the genome? Or are, say, only bases 1-57 aligned, with an unmatching portion from bases 58-92, and then 93-150 match again?"). This means that it it can accurately quantify which genes are expressed at what levels. Additionally, it is built so that it can easily identify reads that span exon-exon boundaries, thereby making it able to distinguish which of the different transcripts that can come from the same genomic locus the read could be derived from. This information is usually collected in a BAM file.
-
-> [!TO DO:]
-> Read more on how Salmon works - the Harvard Chan Bioinfo Core PDF has good visualizations.
-> I found this excellent [RNA-seq analysis course ](https://github.com/hbctraining/Intro-to-rnaseq-hpc-salmon-flipped/blob/main/schedule/links-to-lessons.md)from the Harvard Chan Bioinformatics Core ( [Zenodo](https://doi.org/10.5281/zenodo.5833880)). In the [Salmon lesson](https://github.com/hbctraining/Intro-to-rnaseq-hpc-salmon-flipped/blob/main/lessons/08_quasi_alignment_salmon.md) , they explain how to set the parameters:
-
-STAR is the gold standard of the old school of transcript abundance analysis. Salmon is the new star on the block because it can be used in two different ways: as a pseudo-aligner or as a real aligner. It truly shines as a pseudo-aligner, a mode in which it does not care about the exact fit of the read base-to-base, and does a quantification of "is this read likely to come from this transcript?" based on some more complex background mathematics. This is called pseudo-alignment, and is much faster than an actual base-to-base alignment, like STAR performs. In this mode, Salmon does not compare the reads to a reference genome but to a reference transcriptome, for which it needs a so-called index of the transcriptome. Often, such reference indices are readily available for download for well-studied organisms such as the mouse. 
-
-Salmon also makes some adjustments for normalizing the read counts, e.g. to the length of the transcript, in order to produce accurate estimates of how abundantly different splice isoforms are expressed from a particular gene. It can take the BAM files generated by STAR in order to give these results, which we will obtain with STAR in the first part of the pipeline. [how does tximport play into this?]
-
-Salmon can also operate on raw reads from scratch, as an aligner like STAR would, and I could theoretically let it start its branch of the pipeline from scratch, based on the raw reads, but I will anyway get the BAM files from the STAR branch, so I could save some time on that.
-
-The creators of the dataset/authors of the original study used Hisat2 instead of STAR to align the reads to the mm10 mouse genome, and HTSeq to obtain read counts aka expression levels for the genes. The rnasplice pipeline also runs HTSeq after the STAR step, and I am curious how the results will compare to the ones published in the paper.
-
-
-> ***Part 2a of pipeline: read alignment and read count quantification starting with STAR***
->>**STAR**
->>	aligns the reads
->>	Parameters to consider:
->>	- **`--star_index`**: Provide the path to the STAR index built for your reference genome.
->>	- **`--genome`**: Specify the reference genome (e.g., GRCh38).
->>	- **`--sjdb_overhang`**: Adjust based on your read length. A common choice is `read_length - 1`, or else it defaults to 100 bp. So I will use ***149***, because I am dealing with 150 bp reads.
->>	- [Here](https://www.reneshbedre.com/blog/star-aligner.html), Renesh Bedre explains more of the other parameters that STAR can use, such as `--runThreadN`, which sets on how many cores the aligner should be run (I'll use 6, because that's how many I have)
->>	
-
->>>**samtools**
->>
->>
->>>> ***Part 3a of pipeline: splicing quantification with edgeR, DEXSeq***
->>>>> **rMATS** = splicing event quantification
->>>>> 	**`--rmats_threads`**: Set the number of threads to use for `rMATS`
->>>
->>>
->>>>Then follow two branches that deal with finding differentially expressed exons in the data: 
->>>>
->>>>> **HTSEq** - part of the DEXSeq package
->>>>>> **DEXSeq** = differential exon usage. A package, activated when the parameter `--dexseq_exon` is enabled.
->>>>>> - "Using the `--aggregation` parameter the pipeline will combine overlapping genes into a single aggregate gene. This approach can alternatively be skipped and any exons that overlap other exons from different genes will be skipped. Other important options to take note of are the `--alignment_quality` parameter which can be set by the user and defines the minimum alignment quality required for reads to be included (defined in 5th column of a given SAM file) (default: 10). Prior to quantification, DEXSeq provides an annotation preparation script which takes a GTF file as input and returns a GFF file. Users may instead wish to define their own GFF file and skip this annotation preparation skip by supplying it using the `--gff_dexseq` parameter."
->>>>>> 
->>>>> **featureCounts**
->>>>> 	- provides a quantification that edgeR requires
->>>>> 	- " is activated when the parameter `--edger_exon` is enabled. Please note that as this is aimed at differential exon usage feature type is set as `exon` and cannot be changed. Please take care to use a suitable attribute to categorize the featureCounts attribute type in your GTF using the option `--gtf_group_features` (default: `gene_id`)."
->>>>>>**edgeR** provides info on differential exon usage, based on featureCounts
-
-
-Part 4 of the pipeline does some basic processing of the BAM files resulting from STAR in order to make them easy to display in a genome browser, together with a quantification of how frequently certain exon-exon junctions are encountered. This last step is performed by MISO, which creates so-called Sashimi plots with the exons and their junctions.
-
->>>>***Part 4 of pipeline: post-processing after STAR/samtools branch***
->>>>>**BEDtools** 
->>>>>>**bedGraphTobigWig**
->>>>>>
->>>>>**MISO/Sashimi **
-
-
-
-> ***Part 2b of pipeline: read psued-alignment and read count quantification per transcript using Salmon***
->**Salmon**
->> **tximport**
->> 	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4712774/ tximport solves issues with artificially inflated gene counts derived from transcript isoforms
->> 
->>>> ***Part 3b of pipeline: actual splicing junction quantification***
->>>>> **DRIMSeq**
->>>>>> **DEXSeq** = differential transcript usage
->>>>>> 
->>>>> **SUPPA** = differential event-based splicing
-
-
-### Initial creation of genome and transcriptome indices
-
-#### STAR independent installation and mouse genome index
-
-I decided to create my STAR and Salmon indices in advance in order to remove potential sources of pipeline getting stuck, so I had to install both independent of the pipeline.
-
-[From the ~~horse's~~ scientist's mouth](https://physiology.med.cornell.edu/faculty/skrabanek/lab/angsd/lecture_notes/STARmanual.pdf) who developed STAR, Alexander Dobin, I took the instructions on how to create one's own STAR index, and did so before running the pipeline (see also [here](https://github.com/alexdobin/STAR))
-
- To first get STAR separately from the Nextflow pipeline, I went into my Nextflow environment and ran:
- ```bash
- wget https://github.com/alexdobin/STAR/archive/2.7.11b.tar.gz
- tar -xzf 2.7.11b.tar.gz
- cd STAR-2.7.11b/source
-```
-
-Then, as instructed, I ran `make STAR` for the gcc C++ compiler to create a ready-to-run version of STAR on my system. Started around 11:57, took around 3 min to complete. 
-Got a warning "make: warning:  Clock skew detected.  Your build may be incomplete."
-
-I reset my system time with `sudo apt-get install ntp` and  `sudo service ntp restart`, then re-made the STAR build with `make clean` and `make STAR`, which now worked with no further errors.
-
-I had to add the path to the folder where I compiled the executable to the PATH variable, which I did by adding to my .bashrc `export PATH=/home/iweber/Documents/Software/STAR-2.7.11b/source:$PATH`
-
-
-
-To make the mouse STAR index, ran:
-```bash
-STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/STAR_index_M_musculus --genomeFastaFiles /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.fna --sjdbGTFfile /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.gtf --sjdbOverhang 149
-```
-
-Annnnnnnnd success! Took all of 27 min to complete.
-![[2024-08-07_STAR_index_mouse_success.png]]
-#### Salmon installation and mouse transcriptome index
-
-For the Salmon index creation, I first got the latest Salmon version independent of the Nextflow pipeline as instructed on the[ Salmon website](https://salmon.readthedocs.io/en/latest/building.html#installation) using
-
-`wget https://github.com/COMBINE-lab/salmon/releases/download/v1.10.0/salmon-1.10.0_linux_x86_64.tar.gz`
-
-I decompressed the tar archive with `tar -xvzf salmon-1.10.0_linux_x86_64.tar.gz`, and then added the path to Salmon's bin folder to my PATH variable by including `export PATH=/home/iweber/Documents/Software/salmon-latest_linux_x86_64/bin:$PATH` in my .bashrc file. I could then see the command autocomplete, so I knew it works on my system :) `salmon --version` also returned "1.10.0", which is correct.
-
-
-I also tried to get a Docker image with 
-
-`sudo docker pull combinelab/salmon`
-
-> [!NOTE]
-> which...did not seem to download anything to my "Software" folder that I ran the command in ***pondering smiley*** . I'm sure this rather has something to do with me not understanding how the Docker image is supposed to work. 
-
-
-Next, I went looking for information on how to set up the transcriptomic index with Salmon. The [Salmon manual](https://salmon.readthedocs.io/en/latest/salmon.html#using-salmon) sent me to this [RefGenie server/repository](http://refgenomes.databio.org) that has ready-made indices for well-studied species, and it indeed hosts a Salmon index for the mouse, matching the NCBI genome, [here](http://refgenomes.databio.org/v3/genomes/splash/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1). I chose to download the complete[ Salmon index generated with selective alignment method](http://refgenomes.databio.org/v3/assets/splash/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1/salmon_sa_index?tag=default), because the description says that using it will increase the accuracy of quantification.
-
-I made a new folder, Salmon_index_M_musculus_mm10, in the genome folder (/mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/), then used wget to download the index from RefGenie:
-
-`wget http://refgenomes.databio.org/v3/assets/archive/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1/salmon_sa_index?tag=default`
-
-which...didn't work. Even though I saw the 12 GB download and it took around 30 min to do so, I had no files at the end in my working directory and only an odd file that popped up with `ls -lha`:
-![[2024-08-07_Salmon_index_mouse_download_fail.png]]
-
-ChatGPT told me that the file with the utterly weird privilege indicators (question marks) and the truncated name is likely the fault of a corrupted download, and that that likely happened because there are special characters (question mark) in the archive name on the website. So it suggested re-downloading the archive with a clearly defined name using
-
-`wget "http://refgenomes.databio.org/v3/assets/archive/0f10d83b1050c08dd53189986f60970b92a315aa7a16a6f1/salmon_sa_index?tag=default" -O salmon_sa_index.tgz`
-
-...but that only downloaded a tiny file, nothing close to the 12 GB I was expecting from the tgz archive. So I went the new-school way and just downloaded it through the browser *sweat drop smiley*
-
-***Side note***: *I found out later that RefGenie is actually a Python package that allows downloading files related to some reference genome assemblies from the command line; [here's how to use it ](https://refgenie.databio.org/en/latest/)for further reference.*
-
-## Final setup of the rnasplice pipeline
-
-```bash
-nextflow run nf-core/rnasplice -r 1.0.4
-
---input samplesheet_preeclampsia.csv 
---contrasts contrastssheet_preeclampsia.csv
-
---fasta /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.fna 
---gtf /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.gtf
---outdir /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_rnasplice_results
-
-
---aligner star_salmon
---star_index /mnt/mnt-win-ubu-shared/Win_Ubuntu_shared/Genomes/genome_M_musculus/GCF_000001635.27/STAR_index_M_musculus/
---salmon_index path/to/salmon/index
---save_align_intermeds true # needed if wanting to use rMATS, because otherwise pipeline does not save SAM files, which rMATS needs
---save_reference true # saves anything the pipeline downloads by itself, e.g. STAR indices
-
---salmon_quant_libtype # this might need to go into Salmon's chunk in the workflow AND is optional - Salmon can infer this automatically from the samplesheet information
-
-
--profile docker # or conda, depending on what works
-```
-
 # Pipeline pilot experiment: *C. elegans* data from the course
+
+> [!Side note for the future:]
+> there is a test dataset for this pipeline (human immortalized cell lines, paired-end RNA-seq data from [Shen et al., 2014](https://github.com/nf-core/test-datasets/tree/rnasplice#full-test-dataset-origin) - the original rMATS paper) that can be called with 
+> 
+
+```bash
+nextflow run nf-core/rnasplice -profile test_full,<docker/singularity/institute> --outdir <OUTDIR>
+```
 
 ## The C. elegans data
 In the NGS part of the bioinformatics course, we mapped some reads from the C. elegans genome. I'd like to use these as a test dataset for the pipeline, because the data consisted of far fewer reads than what I have for my mouse experiment, and so I should be able to see fast if the pipeline works or not.
@@ -2112,7 +2527,7 @@ Tip: you can replicate the issue by changing to the process work dir and enterin
 ````
 
 
-### Fixing GTF file
+### Fixing GTF file?
 
 I also saw a message saying "unable to open the GTF file" above. To address this, I decided to copy the contents of my Genomes folder into my Documents folder so that Nextflow can run without any further issues of not being able to create symlinks or opening files.
 
@@ -2207,7 +2622,7 @@ In general VM settings ( Edit -> Preferences):
 - Memory -> Additional memory: activated "fit all virtual machine memory into reserved host RAM"
 - Memory -> Reserved memory: downsized from 114432 MB to 98000 MB (98 GB)
 
-Things I DID NOT change yet, because they seem too risky:
+Things I DID NOT change yet, because they seem too risky to my beginner mind:
 - there is a possibility to limit the number of disk input/output operations to prevent the VM from overwhelming the disk it operates on (which, in this case, is the same disk that my Windows host is running on - I really should get a second ultrafast 2+ TB SSD and move it to this one...). This would involve changing the virtual machine's .vmx file and adding a line to limit the operations (disk.maxIOPS = "500")
 
 I tried unzipping the file again with the new settings: `tar -vxzf` and it worked! No more BSOD, and I now have a folder called "default" with all of the index components. 
@@ -2216,8 +2631,10 @@ I tried unzipping the file again with the new settings: `tar -vxzf` and it worke
 ## Pipeline parameters
 
 I changed:
-- --max_memory 90GB to make sure the pipeline leaves 5 GB for Ubuntu to run properly (apparently, [Linux needs far less RAM than Windows](https://raspberrytips.com/how-much-ram-for-ubuntu/) - I know this being news to me probably makes the Linux pros smile)
-- to cap Nextflow resource usage overall and be on the safe side, I followed the instructions from the [rnasplice parameters page](https://nf-co.re/rnasplice/1.0.4/docs/usage/#running-the-pipeline) and added to my .bashrc `NXF_OPTS='-Xms1g -Xmx4g'`
+- --max_memory 90GB to make sure the pipeline leaves 5 GB for Ubuntu to run properly (apparently, [Linux needs far less RAM than Windows](https://raspberrytips.com/how-much-ram-for-ubuntu/) - I know this being news to me probably makes the Linux pros smile and go "aww!" :) )
+- to cap Nextflow resource usage overall and be on the safe side, I followed the instructions from the [rnasplice parameters page](https://nf-co.re/rnasplice/1.0.4/docs/usage/#running-the-pipeline) and added to my .bashrc file: `NXF_OPTS='-Xms1g -Xmx4g'
+- `--save_reference true`  saves anything the pipeline downloads by itself, e.g. STAR indices, so that they can be re-used in further runs
+- 
 ```bash
 sudo nextflow run nf-core/rnasplice -r 1.0.4 \
 --max_cpus 6 \
@@ -2228,17 +2645,21 @@ sudo nextflow run nf-core/rnasplice -r 1.0.4 \
 --contrasts /home/iweber/Documents/Backup_shared_folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_mice_raw_fastq/contrastssheet_preeclampsia.csv \
 --fasta /home/iweber/Documents/Backup_shared_folder/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.fna \
 --gtf /home/iweber/Documents/Backup_shared_folder/Genomes/genome_M_musculus/GCF_000001635.27/GCF_000001635.27_GRCm39_genomic.gtf \
+--clip_R1 10 \
+--clip_R2 10 \
+--stringency 5 \
 --save_trimmed true \
 --aligner star_salmon \
---star_index /home/iweber/Documents/Backup_shared_folder/Genomes/genome_M_musculus/GCF_000001635.27/STAR_index_M_musculus/ \
+--star_index /home/iweber/Documents/Backup_shared_folder/Genomes/genome_M_musculus/GCF_000001635.27/STAR_index_M_musculus \
+--sjdb_overhang 149 \
 --salmon_index /home/iweber/Documents/Backup_shared_folder/Genomes/genome_M_musculus/GCF_000001635.27/correct_Salmon_index_M_musculus_mm10/default \
 --save_unaligned true \
 --save_align_intermeds true \
---rmats true \
+--save_reference true \
 -profile docker 
 ```
 
-IF NEEDED LATER: `-resume [run name]` to not repeat already finalized analysis steps! [Documentation for -resume](https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html)
+IF NEEDED LATER: `-resume [run-name]` to not repeat already finalized analysis steps! [Documentation for -resume](https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html)
 
 ---
 # ACTIVELY WORKING ON ^above
@@ -2257,33 +2678,6 @@ basics:
 The names of parameters that Nextflow knows and that can be set in scripts or otherwise: https://www.nextflow.io/docs/latest/script.html#regular-expressions launchDir, projectDir
 
 For parameters to be used in case one ever publishes a pipeline, even if only just on GitHub or some other repository: https://www.nextflow.io/docs/latest/config.html#scope-manifest
-
-
-
-# Trimming the reads
-
-After MultiQC aggregated the FastQC results, I wanted to look specifically if anything needed trimming. I installed Trimmomatic from conda with `conda install bioconda::trimmomatic`
-
-Then, I wrote a tiny script to run Trimmomatic automatically over all sequences and then have FastQC go over the now-trimmed sequences, plus MultiQC to aggregate the results:
-[adapter trimming? check MultiQC!]
-
-```bash
-`!#/bin/bash
-
-`trimmomatic PE -phred33 *.fastq -baseout "output" LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:3
-
-`fastqc output_* --threads 8 --memory 40000 --outdir FastQC_results
-
-`multiqc FastQC_results/ --outdir MultiQC_results/`
-```
-
-I found out in another analysis that one can create at most 4 threads on an octo-core PC like mine[source with explanation], and that trimmomatic has some restriction that only allows the use of a max of 10 GB of RAM, and not 40, as I had indicated to it here, so I adjusted the parameters for this case. [can max RAM be overridden with some option of trimmomatic?]
-
-
-> [!NOTE] Title
-> Contents
-Since the reads all had issues up to around the 10th base from the 5' end, I set the  
-
 
 
 # Installing R and RStudio on the virtual machine
