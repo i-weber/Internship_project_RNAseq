@@ -1,0 +1,88 @@
+
+executor >  local (38)
+[4f/788081] process > NFCORE_RNASPLICE:RNASPLICE:PREPARE_GENOME:GFFREAD (GCF_000001635.27_GRCm39_genomic.gff)                       [100%] 1 of 1, cached: 1 ✔
+[85/e3b1ab] process > NFCORE_RNASPLICE:RNASPLICE:PREPARE_GENOME:GTF_GENE_FILTER (GCF_000001635.27_GRCm39_genomic.fna)               [100%] 1 of 1, cached: 1 ✔
+[15/9138d2] process > NFCORE_RNASPLICE:RNASPLICE:PREPARE_GENOME:MAKE_TRANSCRIPTS_FASTA (rsem/GCF_000001635.27_GRCm39_genomic.fna)   [100%] 1 of 1 ✔
+[c4/ed4701] process > NFCORE_RNASPLICE:RNASPLICE:PREPARE_GENOME:CUSTOM_GETCHROMSIZES (GCF_000001635.27_GRCm39_genomic.fna)          [100%] 1 of 1, cached: 1 ✔
+[6a/018809] process > NFCORE_RNASPLICE:RNASPLICE:INPUT_CHECK:SAMPLESHEET_CHECK (samplesheet_preeclampsia.csv)                       [100%] 1 of 1, cached: 1 ✔
+[93/953d3c] process > NFCORE_RNASPLICE:RNASPLICE:CONTRASTS_CHECK:CONTRASTSHEET_CHECK (contrastssheet_preeclampsia.csv)              [100%] 1 of 1, cached: 1 ✔
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:CAT_FASTQ                                                                          -
+[ec/63d490] process > NFCORE_RNASPLICE:RNASPLICE:FASTQ_FASTQC_UMITOOLS_TRIMGALORE:FASTQC (PREECLAMPSIA_REP4)                        [100%] 8 of 8, cached: 8 ✔
+[ee/7705ef] process > NFCORE_RNASPLICE:RNASPLICE:FASTQ_FASTQC_UMITOOLS_TRIMGALORE:TRIMGALORE (PREECLAMPSIA_REP4)                    [100%] 8 of 8, cached: 8 ✔
+[e9/c0e68c] process > NFCORE_RNASPLICE:RNASPLICE:ALIGN_STAR:STAR_ALIGN (PREECLAMPSIA_REP4)                                          [100%] 8 of 8 ✔
+[85/78622c] process > NFCORE_RNASPLICE:RNASPLICE:ALIGN_STAR:BAM_SORT_STATS_SAMTOOLS:SAMTOOLS_SORT (PREECLAMPSIA_REP4)               [100%] 8 of 8 ✔
+[ef/a071dc] process > NFCORE_RNASPLICE:RNASPLICE:ALIGN_STAR:BAM_SORT_STATS_SAMTOOLS:SAMTOOLS_INDEX (CONTROL_REP3)                   [ 12%] 1 of 8
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:ALIGN_STAR:BAM_SORT_STATS_SAMTOOLS:BAM_STATS_SAMTOOLS:SAMTOOLS_STATS               -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:ALIGN_STAR:BAM_SORT_STATS_SAMTOOLS:BAM_STATS_SAMTOOLS:SAMTOOLS_FLAGSTAT            -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:ALIGN_STAR:BAM_SORT_STATS_SAMTOOLS:BAM_STATS_SAMTOOLS:SAMTOOLS_IDXSTATS            -
+[a7/435c5b] process > NFCORE_RNASPLICE:RNASPLICE:DEXSEQ_DEU:DEXSEQ_ANNOTATION (GCF_000001635.27_GRCm39_genomic.gtf)                 [100%] 1 of 1, cached: 1 ✔
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:DEXSEQ_DEU:DEXSEQ_COUNT                                                            [  0%] 0 of 8
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:DEXSEQ_DEU:DEXSEQ_EXON                                                             -
+[b2/338963] process > NFCORE_RNASPLICE:RNASPLICE:EDGER_DEU:SUBREAD_FLATTENGTF (GCF_000001635.27_GRCm39_genomic.gtf)                 [100%] 1 of 1, cached: 1 ✔
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:EDGER_DEU:SUBREAD_FEATURECOUNTS                                                    [  0%] 0 of 8
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:EDGER_DEU:EDGER_EXON                                                               -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:RMATS:CREATE_BAMLIST                                                               [  0%] 0 of 1
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:RMATS:RMATS_PREP                                                                   -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:RMATS:RMATS_POST                                                                   -
+[87/9c14e3] process > NFCORE_RNASPLICE:RNASPLICE:VISUALISE_MISO:GTF_2_GFF3                                                          [100%] 1 of 1, cached: 1 ✔
+[5e/89ed70] process > NFCORE_RNASPLICE:RNASPLICE:VISUALISE_MISO:MISO_INDEX                                                          [100%] 1 of 1 ✔
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:VISUALISE_MISO:MISO_RUN                                                            -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:VISUALISE_MISO:MISO_SETTINGS                                                       -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:VISUALISE_MISO:MISO_SASHIMI                                                        -
+[2a/1984a7] process > NFCORE_RNASPLICE:RNASPLICE:SALMON_QUANT_STAR (PREECLAMPSIA_REP4)                                              [100%] 8 of 8 ✔
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:TX2GENE_TXIMPORT_STAR_SALMON:UNTAR                                                 -
+[a7/b0f3a3] process > NFCORE_RNASPLICE:RNASPLICE:TX2GENE_TXIMPORT_STAR_SALMON:GFFREAD_TX2GENE (GCF_000001635.27_GRCm39_genomic.gtf) [100%] 1 of 1, cached: 1 ✔
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:TX2GENE_TXIMPORT_STAR_SALMON:TXIMPORT                                              [  0%] 0 of 1
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:DRIMSEQ_DEXSEQ_DTU_STAR_SALMON:DRIMSEQ_FILTER                                      -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:DRIMSEQ_DEXSEQ_DTU_STAR_SALMON:DEXSEQ_DTU                                          -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:DRIMSEQ_DEXSEQ_DTU_STAR_SALMON:STAGER                                              -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_STAR_SALMON:SPLIT_FILES_TPM                                                  -
+[69/92c17f] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_STAR_SALMON:GENERATE_EVENTS_IOE (GCF_000001635.27_GRCm39_genomic.gtf)        [100%] 1 of 1, cached: 1 ✔
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_STAR_SALMON:PSIPEREVENT                                                      -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_STAR_SALMON:SPLIT_FILES_IOE                                                  -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_STAR_SALMON:DIFFSPLICE_IOE                                                   -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_STAR_SALMON:CLUSTERGROUPS_IOE                                                -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_STAR_SALMON:CLUSTEREVENTS_IOE                                                -
+[fc/ffa5ce] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_STAR_SALMON:GENERATE_EVENTS_IOI (GCF_000001635.27_GRCm39_genomic.gtf)        [100%] 1 of 1, cached: 1 ✔
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_STAR_SALMON:PSIPERISOFORM                                                    -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_STAR_SALMON:SPLIT_FILES_IOI                                                  -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_STAR_SALMON:DIFFSPLICE_IOI                                                   -
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_STAR_SALMON:CLUSTERGROUPS_IOI                                                -
+[e0/8ad965] process > NFCORE_RNASPLICE:RNASPLICE:SALMON_QUANT_SALMON (PREECLAMPSIA_REP4)                                            [100%] 8 of 8 ✔
+[fe/354fda] process > NFCORE_RNASPLICE:RNASPLICE:TX2GENE_TXIMPORT_SALMON:GFFREAD_TX2GENE (GCF_000001635.27_GRCm39_genomic.gtf)      [100%] 1 of 1, cached: 1 ✔
+[f9/fa69fe] process > NFCORE_RNASPLICE:RNASPLICE:TX2GENE_TXIMPORT_SALMON:TXIMPORT (GCF_000001635.27_GRCm39_genomic.tx2gene.tsv)     [100%] 1 of 1, failed: 1 ✘
+[8f/025573] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_SALMON:GENERATE_EVENTS_IOE (GCF_000001635.27_GRCm39_genomic.gtf)             [100%] 1 of 1, cached: 1 ✔
+[df/8384fe] process > NFCORE_RNASPLICE:RNASPLICE:SUPPA_SALMON:GENERATE_EVENTS_IOI (GCF_000001635.27_GRCm39_genomic.gtf)             [100%] 1 of 1, cached: 1 ✔
+[-        ] process > NFCORE_RNASPLICE:RNASPLICE:MULTIQC                                                                            [  0%] 0 of 1
+Plus 17 more processes waiting for tasks…
+Execution cancelled -- Finishing pending tasks before exit
+ERROR ~ Error executing process > 'NFCORE_RNASPLICE:RNASPLICE:TX2GENE_TXIMPORT_SALMON:TXIMPORT (GCF_000001635.27_GRCm39_genomic.tx2gene.tsv)'
+
+Caused by:
+  Process `NFCORE_RNASPLICE:RNASPLICE:TX2GENE_TXIMPORT_SALMON:TXIMPORT (GCF_000001635.27_GRCm39_genomic.tx2gene.tsv)` terminated with an error exit status (1)
+
+
+Command executed:
+
+  tximport.R GCF_000001635.27_GRCm39_genomic.tx2gene.tsv salmon salmon.merged
+  
+  cat <<-END_VERSIONS > versions.yml
+  "NFCORE_RNASPLICE:RNASPLICE:TX2GENE_TXIMPORT_SALMON:TXIMPORT":
+      r-base: $(echo $(R --version 2>&1) | sed 's/^.*R version //; s/ .*$//')
+      bioconductor-tximeta: $(Rscript -e "library(tximeta); cat(as.character(packageVersion('tximeta')))")
+  END_VERSIONS
+
+Command exit status:
+  1
+
+Command output:
+  (empty)
+
+Command error:
+  f879b42dfe2b: Pulling fs layer
+  0cc1a7ed9591: Pulling fs layer
+  e38092b005c0: Waiting
+  a3ed95caeb02: Waiting
+  f879b42dfe2b: Waiting
+  0cc1a7ed9591: Waiting
+  e7c454e5167d: Waiting
