@@ -1,0 +1,33 @@
+{
+    "id": "120FCE40",
+    "path": "D:/OneDrive/03-Skill development and educational/Own data analysis project/Backup VM shared folder/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_DESeq2/scripts/2024-08-23_DESeq2_pre-eclampsia.qmd",
+    "project_path": "scripts/2024-08-23_DESeq2_pre-eclampsia.qmd",
+    "type": "quarto_markdown",
+    "hash": "3684167021",
+    "contents": "",
+    "dirty": false,
+    "created": 1724761268927.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "rmdVisualMode": "true",
+        "rmdVisualWrapConfigured": "true",
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "559,0",
+        "scrollLine": "0",
+        "docOutlineVisible": "1",
+        "rmdVisualCollapsedChunks": "",
+        "rmdVisualModeLocation": "20354:10784.4443359375",
+        "docOutlineSize": "136"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1724761651,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1724761651136,
+    "read_only": false,
+    "read_only_alternatives": []
+}

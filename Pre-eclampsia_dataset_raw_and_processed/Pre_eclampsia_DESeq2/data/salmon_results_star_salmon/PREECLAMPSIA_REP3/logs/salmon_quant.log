@@ -1,0 +1,766 @@
+[2024-08-15 13:31:10.849] [jointLog] [info] setting maxHashResizeThreads to 6
+[2024-08-15 13:31:10.849] [jointLog] [info] Fragment incompatibility prior below threshold.  Incompatible fragments will be ignored.
+[2024-08-15 13:31:10.849] [jointLog] [info] numQuantThreads = 3
+[2024-08-15 13:31:11.812] [jointLog] [warning] Transcript gene-Gm11207 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:11.839] [jointLog] [warning] Transcript gene-Gm21039 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:11.944] [jointLog] [warning] Transcript gene-Gm38421 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:11.980] [jointLog] [warning] Transcript gene-Gm45925 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.033] [jointLog] [warning] Transcript id-Gm7003 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igha appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd1-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd2-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd2-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd2-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd2-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd2-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd2-8 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd3-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd3-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd4-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd5-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd5-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd5-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd5-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd5-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd5-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd5-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd5-8 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd6-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighd6-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighe appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighg1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighg2b appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighg2c appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighg3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighj1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighj2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighj3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighj4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighm appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-10 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-11 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-12 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-13 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-14 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-15 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-16 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-17 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-17-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-18 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-19 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-19-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-20 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-21 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-21-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-22 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-23 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-24 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-25 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-26 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-27 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-28 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-29 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-30 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-31 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-32 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-33 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-34 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-35 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-36 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-37 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-38 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-39 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-40 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-41 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-42 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-43 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-44 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-45 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-46 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-47 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-48 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-49 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-50 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-51 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-52 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-53 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-54 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-55 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-56 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-57 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-58 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-59 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-60 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-61 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-62 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-62-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-62-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-62-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-63 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-64 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-65 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-66 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-67 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-68 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-69 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-70 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-71 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-72 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-73 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-74 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-75 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-76 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-77 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-78 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-79 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-8 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-80 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-81 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-82 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-83 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-84 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-85 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-86 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv1-9 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv10-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv10-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv10-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv10-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv11-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv11-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv12-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv12-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv12-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv13-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv13-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv14-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv14-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv14-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv14-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv15-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv15-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv16-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv2-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv2-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv2-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv2-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv2-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv2-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv2-6-8 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv2-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv2-8 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv2-9 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv2-9-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv3-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv3-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv3-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv3-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv3-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv3-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv3-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv3-8 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv4-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv4-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-10 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-11 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-12 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-12-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-13 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-15 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-16 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-17 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-18 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-19 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-21 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-8 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-9 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv5-9-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv6-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv6-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv6-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv6-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv6-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv6-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv6-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv7-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv7-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv7-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv7-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-10 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-11 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-12 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-13 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-14 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-15 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-16 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-8 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv8-9 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv9-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv9-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv9-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Ighv9-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkc appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkj1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkj2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkj3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkj4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkj5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-108 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-110 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-115 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-117 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-122 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-131 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-132 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-133 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-135 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-136 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-35 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-88 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv1-99 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv10-94 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv10-95 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv10-96 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv11-106 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv11-114 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv11-118 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv11-125 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv12-38 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv12-40 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv12-41 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv12-42 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv12-44 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv12-46 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv12-47 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv12-49 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv12-66 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv12-67 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv12-89 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv12-98 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-54-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-55-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-56-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-57-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-57-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-61-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-62-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-64 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-71-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-73-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-74-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-76 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-78-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-80-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-82 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-84 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-85 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-87 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv13-89-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv14-100 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv14-111 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv14-118-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv14-118-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv14-126 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv14-126-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv14-130 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv14-134-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv15-101 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv15-101-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv15-102 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv15-103 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv15-97 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv16-104 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv17-121 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv17-127 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv17-134 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv18-36 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv19-93 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv2-105 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv2-107 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv2-109 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv2-112 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv2-113 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv2-116 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv2-137 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv2-93-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv2-95-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv2-95-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv20-101-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-10 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-11 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-12 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-12-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-8 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv3-9 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-50 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-51 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-53 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-54 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-55 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-56 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-57 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-57-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-58 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-59 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-60 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-61 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-62 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-63 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-65 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-68 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-69 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-70 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-71 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-72 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-73 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-74 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-75 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-77 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-78 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-79 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-80 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-81 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-83 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-86 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-90 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-91 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv4-92 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv5-37 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv5-39 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv5-40-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv5-43 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv5-45 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv5-48 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv6-13 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv6-14 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv6-15 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv6-17 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv6-20 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv6-23 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv6-25 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv6-29 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv6-32 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv7-33 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-16 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-18 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-19 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-21 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-22 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-23-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-24 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-26 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-27 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-28 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-30 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-31 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv8-34 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv9-119 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv9-120 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv9-123 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv9-124 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv9-128 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Igkv9-129 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Iglc1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Iglc2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Iglc3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Iglc4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Iglj1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Iglj2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Iglj3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Iglj3p appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Iglj4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Iglv1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Iglv2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.114] [jointLog] [warning] Transcript id-Iglv3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.197] [jointLog] [warning] Transcript gene-LOC100861738 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.893] [jointLog] [warning] Transcript id-Trac appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.893] [jointLog] [warning] Transcript id-Traj1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj11 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj12 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj13 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj14 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj15 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj16 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj17 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj18 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj19 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj20 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj21 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj22 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj23 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj24 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj25 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj26 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj27 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj28 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj29 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj30 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj31 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj32 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj33 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj34 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj35 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj36 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj37 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj38 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj39 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj40 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj41 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj42 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj43 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj44 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj45 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj46 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj47 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj48 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj49 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj50 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj51 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj52 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj53 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj54 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj55 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj56 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj57 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj58 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj59 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj60 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj61 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj8 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.894] [jointLog] [warning] Transcript id-Traj9 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.895] [jointLog] [warning] Transcript id-Trav1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav10 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav10d appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav10n appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav11 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav11d appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav11n appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav12-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav12-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav12-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav12-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav12d-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav12d-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav12d-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav12n-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav12n-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav12n-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13-4-dv7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13d-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13d-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13d-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13d-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13n-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13n-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13n-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav13n-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav14-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav14-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav14-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav14d-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav14d-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav14d-3-dv8 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav14n-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav14n-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav14n-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav15-1-dv6-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav15-2-dv6-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav15-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav15d-1-dv6d-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav15d-2-dv6d-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav15d-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav15n-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav15n-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav15n-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav16 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav16d-dv11 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav16n appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav17 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav18 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav19 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav20 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav21-dv12 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav22 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav23 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav3-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav3-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav3-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav3-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav3d-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav3d-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav3n-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav3n-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav4-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav4-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav4-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav4-4-dv10 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav4d-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav4d-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav4d-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav4n-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav4n-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav5-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav5-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav5-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav5d-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav5d-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav5d-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav5n-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav5n-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav5n-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6-7-dv9 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6d-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6d-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6d-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6d-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6d-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6n-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6n-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav6n-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7d-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7d-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7d-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7d-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7d-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7n-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7n-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav7n-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav8-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav8-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav8d-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav8d-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav8n-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav9-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav9-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav9-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav9d-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav9d-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav9d-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav9d-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav9n-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav9n-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav9n-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trav9n-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbc1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbc2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbd1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbd2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj1-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj1-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj1-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj1-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj1-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj1-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj1-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj2-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj2-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj2-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj2-4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj2-5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj2-6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbj2-7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv10 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv11 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv12-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv12-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv12-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv13-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv13-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv13-3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv14 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv15 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv16 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv17 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv18 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv19 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv20 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv21 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv22 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv23 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv24 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv25 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv26 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv27 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv28 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv29 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv30 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv31 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv8 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trbv9 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trdc appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trdd1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trdd2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trdj1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trdj2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trdv1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trdv2-1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trdv2-2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trdv3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trdv4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trdv5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgc1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgc2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgc3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgc4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgj1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgj2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgj3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgj4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgv1 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgv2 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgv3 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgv4 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgv5 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgv6 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:12.896] [jointLog] [warning] Transcript id-Trgv7 appears in the reference but did not appear in the BAM
+[2024-08-15 13:31:13.075] [jointLog] [info] replaced 0 non-ACGT nucleotides with random nucleotides
+[2024-08-15 13:31:13.200] [fileLog] [info] quantification processed 0 fragments so far
+
+[2024-08-15 13:31:18.172] [fileLog] [info] quantification processed 1000000 fragments so far
+
+[2024-08-15 13:31:23.301] [fileLog] [info] quantification processed 2000000 fragments so far
+
+[2024-08-15 13:31:28.001] [fileLog] [info] quantification processed 3000000 fragments so far
+
+[2024-08-15 13:31:29.104] [jointLog] [info] 
+
+The alignment group queue pool has been exhausted.  11180591 extra fragments were allocated on the heap to saturate the pool.  No new fragments will be allocated
+
+
+[2024-08-15 13:31:38.676] [fileLog] [info] quantification processed 4000000 fragments so far
+
+[2024-08-15 13:31:51.066] [fileLog] [info] quantification processed 5000000 fragments so far
+
+[2024-08-15 13:32:03.148] [fileLog] [info] quantification processed 6000000 fragments so far
+
+[2024-08-15 13:32:15.540] [fileLog] [info] quantification processed 7000000 fragments so far
+
+[2024-08-15 13:32:20.897] [fileLog] [info] quantification processed 8000000 fragments so far
+
+[2024-08-15 13:32:26.169] [fileLog] [info] quantification processed 9000000 fragments so far
+
+[2024-08-15 13:32:31.350] [fileLog] [info] quantification processed 10000000 fragments so far
+
+[2024-08-15 13:32:36.707] [fileLog] [info] quantification processed 11000000 fragments so far
+
+[2024-08-15 13:32:42.082] [fileLog] [info] quantification processed 12000000 fragments so far
+
+[2024-08-15 13:32:47.553] [fileLog] [info] quantification processed 13000000 fragments so far
+
+[2024-08-15 13:32:52.813] [fileLog] [info] quantification processed 14000000 fragments so far
+
+[2024-08-15 13:32:56.971] [fileLog] [info] quantification processed 14784362 fragments so far
+
+[2024-08-15 13:33:07.417] [jointLog] [info] Thread saw mini-batch with a maximum of 4.10% zero probability fragments
+[2024-08-15 13:33:07.422] [jointLog] [info] Thread saw mini-batch with a maximum of 4.20% zero probability fragments
+[2024-08-15 13:33:07.425] [jointLog] [info] Thread saw mini-batch with a maximum of 4.50% zero probability fragments
+[2024-08-15 13:33:07.426] [jointLog] [info] 
+
+
+Completed first pass through the alignment file.
+Total # of mapped reads : 14784362
+# of uniquely mapped reads : 4472285
+# ambiguously mapped reads : 10312077
+
+
+
+[2024-08-15 13:33:07.493] [jointLog] [info] Computed 205123 rich equivalence classes for further processing
+[2024-08-15 13:33:07.493] [jointLog] [info] Counted 14453083 total reads in the equivalence classes 
+[2024-08-15 13:33:07.493] [jointLog] [info] starting optimizer
+[2024-08-15 13:33:07.525] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2024-08-15 13:33:07.531] [jointLog] [info] iteration = 0 | max rel diff. = 6014.06
+[2024-08-15 13:33:08.057] [jointLog] [info] iteration = 100 | max rel diff. = 20.5753
+[2024-08-15 13:33:08.582] [jointLog] [info] iteration = 200 | max rel diff. = 7.55005
+[2024-08-15 13:33:09.105] [jointLog] [info] iteration = 300 | max rel diff. = 3.3802
+[2024-08-15 13:33:09.629] [jointLog] [info] iteration = 400 | max rel diff. = 9.41335
+[2024-08-15 13:33:10.155] [jointLog] [info] iteration = 500 | max rel diff. = 1.89302
+[2024-08-15 13:33:10.680] [jointLog] [info] iteration = 600 | max rel diff. = 17.8365
+[2024-08-15 13:33:11.206] [jointLog] [info] iteration = 700 | max rel diff. = 2.64844
+[2024-08-15 13:33:11.732] [jointLog] [info] iteration = 800 | max rel diff. = 0.366313
+[2024-08-15 13:33:12.261] [jointLog] [info] iteration = 900 | max rel diff. = 1.27493
+[2024-08-15 13:33:12.788] [jointLog] [info] iteration = 1000 | max rel diff. = 0.159962
+[2024-08-15 13:33:13.315] [jointLog] [info] iteration = 1100 | max rel diff. = 0.314574
+[2024-08-15 13:33:13.838] [jointLog] [info] iteration = 1200 | max rel diff. = 0.246247
+[2024-08-15 13:33:14.361] [jointLog] [info] iteration = 1300 | max rel diff. = 0.223286
+[2024-08-15 13:33:14.881] [jointLog] [info] iteration = 1400 | max rel diff. = 0.182362
+[2024-08-15 13:33:15.403] [jointLog] [info] iteration = 1500 | max rel diff. = 0.105052
+[2024-08-15 13:33:15.924] [jointLog] [info] iteration = 1600 | max rel diff. = 0.3186
+[2024-08-15 13:33:16.442] [jointLog] [info] iteration = 1700 | max rel diff. = 0.960457
+[2024-08-15 13:33:16.961] [jointLog] [info] iteration = 1800 | max rel diff. = 0.202936
+[2024-08-15 13:33:17.487] [jointLog] [info] iteration = 1900 | max rel diff. = 0.0731971
+[2024-08-15 13:33:18.028] [jointLog] [info] iteration = 2000 | max rel diff. = 0.0609319
+[2024-08-15 13:33:18.572] [jointLog] [info] iteration = 2100 | max rel diff. = 0.0762465
+[2024-08-15 13:33:19.100] [jointLog] [info] iteration = 2200 | max rel diff. = 0.0434411
+[2024-08-15 13:33:19.626] [jointLog] [info] iteration = 2300 | max rel diff. = 0.998356
+[2024-08-15 13:33:20.151] [jointLog] [info] iteration = 2400 | max rel diff. = 1.79453
+[2024-08-15 13:33:20.677] [jointLog] [info] iteration = 2500 | max rel diff. = 0.0375351
+[2024-08-15 13:33:21.198] [jointLog] [info] iteration = 2600 | max rel diff. = 0.0833494
+[2024-08-15 13:33:21.737] [jointLog] [info] iteration = 2700 | max rel diff. = 0.01764
+[2024-08-15 13:33:22.309] [jointLog] [info] iteration = 2800 | max rel diff. = 0.0163786
+[2024-08-15 13:33:22.651] [jointLog] [info] iteration = 2862 | max rel diff. = 0.00889078
+[2024-08-15 13:33:22.657] [jointLog] [info] finished optimizer
+[2024-08-15 13:33:22.657] [jointLog] [info] writing output
+[2024-08-15 13:33:24.012] [jointLog] [info] Computing gene-level abundance estimates
+[2024-08-15 13:33:39.883] [jointLog] [info] There were 141898 transcripts mapping to 43527 genes
+[2024-08-15 13:33:39.883] [jointLog] [info] NOTE: We recommend using tximport (https://bioconductor.org/packages/release/bioc/html/tximport.html) for aggregating transcript-level salmon abundance estimates to the gene level.  It is more versatile, exposes more features, and allows considering multi-sample information during aggregation.
+[2024-08-15 13:33:39.983] [jointLog] [info] Aggregating expressions to gene level
+[2024-08-15 13:33:40.032] [jointLog] [info] done

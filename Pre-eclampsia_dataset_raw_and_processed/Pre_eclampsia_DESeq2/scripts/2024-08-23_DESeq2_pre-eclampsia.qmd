@@ -1,0 +1,578 @@
+---
+title: "2024-08-22_DESeq2_pre-eclampsia.R"
+author: "Ioana Weber"
+format: html
+editor: visual
+---
+
+# Aim
+
+See how many of the results in terms of DEGs I can validate from [Liu et al., 2023](https://www.life-science-alliance.org/content/6/8/e202301957).
+
+## Authors' analyses from source publication
+
+"the clean reads were obtained and aligned to the mouse genome (mm10, NCBI) using **Hisat2** ([82](https://www.life-science-alliance.org/content/6/8/e202301957#ref-82)). **HTSeq** was applied to obtain gene counts, and gene expression was determined using the RPKM method ([83](https://www.life-science-alliance.org/content/6/8/e202301957#ref-83))."
+
+"For the analysis of DEGs, the **EBSeq algorithm** ([85](https://www.life-science-alliance.org/content/6/8/e202301957#ref-85)) was applied to filter DEGs, after the significant analysis, *P*-value, and false discovery rates (FDRs) were calculated. The following criteria were used: (i) **log2(fold change) \>0.585 or \<−0.585** for E17.5 RNA-seq and \>0.263 or \<−0.263 for adult hippocampus RNA-seq; and (ii) FDR\<0.05 ([86](https://www.life-science-alliance.org/content/6/8/e202301957#ref-86))."
+
+By setting these criteria, the authors found a total of 256 DEGs with log2FCs between -4.61 and 4.68 (0,04 to 25-fold change). They set cutoffs at 0.585 and -0.585, which corresponds to a 1.5-fold increase or decrease down to 66%, respectively.
+
+I am not convinced by the authors' use of EBSeq instead of DESeq2. Its latest update is 8 years ago, whereas DESeq2 is regularly maintained (last update is from a month ago, July 2024). Additionally, it uses RPKM, which is suitable for intra-sample gene expression level comparison, but NOT for DEG analysis between samples. EBSeq does have the advantage of having been developed specifically for identifying alternative transcript usage, so not just at the gene expression level, but it performs better on complex experimental setups (multiple intra- and inter-subject comparisons), whereas DESeq can also perform transcript-level analysis if the txi object it uses is previously generated with the "txOut = TRUE" argument. Interestingly, the authors still report their results at gene level, not transcript level.
+
+`txi <- tximport(files, type = "salmon", txOut = TRUE)`
+
+EBSeq:
+
+| : <https://academic.oup.com/bioinformatics/article/29/8/1035/228913>
+| and <https://bioconductor.org/packages/release/bioc/html/EBSeq.html>
+| Tutorial: <https://github.com/lengning/EBSeq>
+
+**"GO analysis** was performed to facilitate elucidating the biological implications of the DEGs in the experiment. DEGs in the cortices of E17.5 embryos exposed to PE were compared with the genes in the Human Gene module of Simons Foundation for Autism Research Initiative using enrichment analysis via **phyper function in R**."
+
+# Preparations
+
+## Install packages if needed
+
+```{r}
+# if (!require("BiocManager", quietly = TRUE))
+#   install.packages("BiocManager")
+# 
+# BiocManager::install("DESeq2") # commonly used package for DEG analysis, easily handles Salmon quantification quant.sf files
+# BiocManager::install("tximport") # a package used to create tables of genes and their corresponding transcripts
+# BiocManager::install("readr") # a package DESeq2 needs to run faster
+# BiocManager::install("apeglm") # a package DESeq2 uses in order to generate a log fold shrinkage for the differential expression values
+# BiocManager::install("EBSeq") # the DEG analysis package that the authors of the original publication used
+ #pacman::p_install(htmlwidgets)
+#pacman::p_install(rsconnect)
+```
+
+## Load packages, test for and resolve conflicts between functions of same name from different packages
+
+```{r}
+pacman::p_load(DESeq2,
+               tximport,
+               readr,
+               readxl,
+               plotly,
+               conflicted,
+               tidyverse,
+               ggplot2,
+               EBSeq,
+               htmlwidgets,
+               rsconnect)
+
+conflict_scout()
+
+conflicts_prefer(dplyr::filter,
+                 plotly::layout)
+```
+
+# If DESeq2 quantification performed previously: load results (uncomment as needed)
+
+```{r}
+my_DESeqGene_result <- readRDS("./results/my_DESeq_result_gene-level.rds")
+```
+
+# Sample sheet and tx2gene import
+
+Import a sample sheet that describes paths to experiments and conditions, quant.sf (Salmon quantification) files and tx2gene file stemming from the rnasplice pipeline.
+
+```{r}
+
+my_samples <- read_excel("./data/2024-08-23_pre-eclampsia_samples_for_DESeq.xlsx")
+
+my_tx2gene <- read.csv("./data/GCF_000001635.27_GRCm39_genomic_PREFIXES.tx2gene.tsv", sep = "\t", header = FALSE) # set header to FALSE because I otherwise lose the first row!
+
+
+```
+
+# Filling out data structures for DESeq2 (gene-level)
+
+```{r}
+# txi object
+my_txi <- tximport(files = my_samples$file, type = "salmon", tx2gene = my_tx2gene)
+
+
+# DESeqDataSet
+my_ddsTxi <- DESeqDataSetFromTximport(my_txi, colData = my_samples, design = ~ condition)
+
+# set factor levels so that CONTROL is the referemce
+my_ddsTxi$condition <- factor(my_ddsTxi$condition, levels = c("CONTROL","PREECLAMPSIA"))
+```
+
+## Pre-filter transcripts with \<10 reads per sample
+
+```{r}
+
+# Set which rows should be pre-filtered (generates matrix of same size as my_ddsTxi filled with Booleans everywhere where the read counts are larger than ten, then sums them up per condition to make sure all samples of that condition have more than 10 reads for that gene - results in 4x TRUE if all four samples meet the condition, which is interpreted as 4*1 = 4. The TRUE/FALSE result for the row overall is stored in  a vector, keep, which indicates using TRUE or FALSE if the row with that gene kept.)
+keep <- rowSums(counts(my_ddsTxi) >= 10) >= 4 # Sets the smallest group size - we have 4 samples in control group, 4 samples in treatment group
+
+# Initial number of transcripts in the dataset was 42,855
+my_dds_filtered <- my_ddsTxi[keep,]
+# After filtering weakly expressed transcripts: 15,245 left
+
+```
+
+## If needed, remove "gene-", "rna-" identifiers from the dataset
+
+```{r}
+# check if rownames have prefixes
+head(rownames(my_dds_filtered))
+
+# Extract the row names (gene or transcript identifiers)
+rownames_original <- rownames(my_dds_filtered)
+
+# Use gsub() to remove the prefixes "gene-", "id-", or "rna-"
+rownames_modified <- gsub("^(gene-|id-|rna-)", "", rownames_original)
+
+# Reassign the modified row names back to the ddsTxi object
+rownames(my_dds_filtered) <- rownames_modified
+
+# check if prefixes were removed from rownames
+head(rownames(my_dds_filtered))
+```
+
+# Run DESeq2 for gene-level analysis
+
+## Calculate log2 fold changes (gene-level)
+
+...and do post-hoc testing using Benjamini-Hochberg correction. Indicate that PREECLAMPSIA should be compared to reference CONTROL.
+
+```{r}
+my_DESeq_gene <- DESeq(my_dds_filtered) # raw log2 FC values with nominal p values
+
+resultsNames(my_DESeq_gene) # lists the coefficients, in my case: "Intercept" and "condition_PREECLAMPSIA_vs_CONTROL"
+
+# create a proper result, using FDR/Benjamini-Hochberg to correct p values for multiple comparisons
+my_DESeqGene_result <- results(my_DESeq_gene,
+                           pAdjustMethod = "BH",
+                           contrast = c("condition",
+                                        "PREECLAMPSIA",
+                                        "CONTROL"
+                                        )
+                           )
+
+head(my_DESeqGene_result)
+
+# create RDS object out of the DESeq2 gene result to be able to easier retrieve result later
+saveRDS(my_DESeqGene_result, file = "./results/my_DESeq_result_gene-level.rds")
+
+# Describe columns of the DeSeq2 gene-level results object
+mcols(my_DESeqGene_result)$description
+```
+
+## Explore how many values have valid adjusted p values (FDR) (gene-level)
+
+```{r}
+
+# how many of the genes have padj=NA?
+nr_padj_na <- sum(is.na(my_DESeqGene_result$padj)) # 2,071 of 15,245
+
+# data.frame showing distribution
+padj_status <- data.frame(
+  Status = c("Valid padj", "NA padj"),
+  Count = c(sum(!is.na(my_DESeqGene_result$padj)),
+            sum(is.na(my_DESeqGene_result$padj)))
+)
+
+# Print the data frame to check the counts
+print(padj_status)
+
+# Create a ggplot bar plot
+valid_padjGene_plot <- ggplot(padj_status, aes(x = Status, y = Count, fill = Status)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Valid padj" = "seagreen3", "NA padj" = "red4")) +
+  labs(
+    title = "Number of Genes with padj (FDR) = NA vs Valid padj (FDR)",
+    x = "padj Status",
+    y = "Number of Genes"
+  ) +
+  theme_minimal()+
+  theme(
+    text = element_text(size = 18),
+    plot.title = element_text(size = 14, hjust = 0.5)
+  )
+
+# Save the plot
+ggsave(filename = "./plots/valid_padjGene_afterDESeq2_plot.png",
+       plot = valid_padjGene_plot,
+       width = 6,
+       height = 8,
+       dpi = 300,
+       bg = "white")
+
+
+```
+
+## **Log fold change (LFC) shrinkage for visualization and ranking** (gene-level)
+
+See <https://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#log-fold-change-shrinkage-for-visualization-and-ranking> and <https://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#alternative-shrinkage-estimators>
+
+```{r}
+# get name of contrast from the DESeq_result object, which needs to be used as coefficient for the lfcShrink function
+resultsNames(my_DESeq_gene) #"condition_PREECLAMPSIA_vs_CONTROL"
+
+my_DESeqGeneLFC_result <-  lfcShrink(my_DESeq_gene,
+                        coef="condition_PREECLAMPSIA_vs_CONTROL",
+                        type="apeglm")
+
+head(my_DESeqGeneLFC_result)
+```
+
+# Explore results DESeq2 (gene-level analysis)
+
+## Summaries and signficant results for raw results dataset
+
+```{r}
+# See a summary of results
+summary(my_DESeqGene_result)
+
+```
+
+out of 15,245 with nonzero total read count
+
+-   adjusted p-value \< 0.1
+
+-   LFC \> 0 (up) : 1891, 12%
+
+-   LFC \< 0 (down) : 1666, 11%
+
+-   outliers \[1\] : 3, 0.02%
+
+-   low counts \[2\] : 2068, 14%
+
+-   (mean count \< 31)
+
+```{r}
+
+# How many genes have a corrected p-value below 0.05?
+sum(my_DESeqGene_result$padj < 0.05, na.rm= TRUE) # 2758
+
+
+# Extract significant results and sort them by the adjusted p-value
+my_DESeqGene_result_sig <- my_DESeqGene_result[
+  which(my_DESeqGene_result$padj<0.05),
+  ]
+
+my_DESeqGene_result_sig <- my_DESeqGene_result_sig[
+  order(my_DESeqGene_result_sig$padj),
+  ]
+
+# Save significant values as .csv
+write.csv(my_DESeqGene_result_sig, file = "./results/Pre-eclampsia_vs_control_significant_gene-level.csv", row.names = T)
+
+# Check normalization - creates a matrix of the normalized counts
+# norm_counts <- counts(dds.filtered.analysis, normalized = TRUE)
+# nonnorm_counts <- counts(dds.filtered.analysis, normalized = FALSE) # counts as they were input to DESeq2 (the DESeq object retains both info)
+```
+
+## Summaries and signficant results for LFC-shrunk results dataset
+
+```{r}
+# See a summary of results
+summary(my_DESeqGeneLFC_result)
+
+```
+
+out of 15,245 with nonzero total read count
+
+-   adjusted p-value \< 0.1
+
+-   LFC \> 0 (up) : 1891, 12%
+
+-   LFC \< 0 (down) : 1666, 11%
+
+-   outliers \[1\] : 3, 0.02%
+
+-   low counts \[2\] : 2068, 14%
+
+-   (mean count \< 31)
+
+The results look identical so far, so I won't look further into the LFC-shrunk dataset.
+
+```{r}
+
+# How many genes have a corrected p-value below 0.05?
+sum(my_DESeqGeneLFC_result$padj < 0.05, na.rm= TRUE) # 2758
+
+
+# Extract significant results and sort them by the adjusted p-value
+my_DESeqGeneLFC_result_sig <- my_DESeqGeneLFC_result[
+  which(my_DESeqGeneLFC_result$padj<0.05),
+  ]
+
+my_DESeqGeneLFC_result_sig <- my_DESeqGeneLFC_result_sig[
+  order(my_DESeqGeneLFC_result_sig$padj),
+  ]
+
+# Save significant values as .csv
+write.csv(my_DESeqGeneLFC_result_sig, file = "./results/Pre-eclampsia_vs_control_significant_LFC_gene-level.csv", row.names = T)
+
+```
+
+## Plots DESeq2 (gene-level analysis)
+
+### DESeq2 MA plot of raw results
+
+I used the default plotting function of the DESeq2 package, but realized that I'd prefer something interactive, where I can click on data points that pique my interest and immediately see which genes they represent
+
+```{r}
+plotMA(my_DESeqGene_result,
+       ylim = c(-2,2))
+
+# this activates an interactive selection tool for displaying names of the data points you click on in the plot, but it only shows the row number, not the actual gene name. The gene name solely gets displayed in the console after closing the interactive mode with esc.
+indices <- identify(my_DESeqGene_result$baseMean, my_DESeqGene_result$log2FoldChange)
+rownames(my_DESeqGene_result)[indices]
+```
+
+### Plotly interactive MA plot of raw results
+
+```{r}
+# Convert the results to a data frame
+resGene_tib <- as_tibble(rownames_to_column(as.data.frame(my_DESeqGene_result), var = "gene"))
+
+# Add a significance column to store whether values are above or below the 0.05 cutoff
+resGene_tib$significance <- ifelse(resGene_tib$padj < 0.05,
+                                  "p adj. < 0.05",
+                                  "p adj. >= 0.05")
+
+# Create the interactive plot
+plotly_MA_plot_raw <- plot_ly(data = resGene_tib,
+                x = ~log2(baseMean), 
+                y = ~log2FoldChange, 
+                text = ~gene,  # Gene names will appear when hovering
+                mode = 'markers', 
+                marker = list(size = 6), # Set the size of the points
+                color = ~significance,  # Color points based on the color column
+                colors = c("seagreen3","gray"),  # Define the colors used
+                type = 'scatter', 
+                hoverinfo = 'text') |>  # Show only gene names on hover
+  plotly::layout(
+    title = "Interactive MA Plot differential gene expression preeclampsia vs control",
+    xaxis = list(title = "Log2 Mean Expression"),
+    yaxis = list(title = "Log2 Fold Change"),
+    legend = list(title = list(text = "Significance"))
+  )
+
+# Customize the layout
+# my_plot <- my_plot |>
+#   layout(title = "Interactive MA Plot",
+#          xaxis = list(title = "Log2 Mean Expression"),
+#          yaxis = list(title = "Log2 Fold Change"))
+
+# Display the plot
+#options(viewer = NULL)
+# toggle between this one and one below if wanting to see plot in browser vs in RStudio's viewer window
+options(viewer = rstudioapi::viewer)
+print(plotly_MA_plot_raw)
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(plotly_MA_plot_raw), "./plots/plotly_MA_plot_raw.html")
+
+```
+
+### Plotly interactive volcano plot of raw results
+
+```{r}
+
+# Add a column for -log10(padj)
+resGene_tib$`-log10padj` <- -log10(resGene_tib$padj)
+
+# Add a column for regulation based on log2FoldChange and significance (padj < 0.05)
+resGene_tib <- resGene_tib |>
+  mutate(
+    regulation = case_when(
+      padj < 0.05 & log2FoldChange > 0.585  ~ "upregulated",
+      padj < 0.05 & log2FoldChange < -0.585 ~ "downregulated",
+      TRUE ~ "not significant"
+    )
+  )
+
+# In the initial plotting process, got a warning that said "Ignoring 2071 observations", which is likely due to NA values in the "significance" or "regulation" columns. Find which and how many rows are lost due to NA values:
+resGene_tib_NA <- resGene_tib |>
+filter(is.na(resGene_tib$regulation) | is.na(resGene_tib$significance)) # 2071 rows indeed
+
+# how many data points actually plotted
+(plottable_points <- nrow(resGene_tib)-nrow(resGene_tib_NA))
+
+# Create the volcano plot (all values, will ignore NAs)
+Gene_raw_volcano_plot <- plot_ly(
+  data = resGene_tib,
+  x = ~log2FoldChange, 
+  y = ~`-log10padj`, 
+  text = ~gene,  # Text to show on hover
+  mode = 'markers',
+  marker = list(size = 6, opacity = 0.5),  
+  color = ~regulation,  # Use regulation column for colors
+  colors = c("darkred", "lightgray","skyblue3"),  # Light gray for not significant, red for significant and downregulated, blue for significant and  upregulated
+   type = 'scatter', 
+  hoverinfo = 'text'
+) |>
+  plotly::layout(
+    title = paste("DEGs from my DESeq2data (", plottable_points, " points plotted)", sep = ""),
+    xaxis = list(title = "Log2(Fold Change)"),
+    yaxis = list(title = "-Log10(Adjusted P-Value (FDR))"),
+    legend = list(title = list(text = "Regulation"))
+  )
+
+# Display the plot
+Gene_raw_volcano_plot
+
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(Gene_raw_volcano_plot), "./plots/Gene_raw_volcano_plot.html")
+
+# create filtered tibble of significantly up- and downregulated genes
+resGene_tib_sigUpDn <- resGene_tib |>
+filter(resGene_tib$regulation != "not significant")
+
+# export significantly up- and downregulated genes
+write.csv(resGene_tib_sigUpDn, file = "./results/Pre-eclampsia_vs_control_significant_UpDn_gene-level.csv", row.names = T)
+
+```
+
+### Check which of the data points in my significantly up- or downregulated genes show up in the DEGs reported by publication authors
+
+```{r}
+# Read in CSV with DEGs reported in publication (only those with 0.585 > log2FC < -0.585 and FDR < 0.05)
+publication_DEGs <- as_tibble(read.csv("./data/PE-paper-DEGs-ONLY-embryonic-cortex.csv"))
+
+# Add a column in my tibble for whether gene name found in other table
+resGene_tib <- resGene_tib |> mutate(
+  inPublication = gene %in% publication_DEGs$AccID)
+
+# How many genes from the paper are present in my analysis?
+(nr_genes_pub <- sum(resGene_tib$inPublication == TRUE, na.rm = TRUE)) # 182 of the 255 genes found in the publication are also present in the results of my analysis
+
+# Data frame for plotting how many DEGs from publication present in my result
+publication_overlap_status <- data.frame(
+  Status = c("Present", "Absent"),
+  Count = c(nr_genes_pub,
+            nrow(publication_DEGs)-nr_genes_pub
+            )
+)
+
+# Print the data frame to check the counts
+print(publication_overlap_status)
+
+# Create a ggplot bar plot
+overlap_publication_plot <- ggplot(publication_overlap_status,
+       aes(x = Status,
+           y = Count,
+           fill = Status)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(
+    values = c("Present" = "seagreen3", "Absent" = "red4")) +
+  labs(
+    title = "Number of DEGs detected in publication that are present in my DESeq2 results",
+    x = "Status",
+    y = "Number of DEGs"
+  ) +
+  theme_minimal()+
+  theme(
+    text = element_text(size = 18),
+    plot.title = element_text(size = 14, hjust = 0.5)
+  )
+
+# Save the plot
+ggsave(filename = "./plots/Overlap_publicationVSmy_DEGs.png",
+       plot = overlap_publication_plot,
+       width = 6,
+       height = 8,
+       dpi = 300,
+       bg = "white")
+
+```
+
+### Plotly interactive volcano plot of raw results with overlap publication results
+
+```{r}
+
+# Add a new trace (layer) to the original volcano plot from the raw data to include strokes (contours) for the data points that are also present in the published dataset
+
+Gene_raw_volcano_overlap <- Gene_raw_volcano_plot |>
+  add_trace(
+    x = NA, y = NA,  # Invisible trace
+    mode = 'markers',
+    marker = list(
+      size = 2.5,
+      color = 'pink',
+      line = list(width = 0.5)
+    ),
+    showlegend = TRUE,
+    name = "In both datasets"  # Legend entry for the contour
+  )
+
+Gene_raw_volcano_overlap <- Gene_raw_volcano_plot |>
+  add_trace(
+    data = resGene_tib[resGene_tib$inPublication == TRUE, ],
+    x = ~log2FoldChange, 
+    y = ~`-log10padj`, 
+    text = ~gene,  # Text to show on hover
+    mode = 'markers',
+    marker = list(
+      size = 2.5,  # Adjust point size
+      color = 'black',  # Use regulation column for colors
+      #colors = c("darkred", "lightgray","skyblue3"),
+      #stroke = list(width = 1.5, color='cyan'),
+      opacity = 1
+    ),
+    hoverinfo = 'text',
+    showlegend = FALSE
+  ) |>
+   layout(
+    title = paste("Overlap publication DEGs with my DEGs.\nDark center = reported in publication", sep=""),
+    xaxis = list(title = "Log2(Fold Change)"),
+    yaxis = list(title = "-Log10(Adjusted P-Value (FDR))"),
+    legend = list(title = list(text = "Regulation and Dataset"))
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(Gene_raw_volcano_overlap), "./plots/Gene_raw_volcano_overlap.html")
+
+```
+
+### Label data points validated in the publication (wet lab)
+
+```{r}
+
+# Extract a mini tibble with the data for the genes the authors have validated in the paper 
+points_to_label <- resGene_tib[resGene_tib$gene %in% c("Grin2a","Grin2b","Ube2c","Celsr1","Kif18","Creb5", "Gli2", "Plk1"), ] # Kif18 not found in my data
+
+# Create a plot that has persistent labels for the data points associated with these genes
+Gene_raw_volcano_overlap_labels <- Gene_raw_volcano_overlap |>
+  layout(title = paste("Overlap publication DEGs with my DEGs.\nPersistent labels = validated in publication.\nDark center = reported in publication", sep="")) |>
+  add_annotations(
+    x = points_to_label$log2FoldChange,
+    y = points_to_label$`-log10padj`,
+    text = points_to_label$gene,
+    showarrow = TRUE,
+    arrowhead = 1,
+    ax = 20,
+    ay = -40
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(Gene_raw_volcano_overlap_labels), "./plots/Gene_raw_volcano_overlap_labels.html")
+  
+```
+
+# TO DO: PCA analysis samples
+
+# Copy results to Shiny app www folder
+
+```{r}
+# Define paths
+source_folder <- "./plots"
+destination_folder <- "./results/Shiny_app_DESeq2_results/www"
+
+# Copy files from source to destination
+file.copy(list.files(source_folder, full.names = TRUE), destination_folder, overwrite = TRUE)
+
+```
+
+# Deploy app ONLINE (uncomment when ready to publish)
+
+```{r}
+#rsconnect::deployApp('results/Shiny_app_DESeq2_results')
+```

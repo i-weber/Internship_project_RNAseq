@@ -1,0 +1,16 @@
+{
+    "dialog-state": {
+        "query": "hjust",
+        "path": "D:/OneDrive/03-Skill development and educational/Applied Bioinformatics/4_2_R_programming/All relevant R stuff, data and scripts/scripts",
+        "regex": false,
+        "caseSensitive": false,
+        "wholeWord": false,
+        "filePatterns": [],
+        "useGitGrep": true,
+        "excludeGitIgnore": true,
+        "excludeFilePatterns": [],
+        "resultsCount": 20,
+        "errorCount": 0,
+        "replaceErrors": ""
+    }
+}

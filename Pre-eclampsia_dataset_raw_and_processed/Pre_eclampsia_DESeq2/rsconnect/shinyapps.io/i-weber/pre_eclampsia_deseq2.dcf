@@ -1,0 +1,10 @@
+name: pre_eclampsia_deseq2
+title:
+username: i-weber
+account: i-weber
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12530852
+bundleId: 9030246
+url: https://i-weber.shinyapps.io/pre_eclampsia_deseq2/
+version: 1

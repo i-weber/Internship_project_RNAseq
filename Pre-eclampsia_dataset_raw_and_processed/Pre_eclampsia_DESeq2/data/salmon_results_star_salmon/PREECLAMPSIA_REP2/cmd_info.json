@@ -1,0 +1,10 @@
+{
+    "salmon_version": "1.10.1",
+    "geneMap": "GCF_000001635.27_GRCm39_genomic.gtf",
+    "threads": "6",
+    "libType": "ISR",
+    "targets": "genome.transcripts.fa",
+    "alignments": "PREECLAMPSIA_REP2.Aligned.toTranscriptome.out.bam",
+    "output": "PREECLAMPSIA_REP2",
+    "auxDir": "aux_info"
+}
