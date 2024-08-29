@@ -59,7 +59,8 @@ pacman::p_load(DESeq2,
                ggplot2,
                EBSeq,
                htmlwidgets,
-               rsconnect)
+               rsconnect,
+               wrappedtools)
 
 conflict_scout()
 
@@ -75,7 +76,7 @@ my_DESeqGene_result <- readRDS("./results/my_DESeq_result_gene-level.rds")
 
 # Sample sheet and tx2gene import
 
-Import a sample sheet that describes paths to experiments and conditions, quant.sf (Salmon quantification) files and tx2gene file stemming from the rnasplice pipeline.
+Import a sample sheet that describes paths to experiments and conditions, quant.sf (Salmon quantification) files and tx2gene file stemming from the rnasplice pipeline. The tx2gene file is generated from the genome annotation and is a relational table describing which transcripts stem from which genes.
 
 ```{r}
 
@@ -98,6 +99,191 @@ my_ddsTxi <- DESeqDataSetFromTximport(my_txi, colData = my_samples, design = ~ c
 
 # set factor levels so that CONTROL is the referemce
 my_ddsTxi$condition <- factor(my_ddsTxi$condition, levels = c("CONTROL","PREECLAMPSIA"))
+```
+
+# Explore raw, non-normalized read counts from the ddsTxi object
+
+```{r}
+raw_counts_matrix <- counts(my_ddsTxi)
+
+raw_nonnorm_counts <- counts(my_ddsTxi, normalized = FALSE)
+```
+
+Remove prefixes from gene names
+
+```{r}
+# Extract the row names (gene or transcript identifiers)
+rownames_original <- rownames(raw_counts_matrix)
+
+# Use gsub() to remove the prefixes "gene-", "id-", or "rna-"
+rownames_modified <- gsub("^(gene-|id-|rna-)", "", rownames_original)
+
+# Reassign the modified row names back to the counts matrix
+rownames(raw_counts_matrix) <- rownames_modified
+```
+
+Is there any difference between the two count matrices?
+
+```{r}
+difference_matrix <- raw_counts_matrix - raw_nonnorm_counts
+
+heatmap_plot <- plot_ly(
+  x = colnames(difference_matrix),  # Samples
+  y = rownames(difference_matrix),  # Genes
+  z = difference_matrix,  # Difference in counts
+  type = "heatmap",
+  colorscale = "Viridis",  # Use the Viridis color scale
+  colorbar = list(title = "Count Difference"),
+  hoverinfo = "x+y+z",  # Show x, y, and z values on hover
+  showscale = TRUE
+) %>%
+  layout(
+    title = list(
+      text = "Heatmap of Differences Between Count Matrices",
+      font = list(size = 14),  # Adjust title font size
+      y = 0.95,  # Position title above the plot area
+      x = 0.5,
+      xanchor = "center",
+      yanchor = "top"
+    ),
+    xaxis = list(title = "Samples"),
+    yaxis = list(title = "Genes")
+  )
+
+# Display the heatmap
+heatmap_plot
+
+```
+
+Conclusion: what the ddsTxi object stores is the non-normalized counts, so no need to specify that separately. So I will work with the raw_nonnorm_counts matrix from here on.
+
+```{r}
+# Reassign the modified row names back to the counts matrix
+rownames(raw_nonnorm_counts) <- rownames_modified
+```
+
+### Summed read counts
+
+Getting tibbles of total counts and log2 transformed counts for each sample:
+
+```{r}
+# get the proper sample names from the ddsTxi object to replace the default names of the raw_nonnorm_counts column
+colnames(raw_nonnorm_counts) <- my_ddsTxi@colData$sample
+
+# create a named vector from the sums of counts per column (sample)
+count_sums_vector <- colSums(raw_nonnorm_counts)
+
+# get a raw counts tibble (transpose the named vector of count sums resutling by colSums and convert without doing anything to the names)
+total_raw_counts <- as_tibble(t(count_sums_vector), .name_repair = "minimal") |> rename_with(~colnames(raw_nonnorm_counts))
+
+# create a named vector of the log2 transformed sum of counts (+1 to avoid issues where counts are 0)
+log2count_sums_vector <- colSums(log2(raw_nonnorm_counts+1))
+
+log2_total_raw_counts <- as_tibble(t(log2count_sums_vector), .name_repair = "minimal") |> rename_with(~colnames(raw_nonnorm_counts))
+
+
+# Pivot the two tibbles longer for easier plotting
+total_raw_counts_long <- pivot_longer(total_raw_counts, cols = everything(), names_to = "Sample", values_to = "TotalCounts")
+
+log2_total_raw_counts_long <- pivot_longer(log2_total_raw_counts, cols = everything(), names_to = "Sample", values_to = "log2TotalCounts")
+
+# Create an interactive bar plot for total raw counts
+total_raw_counts_plot <- plot_ly(
+  data = total_raw_counts_long,
+  x = ~Sample, 
+  y = ~TotalCounts, 
+  type = 'bar',
+  hoverinfo = 'y', # show y value on hover
+  textposition = 'none', # make sure no text within bars
+  marker = list(color = 'rgba(50, 171, 96, 0.6)', width = 1)
+) |>
+  layout(
+    title = "Total Raw Counts per Sample",
+    xaxis = list(title = "Sample"),
+    yaxis = list(title = "Total Counts")
+  )
+
+# Display the plot
+total_raw_counts_plot
+
+
+# Create an interactive bar plot for log-transformed raw counts
+log2_total_raw_counts_plot <- plot_ly(
+  data = log2_total_raw_counts_long,
+  x = ~Sample, 
+  y = ~log2TotalCounts, 
+  type = 'bar',
+  #text = ~paste("Sample:", Sample, "<br>Total Counts:", TotalCounts), 
+  hoverinfo = 'y',
+  textposition = 'none', # make sure no text within bars
+  marker = list(color = 'rgba(119, 95, 128, 0.6)', width = 1)
+) |>
+  layout(
+    title = "log2(Total Raw Counts) per Sample",
+    xaxis = list(title = "Sample"),
+    yaxis = list(title = "log2(Total Counts)")
+  )
+
+# Display the plot
+log2_total_raw_counts_plot
+
+```
+
+### Distribution of read counts, raw and log-transformed
+
+```{r}
+# generate matrix where raw counts are log-transformed
+log2_counts <- log2(raw_nonnorm_counts+1)
+
+# turn the raw_nonnorm_counts and log2_counts matrices into tibbles to be able to pivot them
+raw_nonnorm_counts_tib <- as_tibble(raw_nonnorm_counts, rownames = "Gene")
+
+log2_counts_tib <- as_tibble(log2_counts, rownames = "Gene")
+```
+
+Actual violin plots:
+
+```{r}
+# Pivot the two tibbles longer for easier plotting
+raw_nonnorm_counts_long <- pivot_longer(raw_nonnorm_counts_tib,
+                                         cols = -Gene,
+                                         names_to = "Sample",
+                                         values_to = "Counts")
+
+log2_counts_long <- pivot_longer(log2_counts_tib,
+                                 cols = -Gene,
+                                 names_to = "Sample",
+                                 values_to = "log2Counts")
+
+
+# Generate interactive violin plots from the long tibbles
+
+plot_violin_raw_counts <- plot_ly(
+  data = raw_nonnorm_counts_long,
+  x = ~Sample,
+  y = ~Counts,
+  type = 'violin',
+  color = ~Sample,
+  box = list(visible = TRUE),  # optional boxplot inside the violin plot
+  meanline = list(visible = TRUE),  # optional line for the mean
+  #points = "all",  # Show all data points
+  #jitter = 0.3,  # if showing all data points, add some jitter to points for better visibility
+  bandwidth = 125, #...or else KDE is calculated in a way that makes values around 300 counts plot on 0 on the y axis instead of at their real value (it oversmoothes the curves)
+  hoverinfo = 'text',  # Display y-value and additional text on hover
+  text = ~paste(Gene, "<br>Count:", Counts),
+  showlegend = FALSE
+) |>
+  layout(
+    title = "Distribution of Read Counts per Gene and Sample",
+    yaxis = list(title = "Raw Counts",
+                 range = c(0, NA))
+    
+  )
+
+# I have a persistent issue here with values that are around 300 centering on 0 in the plot. Apparently, this is a function of how Plotly handles KDE bandwidth, but this is  
+
+
+plot_violin_log2_counts
 ```
 
 ## Pre-filter transcripts with \<10 reads per sample
@@ -159,6 +345,12 @@ saveRDS(my_DESeqGene_result, file = "./results/my_DESeq_result_gene-level.rds")
 
 # Describe columns of the DeSeq2 gene-level results object
 mcols(my_DESeqGene_result)$description
+```
+
+## Explore normalized counts of the DESeq result object
+
+```{r}
+norm_counts <- counts(my_DESeqGene_result, normalized = TRUE)
 ```
 
 ## Explore how many values have valid adjusted p values (FDR) (gene-level)
@@ -564,7 +756,7 @@ saveWidget(as_widget(Gene_raw_volcano_overlap_labels), "./plots/Gene_raw_volcano
 ```{r}
 # Define paths
 source_folder <- "./plots"
-destination_folder <- "./results/Shiny_app_DESeq2_results/www"
+destination_folder <- "./results/Shiny_app_rnasplice_results/www"
 
 # Copy files from source to destination
 file.copy(list.files(source_folder, full.names = TRUE), destination_folder, overwrite = TRUE)
@@ -574,5 +766,5 @@ file.copy(list.files(source_folder, full.names = TRUE), destination_folder, over
 # Deploy app ONLINE (uncomment when ready to publish)
 
 ```{r}
-#rsconnect::deployApp('results/Shiny_app_DESeq2_results')
+#rsconnect::deployApp('results/Shiny_app_rnasplice_results')
 ```
