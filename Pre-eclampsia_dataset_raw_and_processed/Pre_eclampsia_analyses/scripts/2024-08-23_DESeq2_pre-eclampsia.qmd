@@ -259,7 +259,7 @@ my_DESeqGene_result_sig <- my_DESeqGene_result_sig[
   ]
 
 # Save significant values as .csv
-write.csv(my_DESeqGene_result_sig, file = "./results/Pre-eclampsia_vs_control_significant_gene-level.csv", row.names = T)
+write.csv(my_DESeqGene_result_sig, file = "./results/DESeq2_significant_gene-level.csv", row.names = T)
 
 # Check normalization - creates a matrix of the normalized counts
 # norm_counts <- counts(dds.filtered.analysis, normalized = TRUE)
@@ -306,7 +306,7 @@ my_DESeqGeneLFC_result_sig <- my_DESeqGeneLFC_result_sig[
   ]
 
 # Save significant values as .csv
-write.csv(my_DESeqGeneLFC_result_sig, file = "./results/Pre-eclampsia_vs_control_significant_LFC_gene-level.csv", row.names = T)
+write.csv(my_DESeqGeneLFC_result_sig, file = "./results/DESeq2_significant_LFC_gene-level.csv", row.names = T)
 
 ```
 
@@ -427,7 +427,7 @@ resGene_tib_sigUpDn <- resGene_tib |>
 filter(resGene_tib$regulation != "not significant")
 
 # export significantly up- and downregulated genes
-write.csv(resGene_tib_sigUpDn, file = "./results/Pre-eclampsia_vs_control_significant_UpDn_gene-level.csv", row.names = T)
+write.csv(resGene_tib_sigUpDn, file = "./results/DESeq2_significant_UpDn_gene-level.csv", row.names = T)
 
 ```
 
