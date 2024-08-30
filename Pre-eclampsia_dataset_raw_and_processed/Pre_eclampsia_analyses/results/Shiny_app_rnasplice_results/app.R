@@ -39,7 +39,7 @@ ui <- fluidPage(
 
   # Application title
   titlePanel(
-    title = div("DESeq2 results at gene level",
+    title = div("Gene and transcript expression differences in pre-eclampsia E 17.5 mouse cortices vs controls",
                 style = "text-align: center;")),
 
   # Insert some space after title
@@ -50,7 +50,7 @@ ui <- fluidPage(
   fluidRow(
     column(width = 6,
            style = "margin-bottom: 0px;",
-           tags$iframe(src = "Gene_raw_volcano_plot.html", style = "height: 1000px;") #, height = "1000px", width = "100%"
+           tags$iframe(src = "Gene_raw_volcano_overlap_labels.html", style = "height: 1000px;") #, height = "1000px", width = "100%"
            ),
 
 
@@ -60,7 +60,7 @@ ui <- fluidPage(
 
     column(width = 6,
            style = "margin-bottom: 0px;",
-           tags$iframe(src = "Gene_raw_volcano_overlap_labels.html", style = "height: 1000px;")
+           tags$iframe(src = "DEXSeq_DTU_volcano_plot.html", style = "height: 1000px;")
            ),
   )
 )
