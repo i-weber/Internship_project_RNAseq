@@ -40,13 +40,33 @@ conflicts_prefer(dplyr::filter,
 # If DEXSeq analysis performed previously: load results (uncomment as needed)
 
 ```{r}
-#my_DEXSeqTc_result <- readRDS("./results/my_DESeq_result_gene-level.rds")
+#DEXSeq_res <- readRDS("./results/DEXSeq_DTU_result.rds")
 ```
 
-# Import cts object from tximport 
+
+## If wanting to reload all variables
+```{r}
+# Load the variables from the RDS file
+loaded_vars <- readRDS("./results/all_variables_DESeq2.rds")
+
+# Optionally, assign them back to the global environment
+list2env(loaded_vars, envir = .GlobalEnv)
+```
+
+
+# Import DEXSeq DTU results from TSV 
 
 ```{r}
-drimSeq_res <- readRDS("./Pre_eclampsia_mice_rnasplice_results/dexseq_dtu/filter/drimseq/dmDSdata.rds")
+DEXSeq_res <- read_tsv('./dexseq_dtu/results/dexseq/DEXSeqResults.PREECLAMPSIA-CONTROL.tsv')
+
+# Remove gene-, id-, rna- prefixes
+DEXSeq_res <- DEXSeq_res |> mutate(
+  featureID = str_remove(featureID, "^gene-|^rna-|^id-"),
+  groupID = str_remove(groupID, "^gene-|^rna-|^id-")
+)
+
+# create RDS object out of the DEXSeq DTU result to be able to easier retrieve result later
+saveRDS(DEXSeq_res, file = "./results/DEXSeq_DTU_result.rds")
 ```
 
 # Explore raw, non-normalized read counts from the object

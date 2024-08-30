@@ -74,7 +74,7 @@ conflicts_prefer(dplyr::filter,
 #my_DESeqGene_result <- readRDS("./results/my_DESeq_result_gene-level.rds")
 ```
 
-## If wanting to reload all variables, uncomment this chunk
+## If wanting to reload all variables
 ```{r}
 # Load the variables from the RDS file
 loaded_vars <- readRDS("./results/all_variables_DESeq2.rds")
