@@ -1,0 +1,32 @@
+{
+    "id": "2D154A1D",
+    "path": "C:/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_analyses/scripts/2024-08-30_DEXSeq_DTU.qmd",
+    "project_path": "scripts/2024-08-30_DEXSeq_DTU.qmd",
+    "type": "quarto_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1725003563890.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "rmdVisualMode": "true",
+        "rmdVisualWrapConfigured": "true",
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "47,0",
+        "scrollLine": "0",
+        "docOutlineVisible": "1",
+        "rmdVisualCollapsedChunks": "",
+        "rmdVisualModeLocation": "1149:888.888916015625"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1725008388,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1725008388435,
+    "read_only": false,
+    "read_only_alternatives": []
+}

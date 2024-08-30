@@ -1,0 +1,192 @@
+---
+title: "2024-08-30_DEXSeq_DTU"
+author: "Ioana Weber"
+format: html
+editor: visual
+---
+
+# Aim
+
+Explore which transcripts are differentially expressed between conditions from the DEXSeq DTU data output by the rnasplice pipeline for the experiment that analyzed the effect of pre-eclampsia on E 17.5 embryonic cortices.
+
+# Preparations
+
+## Install packages if needed
+
+```{r}
+#pacman::p_install(htmlwidgets)
+#pacman::p_install(rsconnect)
+```
+
+## Load packages, test for and resolve conflicts between functions of same name from different packages
+
+```{r}
+pacman::p_load(readxl,
+               plotly,
+               conflicted,
+               tidyverse,
+               ggplot2,
+               EBSeq,
+               htmlwidgets,
+               rsconnect,
+               wrappedtools)
+
+conflict_scout()
+
+conflicts_prefer(dplyr::filter,
+                 plotly::layout)
+```
+
+# If DEXSeq analysis performed previously: load results (uncomment as needed)
+
+```{r}
+#my_DEXSeqTc_result <- readRDS("./results/my_DESeq_result_gene-level.rds")
+```
+
+# Import cts object from tximport 
+
+```{r}
+drimSeq_res <- readRDS("./Pre_eclampsia_mice_rnasplice_results/dexseq_dtu/filter/drimseq/dmDSdata.rds")
+```
+
+# Explore raw, non-normalized read counts from the object
+
+## Pre-filter transcripts with \<10 reads per sample
+
+```{r}
+
+# Set which rows should be pre-filtered (generates matrix of same size as my_ddsTxi filled with Booleans everywhere where the read counts are larger than ten, then sums them up per condition to make sure all samples of that condition have more than 10 reads for that gene - results in 4x TRUE if all four samples meet the condition, which is interpreted as 4*1 = 4. The TRUE/FALSE result for the row overall is stored in  a vector, keep, which indicates using TRUE or FALSE if the row with that gene kept.)
+keep <- rowSums(counts(my_ddsTxi) >= 10) >= 4 # Sets the smallest group size - we have 4 samples in control group, 4 samples in treatment group
+
+# Initial number of transcripts in the dataset was 42,855
+my_dds_filtered <- my_ddsTxi[keep,]
+# After filtering weakly expressed transcripts: 15,245 left
+
+```
+
+## If needed, remove "gene-", "rna-" identifiers from the dataset
+
+```{r}
+# check if rownames have prefixes
+head(rownames(my_dds_filtered))
+
+# Extract the row names (gene or transcript identifiers)
+rownames_original <- rownames(my_dds_filtered)
+
+# Use gsub() to remove the prefixes "gene-", "id-", or "rna-"
+rownames_modified <- gsub("^(gene-|id-|rna-)", "", rownames_original)
+
+# Reassign the modified row names back to the ddsTxi object
+rownames(my_dds_filtered) <- rownames_modified
+
+# check if prefixes were removed from rownames
+head(rownames(my_dds_filtered))
+```
+
+# Explore results DEXSeq (transcript-level analysis)
+
+## Summaries and signficant results for raw results dataset
+
+```{r}
+# See a summary of results
+summary(my_DEXSeqTc_result)
+
+```
+
+```{r}
+# How many genes have a corrected p-value below 0.05?
+sum(my_DEXSeqTc_result$padj < 0.05, na.rm= TRUE) # 2758
+
+
+# Extract significant results and sort them by the adjusted p-value
+my_DEXSeqTc_result_sig <- my_DEXSeqTc_result[
+  which(my_DEXSeqTc_result$padj<0.05),
+  ]
+
+my_DEXSeqTc_result_sig <- my_DEXSeqTc_result_sig[
+  order(my_DEXSeqTc_result_sig$padj),
+  ]
+
+# Save significant values as .csv
+write.csv(my_DEXSeqTc_result_sig, file = "./results/DEXSeqDTU_significant_tc-level.csv", row.names = T)
+```
+
+## Plots DEXSeq (transcript-level analysis)
+
+### Plotly interactive volcano plot of raw results
+
+```{r}
+
+# Add a column for -log10(padj)
+resGene_tib$`-log10padj` <- -log10(resGene_tib$padj)
+
+# Add a column for regulation based on log2FoldChange and significance (padj < 0.05)
+resGene_tib <- resGene_tib |>
+  mutate(
+    regulation = case_when(
+      padj < 0.05 & log2FoldChange > 0.585  ~ "upregulated",
+      padj < 0.05 & log2FoldChange < -0.585 ~ "downregulated",
+      TRUE ~ "not significant"
+    )
+  )
+
+# In the initial plotting process, got a warning that said "Ignoring 2071 observations", which is likely due to NA values in the "significance" or "regulation" columns. Find which and how many rows are lost due to NA values:
+resGene_tib_NA <- resGene_tib |>
+filter(is.na(resGene_tib$regulation) | is.na(resGene_tib$significance)) # 2071 rows indeed
+
+# how many data points actually plotted
+(plottable_points <- nrow(resGene_tib)-nrow(resGene_tib_NA))
+
+# Create the volcano plot (all values, will ignore NAs)
+Gene_raw_volcano_plot <- plot_ly(
+  data = resGene_tib,
+  x = ~log2FoldChange, 
+  y = ~`-log10padj`, 
+  text = ~gene,  # Text to show on hover
+  mode = 'markers',
+  marker = list(size = 6, opacity = 0.5),  
+  color = ~regulation,  # Use regulation column for colors
+  colors = c("darkred", "lightgray","skyblue3"),  # Light gray for not significant, red for significant and downregulated, blue for significant and  upregulated
+   type = 'scatter', 
+  hoverinfo = 'text'
+) |>
+  plotly::layout(
+    title = paste("DEGs from my DESeq2data (", plottable_points, " points plotted)", sep = ""),
+    xaxis = list(title = "Log2(Fold Change)"),
+    yaxis = list(title = "-Log10(Adjusted P-Value (FDR))"),
+    legend = list(title = list(text = "Regulation"))
+  )
+
+# Display the plot
+Gene_raw_volcano_plot
+
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(Gene_raw_volcano_plot), "./plots/Gene_raw_volcano_plot.html")
+
+# create filtered tibble of significantly up- and downregulated genes
+resGene_tib_sigUpDn <- resGene_tib |>
+filter(resGene_tib$regulation != "not significant")
+
+# export significantly up- and downregulated genes
+write.csv(resGene_tib_sigUpDn, file = "./results/DESeq2_significant_UpDn_gene-level.csv", row.names = T)
+
+```
+
+# Copy results to Shiny app www folder
+
+```{r}
+# Define paths
+source_folder <- "./plots"
+destination_folder <- "./results/Shiny_app_rnasplice_results/www"
+
+# Copy files from source to destination
+file.copy(list.files(source_folder, full.names = TRUE), destination_folder, overwrite = TRUE)
+
+```
+
+# Deploy app ONLINE (uncomment when ready to publish)
+
+```{r}
+#rsconnect::deployApp('results/Shiny_app_rnasplice_results')
+```

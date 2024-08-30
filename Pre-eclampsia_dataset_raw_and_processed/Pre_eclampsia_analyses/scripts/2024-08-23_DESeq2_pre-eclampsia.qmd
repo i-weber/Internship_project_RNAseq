@@ -71,8 +71,18 @@ conflicts_prefer(dplyr::filter,
 # If DESeq2 quantification performed previously: load results (uncomment as needed)
 
 ```{r}
-my_DESeqGene_result <- readRDS("./results/my_DESeq_result_gene-level.rds")
+#my_DESeqGene_result <- readRDS("./results/my_DESeq_result_gene-level.rds")
 ```
+
+## If wanting to reload all variables, uncomment this chunk
+```{r}
+# Load the variables from the RDS file
+loaded_vars <- readRDS("./results/all_variables_DESeq2.rds")
+
+# Optionally, assign them back to the global environment
+list2env(loaded_vars, envir = .GlobalEnv)
+```
+
 
 # Sample sheet and tx2gene import
 
@@ -175,7 +185,17 @@ count_sums_vector <- colSums(raw_nonnorm_counts)
 
 # get a raw counts tibble (transpose the named vector of count sums resutling by colSums and convert without doing anything to the names)
 total_raw_counts <- as_tibble(t(count_sums_vector), .name_repair = "minimal") |> rename_with(~colnames(raw_nonnorm_counts))
+```
 
+```         
+  CONTROL_REP1      CONTROL_REP2      CONTROL_REP3     CONTROL_REP4
+     15108046          15529776          15220648       13829628
+     
+PREECLAMPSIA_REP1 PREECLAMPSIA_REP2   PREECLAMPSIA_REP3   PREECLAMPSIA_REP4
+    14331056          14746690           14453073           15098198
+```
+
+```{r}
 # create a named vector of the log2 transformed sum of counts (+1 to avoid issues where counts are 0)
 log2count_sums_vector <- colSums(log2(raw_nonnorm_counts+1))
 
@@ -280,13 +300,33 @@ plot_violin_raw_counts <- plot_ly(
     
   )
 
-# I have a persistent issue here with values that are around 300 centering on 0 in the plot. Apparently, this is a function of how Plotly handles KDE bandwidth, but this is  
+# I have a persistent issue here with values that are around 300 centering on 0 in the plot, making it look like there are negative read values (there aren't, I tested it with summary()). Apparently, this is an issue because of how Plotly handles the KDE bandwidth, which makes the violin plots smoother or more granular. So far, the best I could get was with setting the bandwidth to 125, but it's still suboptimal...
 
 
-plot_violin_log2_counts
+plot_violin_log2_counts  <- plot_ly(
+  data = log2_counts_long,
+  x = ~Sample,
+  y = ~log2Counts,
+  type = 'violin',
+  color = ~Sample,
+  box = list(visible = TRUE),  # optional boxplot inside the violin plot
+  meanline = list(visible = TRUE),  # optional line for the mean
+  #points = "all",  # Show all data points
+  #jitter = 0.3,  # if showing all data points, add some jitter to points for better visibility
+  #bandwidth = 125, #...or else KDE is calculated in a way that makes values around 300 counts plot on 0 on the y axis instead of at their real value (it oversmoothes the curves)
+  hoverinfo = 'text',  # Display y-value and additional text on hover
+  text = ~paste(Gene, "<br>log2 Count:", log2Counts),
+  showlegend = FALSE
+) |>
+  layout(
+    title = "Distribution of log2 Read Counts per Gene and Sample",
+    yaxis = list(title = "log2 (Counts)",
+                 range = c(0, NA))
+    
+  )
 ```
 
-## Pre-filter transcripts with \<10 reads per sample
+## Pre-filter genes with \<10 reads per sample
 
 ```{r}
 
@@ -350,7 +390,7 @@ mcols(my_DESeqGene_result)$description
 ## Explore normalized counts of the DESeq result object
 
 ```{r}
-norm_counts <- counts(my_DESeqGene_result, normalized = TRUE)
+norm_counts <- counts(my_DESeq_gene, normalized = TRUE)
 ```
 
 ## Explore how many values have valid adjusted p values (FDR) (gene-level)
@@ -452,10 +492,6 @@ my_DESeqGene_result_sig <- my_DESeqGene_result_sig[
 
 # Save significant values as .csv
 write.csv(my_DESeqGene_result_sig, file = "./results/DESeq2_significant_gene-level.csv", row.names = T)
-
-# Check normalization - creates a matrix of the normalized counts
-# norm_counts <- counts(dds.filtered.analysis, normalized = TRUE)
-# nonnorm_counts <- counts(dds.filtered.analysis, normalized = FALSE) # counts as they were input to DESeq2 (the DESeq object retains both info)
 ```
 
 ## Summaries and signficant results for LFC-shrunk results dataset
@@ -750,6 +786,17 @@ saveWidget(as_widget(Gene_raw_volcano_overlap_labels), "./plots/Gene_raw_volcano
 ```
 
 # TO DO: PCA analysis samples
+
+# Save all variables from environment to an RDS file
+
+```{r}
+# Collect all variables from the global environment
+all_vars <- mget(ls(), envir = .GlobalEnv)
+
+# Save the collected variables as an RDS file
+saveRDS(all_vars, file = "./results/all_variables_DESeq2.rds")
+```
+
 
 # Copy results to Shiny app www folder
 

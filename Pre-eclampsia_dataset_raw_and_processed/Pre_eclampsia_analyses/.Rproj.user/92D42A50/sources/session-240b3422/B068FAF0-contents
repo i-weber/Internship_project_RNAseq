@@ -1,0 +1,243 @@
+#####
+#Install DESeq2
+#####
+if (!require("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("DESeq2")
+
+# Load DESeq2
+library(DESeq2)
+
+# Load CD8_counts.csv
+# CD8_counts contains the RAW counts of reads mapped to the transcripts, without any normalization
+# Change the path to your own folder with the CD8_counts.csv
+CD8_counts <- read.csv("~/CQ/ABI-2024-1/3-RNA-Seq/RNA-Seq_dataset/CD8_counts.csv",row.names=1)
+View(CD8_counts)
+
+
+#################
+# Set the experimental design
+#################
+?rep
+sampleTable <- data.frame( condition = factor(c(rep("old",8),rep("young",8))),
+                           sex = factor(c("M","F", "F", rep("M",3), rep("F",2),rep("M",3), rep("F",2), "M",rep("F",2))),
+                           batch = factor(c(rep(1,4),rep(2,4),rep(1,4),rep(2,4)))
+)
+
+rownames(sampleTable) <- colnames(CD8_counts)
+
+
+#######
+# Create a DESeqDataSet from the read counts
+#######
+dds <- DESeqDataSetFromMatrix(countData = CD8_counts,
+                              colData = sampleTable,
+                              design = ~ batch + condition # here you can adapt the factors for the DEG analysis
+                              #design = ~ condition
+                              )
+
+######
+# Pre-filter lowly expressed transcripts
+######
+
+counts(dds) # retrieve the raw read counts from the DESeqDataSet object
+
+# keep all transcripts that have more the 100 reads in total
+
+keep <- rowSums(counts(dds)) >=100
+
+dds.filtered <- dds[keep,]
+
+# Initial number of transcripts in the dataset was 159,054
+# After filtering very lowly expressed transcripts: 63,814
+
+#####
+# Run the DEG analysis
+# incl normalization, parameter estimation for the negative binomial distribution of the reads
+# and the statistical testing
+####
+
+dds.filtered.analysis <- DESeq(dds.filtered)
+
+###
+# Exporting the analysis results
+###
+# contrast = c(name_factor, groupA, groupB)
+# log2(FC) = log2(groupA/groupB)
+
+res <- results(dds.filtered.analysis, pAdjustMethod = "BH", #results is a DESeq2 function
+               contrast = c("condition" , "old", "young"))
+
+# log2(FC)>0 => up-regulation in the old samples compared to the young ones
+# log2(FC)<0 => down-regulation in the old samples compared to the young ones
+
+head(res) # if just clicking on "value" in the Environment tab, will show summary data about the res object, but not the actual data. Hence, makes more sense to look into it with head. also shows what the test hypothesis was, what the non-adjusted p-val (Wald p-val) was tested for (old vs young in both cases)
+
+# padj = corrected p-value
+
+# How many genes have a corrected p-value below 0.05?
+sum(res$padj < 0.05, na.rm= TRUE)
+
+# How many genes have a p-value below 0.05?
+sum(res$pvalue < 0.05, na.rm= TRUE)
+
+# Extract the information for all DEG from results and export them in a .csv file
+resSig <-res[which(res$padj<0.05),]
+head(resSig)
+
+resSig.sorted <- resSig[order(resSig$padj),]
+head(resSig.sorted)
+
+write.csv(resSig.sorted, file = "CD8_old_vs_young_Sig.csv", row.names = T)
+# Alternative
+#write.table(resSig.sorted, file = "CD8_old_vs_young_Sig_test.csv", sep=";", col.names = T, row.names = T)
+
+
+###
+# Check normalization - creates a matrix of the normalized counts
+###
+
+norm_counts <- counts(dds.filtered.analysis, normalized = TRUE)
+nonnorm_counts <- counts(dds.filtered.analysis, normalized = FALSE) # counts as they were input to DESeq2 (the DESeq object retains both info)
+
+# Create boxplots of the read distribution per sample before and after normalization
+# Export the plots as a pdf
+
+pdf(file ="Boxplot_counts.pdf", height = 10, width = 20) #creates a dev environment for a PDF file and creates a PDF file with no data (can't be opened)
+  #par(mfrow = c(1,2)) # plot parameter for splitting the plot environment in order to have 2 plots next to each #other
+  par(mfrow = c(2,1)) # plot parameter for having the boxplots below each other
+  #raw reads
+  raw_reads <-counts(dds.filtered.analysis, normalized = FALSE)
+
+  boxplot(log2(raw_reads+1) , # WHY THIS +1 CORRECTION?
+        xlab = "Sample",
+        ylab = "log2(raw reads +1)",
+        main = "Read distribution before normalization")
+
+  # normalized reads
+  boxplot(log2(norm_counts+1) ,
+        xlab = "Sample",
+        ylab = "log2(normalized reads +1)",
+        main = "Read distribution after normalization")
+
+dev.off() # closing the output to the pdf file
+
+
+
+####
+# Principal component analysis based on the transcriptomic profiles of the samples
+# A method for comparing multi-dimensional vectors by reducing their dimensionality
+# Alternatives: PCoA (Principal Coordinates Analysis), MDS (multi-dimenstional scaling)
+# tSNE plots (single cell RNA experiments)
+###
+
+# Summarizing the information from the dds.filtered.analysis so that we can run plotPCA
+se <- SummarizedExperiment(log2(norm_counts+1), colData = colData(dds.filtered.analysis))
+#head(se) #this one only shows summary
+# class?SummarizedExperiment
+
+plotPCA(DESeqTransform(se))
+#?plotPCA
+
+plotPCA(DESeqTransform(se), intgroup = c("batch"))
+plotPCA(DESeqTransform(se), intgroup = c("sex"))
+
+plotPCA(DESeqTransform(se), intgroup = c("batch", "condition"))
+
+
+# PC1 = principal component 1
+# PC2 = principal component 2
+# 63,814 transcripts => the sample vectors have 63,814 dimensions
+# by the PCA we reduce the 63,814 dimensions to only 2 dimensions (PC1/ x-axis, and PC2/ y-axis)
+
+####################
+# Volcano plots
+# x-axis = log2(Fold change)
+# y-axis = -log10(corrected p-value) - the higher the y value, the lower and more significant the corrected p-value
+
+# padj = 10^(-5) => y coordinate -log10(10^(-5)) = -(-5)= 5
+
+####################
+
+BiocManager::install("EnhancedVolcano")
+library(EnhancedVolcano)
+
+# First try
+
+EnhancedVolcano(res,
+                lab=rownames(res),
+                x= 'log2FoldChange',
+                y= 'padj')
+
+# Set thresholds for FC and corrected p-value
+
+EnhancedVolcano(res,
+                lab=rownames(res),
+                x= 'log2FoldChange',
+                y= 'padj',
+                FCcutoff = 2,
+                pCutoff = 0.05)
+
+# Customize the legend of the plot and include information about the thresholds for FC and padj
+EnhancedVolcano(res,
+                lab=rownames(res),
+                x= 'log2FoldChange',
+                y= 'padj',
+                FCcutoff = 2,
+                pCutoff = 0.05,
+                legendLabels = c("non significant", "|log2FC|> 2", "padj <0.05", "|log2FC|> 2 and padj <0.05"),
+                legendLabSize = 10,
+                legendPosition =  "bottom"
+                )
+
+# Improve the labels of the points
+pdf(file = "Volcano.pdf", height = 10, width = 10)
+
+EnhancedVolcano(res,
+                lab=rownames(res),
+                x= 'log2FoldChange',
+                y= 'padj',
+                FCcutoff = 2,
+                pCutoff = 0.05,
+                legendLabels = c("non significant", "|log2FC|> 2", "padj <0.05", "|log2FC|> 2 and padj <0.05"),
+                legendLabSize = 10,
+                legendPosition =  "bottom",
+                boxedLabels = T,
+                labSize = 3,
+                drawConnectors = T
+)
+
+dev.off()
+
+###
+# Add the gene name to the NCBI transcript IDs in the results table
+# we need a transcript-to-gene mapping table
+# This information can be found in the annotation files of the genome (.gtf/.gff, downloadable from NCBI)
+###
+
+
+# download human annotation file from https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_full_analysis_set.refseq_annotation.gtf.gz
+
+# import gtf file into R
+BiocManager::install("rtracklayer")
+
+library(rtracklayer)
+
+gtf <- rtracklayer::import("GCA_000001405.15_GRCh38_full_analysis_set.refseq_annotation.gtf")
+
+# correspondence between transcripts and genes
+
+transcript2gene <- unique(data.frame(gtf[gtf$type=="exon"])[,c("transcript_id", "gene_id", "product")])
+
+#head(data.frame(gtf[gtf$type=="exon"]))
+
+# Join the results table (res) with the transcript2gene mapping table
+
+row.names(transcript2gene) <- transcript2gene$transcript_id # add the transcript_id as row.names
+
+# join the two tables by the row names
+finals_results<- merge(data.frame(res), transcript2gene, by=0, all.x = TRUE)
+
+
+
+

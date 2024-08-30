@@ -1,0 +1,502 @@
+---
+title: "2024-06-04_penguin_normality"
+format:
+  docx:
+    reference-doc: D:\OneDrive\03-Skill development and educational\Applied Bioinformatics\4_2_R_programming\R_Stuff_Ioana\Scripts_R_ABI_Ioana\2024-05-28_quarto_test_original.docx
+    toc: true
+    toc-depth: 3
+execute:
+  echo: true
+  warning: false
+  output: asis
+fig.dpi: 150
+fig-width: 6
+editor: visual
+---
+
+\newpage
+
+## Set env
+
+```{r}
+Sys.setenv(LANG="en_EN.UTF-8") # to get errors/warnings in English
+if(!requireNamespace("pacman",quietly = TRUE)){
+  install.packages("pacman")
+}
+pacman::p_load(
+  conflicted, # tests/solutions for name conflicts
+  tidyverse, # metapackage 
+  wrappedtools, # Andreas's tools package
+  ggplot2,
+  palmerpenguins,
+  ggbeeswarm,
+  rlist,
+  RColorBrewer,
+  flextable
+  )
+conflict_scout()
+conflicts_prefer(dplyr::filter,
+                 stats::lag)
+
+RColorBrewer::display.brewer.all()
+```
+
+## Explore penguins dataset
+
+```{r}
+# View(penguins)
+colnames(penguins)
+
+# Extract numeric variables that make sense
+
+numeric_vars <- ColSeeker(data = penguins,
+                          namepattern = c("bill", "flipper", "mass"))
+numeric_vars
+
+
+# should I define year as a numerical or categorical var? In principle, it is numeric, but we don't care about checking it for normality, so will leave it to categorical in this case
+
+categorical_vars <- ColSeeker(data = penguins,
+                              namepattern = c("species", "sex", "island", "year"))
+categorical_vars
+```
+
+## Viz density plots for penguin weights
+
+```{r}
+weight_density_plots <- 
+  ggplot(data = penguins,
+         aes(x = body_mass_g, fill = sex)) +
+  geom_density(alpha=0.5, lwd=0) +
+  facet_grid(rows = vars(sex),
+             cols = vars(species)
+             # , margins = TRUE
+             ) +
+  xlab("Body mass (g)") +
+  ylab("Frequency") +
+  theme_gray()
+  
+weight_density_plots
+
+# same w/o NAs:
+weight_density_plots_noNA <- ggplot(data = penguins |> filter(!is.na(sex)),
+                        aes(x = body_mass_g, fill = sex)) +
+  geom_density(alpha = 0.5, lwd = 0) +
+  facet_grid(rows = vars(sex),
+             cols = vars(species)
+             #, margins = TRUE
+             ) +
+  xlab("Body mass (g)") +
+  ylab("Frequency") +
+  theme_gray()
+  
+weight_density_plots_noNA
+
+#to only show something in the interactive R session but not print it in the loop: 
+
+# if(interactive()){
+#   print(weight_density_plots)
+# }
+
+# to create plots in a loop:
+# define an empty list. Make sure you import the rlist package, which makes extracting things from a list easier
+plot_list <- list()
+
+for(var_i in numeric_vars$names){
+  plot1 <-
+    penguins |>
+     ggplot(
+       aes(x = .data[[var_i]],
+           fill = species)
+  )
+
+  plot_list <- list.append(plot_list, plot1)
+  names(plot_list)[length(plot_list)] <-
+    paste0(var_i, '_hist')} # give a name to the last element added to the list (represented by position in plot_list corresp to its length bc R indexing starts at 1
+# 
+
+
+
+# older version to create plots in a loop: aes_string can be used instead of aes when wanting to pass aes different column names in a loop. aes_string then needs all of the column names ASIDE from the loop variable name 
+
+# assigning variable names dynamically, e.g. for creating plots with names relating to the contents:
+# assign(x=name_to_create, value=value_to_assign)
+
+
+```
+
+## Normality of body mass, bill depth, etc of different penguin subspecies and sexes
+
+```{r}
+numeric_vars$names
+
+normality_res_penguins <-
+  penguins |> 
+  group_by(sex, species) |>
+  summarize(
+    across(
+      .cols = all_of(numeric_vars$names),
+      .fns = list(
+        pKS = ~ksnormal(.x) |> formatP(mark = TRUE),
+        pSh = ~shapiro.test(.x) |> pluck("p.value") |> formatP(mark = TRUE)
+                 ),
+      .names = "{.col}#{.fn}"
+          )
+           ) |> 
+  pivot_longer(cols = contains("#"),
+               names_sep = "#",
+               names_to = c("Variable", "p_val_source")
+              ) |> 
+  pivot_wider(names_from = p_val_source, values_from = value) |>
+  arrange(Variable)
+
+
+head(normality_res_penguins)
+```
+
+## Conditional formatting with flextable
+
+```         
+flextable() |>
+  bold(~str_detect(col_name, "regex pattern to find"), j=col_to_modify (if empty, applies to all columns in that row, bold=TRUE) |>
+  bg(~str_detect(col_name, "regex pattern to find"), j=col_to_modify (if empty, applies to all columns in that row, bg="colorname")
+     
+     in this case, the tilde is used simply to indicate that this is a condition to be checked. Can check for absence of something with ~!(function to use)
+     we can also check if something smaller or larger (extracts number in that cell automatically), e.g. ~!colname < 0.5, j=col_to_modify, etc
+```
+
+## Applying some function to all elements in a list
+
+```         
+walk(plot_list, print)
+walk()
+```
+
+## Split header of flextable
+
+```         
+flextable() |>
+separate_header(split="separator_to_use")
+```
+
+## Descriptive statistics penguins
+
+treat measurements for the bill as ordinal measurement! In general, anything that doesn't follow a normal distribution is treated as ordinal measurement. For these measurements, we can still calculate mean, median, and other descriptive stats. However: there are also ordered categories (when dealing with few values), for which we wouldn't calculate this.
+
+```{r}
+# View(penguins)
+colnames(penguins)
+
+# Extract numeric variables that make sense
+
+numeric_vars2 <- ColSeeker(data = penguins,
+                          namepattern = c("flipper", "mass"))
+numeric_vars2
+
+ordinal_vars2 <- ColSeeker(data=penguins,
+                          namepattern = ("bill"))
+ordinal_vars2
+
+# should I define year as a numerical or categorical var? In principle, it is numeric, but we don't care about checking it for normality, so will leave it to categorical in this case
+
+categorical_vars2 <- ColSeeker(data = penguins,
+                              namepattern = c("species", "sex", "island", "year"))
+categorical_vars2
+```
+
+```{r}
+peng_descr <- penguins |> filter(!is.na(sex)) |>
+  group_by(species, sex) |>
+  summarize(
+    across(numeric_vars2$names,
+           .fns = list(
+             MeanSD = ~meansd(.x,
+                              roundDig = 2,
+                              range = TRUE),
+             Quantiles = ~quantile(.x, probs = c(.25,.75)) |> paste(collapse = "/") # or else, since quantile() returns two numbers, it creates a nested structure! This way, we have both results in the same cell, sep by /
+                     ),
+           .names = "{.col}#{.fn}"
+           )
+  ) |>
+  pivot_longer(cols = contains("#"), # pivoting makes particular sense here, where we are generating many columns with measures
+               names_sep = "#",
+               names_to = c("Variable", "Measure")
+               ) |>
+  pivot_wider(names_from = Measure,
+              values_from = value
+              )
+
+peng_descr |> flextable() |> theme_vader()
+```
+
+## What other analyses make sense for the penguins?
+
+So far, we performed descriptive stats on continuous/numeric variables individually and grouped by sex and species. Can I add a third grouping variable, the year, to see if their measurements changed along the years?
+
+```{r}
+peng_descr_year <- penguins |> filter(!is.na(sex)) |>
+  group_by(species,sex,year,island) |>
+  summarize(
+    across(numeric_vars2$names,
+           .fns = ~meansd(.x,
+                        roundDig = 2,
+                        range = TRUE
+                        )
+           )
+         ) # here, not pivoting because table already quite well legible
+peng_descr_year
+
+pengu_table <- penguins |> filter(!is.na(sex))
+
+cat_desc_table(pengu_table, categorical_vars2$names) |> rename(`n (%)`=desc_all)
+
+# cat_desc_stats has an argument groupvar that allow us to compute the absolute and relative freqs per groups!
+
+
+pengu_table <- pengu_table |> mutate(year = factor(year))
+
+freq_PDY <- table(pengu_table$island, pengu_table$species, pengu_table$sex, pengu_table$year)
+
+
+perc_freq_PDY <- round(prop.table(freq_PDY, margin = 2)*100, digits = 2)
+
+df_freq <- data.frame(perc_freq_PDY)
+tib_freq <- as_tibble(df_freq)
+
+tib_freq <- rename(tib_freq, Island=Var1, Species=Var2, Sex=Var3, Year=Var4, `Frequency [%]`=Freq)
+
+tib_freq <-tib_freq |> pivot_wider(names_from = Sex,
+                                   values_from = `Frequency [%]`)
+
+tib_freq <- arrange(tib_freq, Island)
+
+tib_freq |> flextable() |>   
+  set_caption("Frequency distribution of penguins across islands and sexes") |>
+  theme_zebra(odd_header="royalblue",
+              odd_body= 'transparent',
+              even_body="lightblue") |>
+  color(color="white",
+              part = "header") |>
+   align(j = c(1, 2, 3, 4),
+         align = "center",
+         part = "all") |>
+  set_table_properties(width = 1,
+                       layout = "autofit",
+                       )
+
+
+
+peng_descr_year_plt <-  
+  ggplot(data = peng_descr_year,
+    aes(x = body_mass_g,
+        fill = year
+        )
+         ) +
+  geom_density(
+    alpha = 0.5
+              ) +
+  scale_fill_discrete() +
+  facet_grid(rows = vars(sex),
+             cols = vars(species)
+            ) + 
+  theme(
+    plot.title = element_text("Yearly penguin weights by sex and species"),
+    plot.title.position = "plot",
+    axis.title.x = element_text(size = 10),
+    axis.title.y = element_text(size = 10,
+                                angle = 0,
+                                vjust = 0.5),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    legend.title = element_text("year")
+        )
+
+peng_descr_year_plt
+  
+
+# see if there are some biases in the sex sampling based on the islands where data was gathered
+
+sex_vs_island <- table(penguins$sex, penguins$island, useNA = "no")
+
+chi_peng_out <- chisq.test(sex_vs_isl_raw)
+chi_peng_out$residuals
+
+sex_vs_isl_raw <- round(prop.table(sex_vs_island, margin = 1), digits=2)
+sex_vs_isl_prop <- prop.table(sex_vs_island, margin = 2)*100 # not really :) on Torgersen Island, 
+sex_vs_isl_prop
+
+sex_vs_isl_prop <- sex_vs_isl_prop |>
+  mutate(
+    across(c(1:4),
+           .fns = ~ roundR(.x,
+                           level = 4,
+                           textout = FALSE)
+           )
+)
+  
+  
+
+```
+
+Andreas's solution: 2 levels of grouping, species and island. Initial structure: Variable col (stores whether we are looking at island or year as grouping var), Species cp;. Sex col, Freq col !!! NEVER do descriptive stas on grouped variable! Loops over factorial measures, then over species factor levels, then over sex levels Puts absolute counts into a variable and converts them into table Filters subgroup that is defined by current sex-species combination given by loop
+
+```{r}
+desc_fact_looped <- tibble(
+  Variable="",Species="",Sex="",Frequencies="") |>
+  slice(0)
+
+for(var_i in factvars$names[c(2,4)]){
+  for(species_i in levels(rawdata$species)){
+    for(sex_i in levels(rawdata$sex)){
+      counts <- rawdata |>
+        filter(species==species_i,
+               sex==sex_i) |>
+        pull(var_i) |>
+        table()
+      freqs <- round(prop.table(counts)*100)
+      desc_fact_looped <-
+        add_row(desc_fact_looped,
+                Variable=var_i,
+                Species=species_i,
+                Sex=sex_i,
+                Frequencies=paste0(
+                  names(counts),": ",counts,
+                  " (",freqs,"%)",
+                  collapse="\n")
+        )
+    }
+  }
+}
+
+desc_fact_looped |>
+  pivot_wider(names_from = c(Species, Sex),
+              values_from = Frequencies) |>
+  flextable() |>
+  separate_header() |>
+  set_caption("Descriptive statistics within species and sex") |> 
+  theme_apa() |> 
+  set_table_properties(width = 1,layout = 'autofit')
+```
+
+Another solution from Andreas:
+
+```{r}
+results_factorial <- 
+  pengu_table |>
+  compare_n_qualvars(dep_vars = categorical_vars2$names[-1],
+                     indep_var = "species")
+
+results_factorial |> 
+  select(-desc_all) |>
+  rename_with(~str_remove(.x, "desc")) |>
+  flextable() |>
+  padding(~P==" ", 1, padding.left = 15) |>
+  set_table_properties(width = 1, layout = "autofit")
+  
+```
+
+## Testing group differences
+
+exercise: penguins - comparing 2 groups - compare male and female penguins according to other measures (treat 2 var as ordinal, 2 var as Gaussian). Compare even categories between categories as defined by sex (ignore species effects). Just to get practice with t test, Wilcoxon's, Fisher's, etc
+
+```{r}
+# View(penguins)
+colnames(penguins)
+
+# Extract numeric variables that make sense
+
+numeric_vars3 <- ColSeeker(data = penguins,
+                          namepattern = c("flipper", "mass"))
+numeric_vars3$names
+
+ordinal_vars3 <- ColSeeker(data=penguins,
+                          namepattern = c("bill", "year"))
+ordinal_vars3
+
+# should I define year as a numerical or categorical var? In principle, it is numeric, but we don't care about checking it for normality, so will leave it to categorical in this case
+
+categorical_vars3 <- ColSeeker(data = penguins,
+                              namepattern = c("species", "sex", "island"))
+categorical_vars3
+```
+
+```{r}
+pengu_table <- penguins |> filter(!is.na(sex))
+
+t_test_list <- list()
+# # Are there significant differences in flipper length and mass between sexes?
+
+# for (var_name in numeric_vars3$names) {
+#   t_test_list <- append(t_test_list,
+#                         values = t.test(pengu_table$numeric_vars3["var_name"] ~ pengu_table$sex))
+#   }
+var.test(pengu_table$body_mass_g ~ pengu_table$sex)
+t.test(pengu_table$body_mass_g ~ pengu_table$sex)
+
+var.test(pengu_table$flipper_length_mm ~ pengu_table$sex) # p is juuust so above 0.05 (0.052)
+ttest_flipper <- t.test(pengu_table$flipper_length_mm ~ pengu_table$sex,
+       var.equal = TRUE) |> pluck(p.value)
+
+
+
+# explore whether Gaussian (obvs not because males, females, and different species have different distributions)
+ggplot(data = pengu_table,
+       mapping = aes(x = pengu_table$body_mass_g,
+                     fill = pengu_table$sex
+                     )
+       ) +
+  geom_density(alpha = 0.5) 
+
+# explore data for body mass. I used mean_se initially, but afterwards, seeing how non-normally distributed the data look, I would change it to median_cl_boot_gg.
+ggplot(data = pengu_table,
+       mapping = aes(x = sex,
+                     y = body_mass_g,
+                     fill = sex
+                     )
+       ) +
+  geom_violin(color = "transparent",
+              alpha = 0.7) +
+  scale_fill_brewer(palette = "Pastel2" ) +
+  geom_beeswarm(color="skyblue3",
+                size = 1,
+                alpha = 0.7
+                ) +
+  stat_summary(fun.data = "mean_se",
+               geom = "point",
+               size = 3,
+               color = "red4",
+               alpha = 0.6
+               ) +
+  ylab("Body mass [g]" )
+
+# explore data for flipper length. I used mean_se initially, but afterwards, seeing how non-normally distributed the data look, I would change it to median_cl_boot_gg.
+ggplot(data = pengu_table,
+       mapping = aes(x = sex,
+                     y = flipper_length_mm,
+                     fill = sex
+                     )
+       ) +
+  geom_violin(color = "transparent",
+              alpha = 0.7) +
+  scale_fill_brewer(palette = "Accent") +
+  geom_beeswarm(color="skyblue3",
+                size = 1
+                ) +
+  stat_summary(fun.data = "mean_se",
+               geom = "point",
+               size = 3,
+               color = "red4",
+               alpha = 0.6
+               ) +
+  ylab("Body mass [g]")
+
+# both body mass and flipper length don't look normally distributed -> test for differences with Wilcoxon test
+
+compare2numvars(pengu_table,
+                dep_vars = numeric_vars3$names,
+                indep_var = "sex",
+                gaussian = FALSE,
+                range = TRUE,
+                add_n = TRUE) |>
+  flextable() |> flex2rmd()
+```
