@@ -5,6 +5,10 @@ pacman::p_load(shiny,
 # Define UI for application
 ui <- fluidPage(
 
+  tags$head(
+    tags$title("Expression and alternative splicing changes in a pre-eclampsia mouse model"),  # Set the title for the browser tab
+    tags$link(rel = "icon", type = "image/png", href = "./results/Shiny_app_rnasplice_results/www/favicon_RNA.png")  # Set the favicon
+  ),
 
   # Custom CSS to remove borders and scroll bars
   tags$style(HTML("
@@ -50,7 +54,7 @@ ui <- fluidPage(
   fluidRow(
     column(width = 6,
            style = "margin-bottom: 0px;",
-           tags$iframe(src = "Gene_raw_volcano_overlap_labels.html", style = "height: 1000px;") #, height = "1000px", width = "100%"
+           tags$iframe(src = "Gene_raw_volcano_overlap_labels2.html", style = "height: 1000px;") #, height = "1000px", width = "100%"
            ),
 
 
@@ -60,7 +64,7 @@ ui <- fluidPage(
 
     column(width = 6,
            style = "margin-bottom: 0px;",
-           tags$iframe(src = "DEXSeq_DTU_volcano_plot.html", style = "height: 1000px;")
+           tags$iframe(src = "DEXSeq_DTU_volcano_plot2.html", style = "height: 1000px;")
            ),
   )
 )
