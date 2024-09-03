@@ -457,7 +457,7 @@ DEXSeq_DEU_res_volcano_plot <- plot_ly(data = DEXSeq_DEU_res,
 
 # export plot as html file with htmlwidgets
 saveWidget(as_widget(DEXSeq_DEU_res_volcano_plot), "./plots/DEXSeq_DEU_res_volcano_plot.html")
-
+saveRDS(DEXSeq_DEU_res_volcano_plot, file = "./plots/DEXSeq_DEU_res_volcano_plot.rds")
 ```
 
 # Save all variables from environment to an RDS file

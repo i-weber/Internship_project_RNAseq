@@ -78,10 +78,10 @@ conflicts_prefer(dplyr::filter,
 
 ```{r}
 # # Load the variables from the RDS file
-# loaded_vars <- readRDS("./results/all_variables_DESeq2.rds")
+loaded_vars <- readRDS("./results/all_variables_DESeq2.rds")
 # 
 # # Optionally, assign them back to the global environment
-# list2env(loaded_vars, envir = .GlobalEnv)
+list2env(loaded_vars, envir = .GlobalEnv)
 ```
 
 # Sample sheet and tx2gene import
@@ -859,6 +859,10 @@ Gene_raw_volcano_overlap_labels2 <- Gene_raw_volcano_overlap2 |>
 
 # export plot as html file with htmlwidgets
 saveWidget(as_widget(Gene_raw_volcano_overlap_labels2), "./plots/Gene_raw_volcano_overlap_labels2.html")
+
+
+# save plot as an RDS
+saveRDS(Gene_raw_volcano_overlap_labels2, file = "./plots/Gene_raw_volcano_overlap_labels2.rds")
 ```
 
 # TO DO: PCA analysis samples

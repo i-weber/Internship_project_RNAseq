@@ -39,7 +39,7 @@ conflicts_prefer(dplyr::filter,
 In case needing to re-set working directory:
 
 ```{r}
-#setwd("C:/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_analyses/")
+#setwd("C:/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_analyses")
 ```
 
 # If DEXSeq analysis performed previously: load results (uncomment as needed)
@@ -53,10 +53,10 @@ perGeneQvals <- readRDS("./results/DEXSeq_DTU_perGeneQvals.rds")
 
 ```{r}
 # Load the variables from the RDS file
-#loaded_vars <- readRDS("./results/all_variables_DEXSeq_DTU.rds")
+loaded_vars <- readRDS("./results/all_variables_DEXSeq_DTU.rds")
 
 # Optionally, assign them back to the global environment
-#list2env(loaded_vars, envir = .GlobalEnv)
+list2env(loaded_vars, envir = .GlobalEnv)
 ```
 
 # Import DEXSeq DTU results and the perGeneQvalues from TSVs
@@ -89,7 +89,7 @@ DEXSeq_DTU_res <- mutate(DEXSeq_DTU_res,
 
 As alternative splicing is generally a more sensitive response mechanism than gene expression and hence more prone to fluctuation, I used a more stringent threshold for up- and downregulation of individual transcripts within the gene expression pool than I did for the gene regulation (here, I decided upregulation to be anything above a twofold change and downregulation anything below 0.5 to be downregulated)
 
-table(DEXSeq_DTU_res$regulation) returned
+table(DEXSeq_DTU_res\$regulation) returned
 
 downregulated not significant upregulated 190 22762 237
 
@@ -107,6 +107,7 @@ perGeneQvals <- perGeneQvals |> mutate(
 ```
 
 ### Export significantly up- and downregulated transcripts
+
 ```{r}
 
 # create filtered tibble of significantly up- and downregulated genes
@@ -224,6 +225,7 @@ saveRDS(DEXSeq_DTU_res, file = "./results/DEXSeq_DTU_result.rds")
 ```
 
 ### Jitter strip plot exploring distribution of source genes of the analyzed transcripts across -log10(Q) values
+
 ```{r}
 plot_jitter_strip_qval <- plot_ly(
   perGeneQvals, 
@@ -397,6 +399,9 @@ plot_DEXSeq_DTU_volcano_2 <- plot_ly(data = DEXSeq_DTU_res,
 
 # export plot as html file with htmlwidgets
 saveWidget(as_widget(plot_DEXSeq_DTU_volcano_2), "./plots/DEXSeq_DTU_volcano_plot2.html")
+
+# save plot as an RDS
+saveRDS(plot_DEXSeq_DTU_volcano_2, file = "./plots/DEXSeq_DTU_volcano_plot2.rds")
 
 ```
 
