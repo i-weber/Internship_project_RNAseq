@@ -9,9 +9,12 @@ pacman::p_load(shiny,
 ui <- fluidPage(
 
   tags$head(
-    tags$title("Expression and alternative splicing changes in a pre-eclampsia mouse model"),  # Set the title for the browser tab
-    tags$link(rel = "icon", type = "image/png", href = "./results/Shiny_app_rnasplice_results/www/favicon_RNA.png")  # Set the favicon
+    tags$title("Expression and Alternative Splicing Changes in a Pre-eclampsia Mouse Model"),  # Set the title for the browser tab
+    tags$link(rel = "icon", type = "image/png", href = "./results/Shiny_app_rnasplice_results-test/www/favicon_RNA.png")  # Set the icon for the tab
   ),
+  tags$link(rel = "stylesheet", type = "text/css", href = "./results/Shiny_app_rnasplice_results-test/www/bootstrap.min.css"),  # Link to custom Lux theme CSS (free theme from Bootswatch)
+
+  titlePanel("Gene and Transcript Expression Differences in Pre-eclampsia E 17.5 Mouse Cortices vs Controls"),
 
   # Custom CSS to remove borders and scroll bars
   tags$style(HTML("
