@@ -45,25 +45,25 @@ In case needing to re-set working directory:
 # If DEXSeq analysis performed previously: load results (uncomment as needed)
 
 ```{r}
-DEXSeq_DTU_res <- readRDS("../results/DEXSeq_DTU_result.rds")
-perGeneQvals <- readRDS("../results/DEXSeq_DTU_perGeneQvals.rds")
+DEXSeq_DTU_res <- readRDS("./results/DEXSeq_DTU_result.rds")
+perGeneQvals <- readRDS("./results/DEXSeq_DTU_perGeneQvals.rds")
 ```
 
 ## If wanting to reload all variables
 
 ```{r}
 # Load the variables from the RDS file
-loaded_vars <- readRDS("./results/all_variables_DEXSeq_DTU.rds")
+#loaded_vars <- readRDS("./results/all_variables_DEXSeq_DTU.rds")
 
 # Optionally, assign them back to the global environment
-list2env(loaded_vars, envir = .GlobalEnv)
+#list2env(loaded_vars, envir = .GlobalEnv)
 ```
 
 # Import DEXSeq DTU results and the perGeneQvalues from TSVs
 
 ```{r}
 # Read in DEXSeq DTU result
-DEXSeq_DTU_res <- read_tsv('./dexseq_dtu/results/dexseq/DEXSeqResults.PREECLAMPSIA-CONTROL.tsv')
+DEXSeq_DTU_res <- read_tsv('../Pre_eclampsia_mice_rnasplice_results/dexseq_dtu/results/dexseq/DEXSeqResults.PREECLAMPSIA-CONTROL.tsv')
 
 # Remove gene-, id-, rna- prefixes
 DEXSeq_DTU_res <- DEXSeq_DTU_res |> mutate(
@@ -98,7 +98,7 @@ downregulated not significant upregulated 190 22762 237
 saveRDS(DEXSeq_DTU_res, file = "./results/DEXSeq_DTU_result.rds")
 
 # read in the Q vals, which indicate significant changes in the transcript composition within the transcript pool produced from one gene locus
-perGeneQvals <- read_tsv('./dexseq_dtu/results/dexseq/perGeneQValue.PREECLAMPSIA-CONTROL.tsv')
+perGeneQvals <- read_tsv('../Pre_eclampsia_mice_rnasplice_results/dexseq_dtu/results/dexseq/perGeneQValue.PREECLAMPSIA-CONTROL.tsv')
 # 7,750 genes
 
 perGeneQvals <- perGeneQvals |> mutate(
@@ -111,10 +111,10 @@ perGeneQvals <- perGeneQvals |> mutate(
 
 # create filtered tibble of significantly up- and downregulated genes
 DEXSeq_DTU_res_sigUpDn <- DEXSeq_DTU_res |>
-filter(DEXSeq_DEU_res$regulation != "not significant")
+filter(DEXSeq_DTU_res$regulation != "not significant")
 
 # export significantly up- and downregulated genes
-write.csv(DEXSeq_DTU_res_sigUpDn, file = "./results/DEXSeq_significant_UpDn_transcripts.csv", row.names = T)
+write.csv(DEXSeq_DTU_res_sigUpDn, file = "./results/DEXSeq_DTU_significant_UpDn_transcripts.csv", row.names = T)
 ```
 
 # Explore results DEXSeq (transcript-level analysis)
@@ -160,7 +160,11 @@ Mean : 3.001355 Mean : 0.076015\
 3rd Qu.: 4.202713 3rd Qu.: 0.319994\
 Max. :13.085330 Max. : 23.540320
 
-# `{r} # # How many genes have a corrected p-value below 0.05? # sum(my_DEXSeqTc_result$padj < 0.05, na.rm= TRUE) # 2758 #  #  # # Extract significant results and sort them by the adjusted p-value # my_DEXSeqTc_result_sig <- my_DEXSeqTc_result[ #   which(my_DEXSeqTc_result$padj<0.05), #   ] #  # my_DEXSeqTc_result_sig <- my_DEXSeqTc_result_sig[ #   order(my_DEXSeqTc_result_sig$padj), #   ] #  # # Save significant values as .csv # write.csv(my_DEXSeqTc_result_sig, file = "./results/DEXSeqDTU_significant_tc-level.csv", row.names = T) #`
+### How many genes have a corrected p-value below 0.05?
+
+```{r}
+sum(DEXSeq_DTU_res$padj < 0.05, na.rm= TRUE) # 980 
+```
 
 ## Explore per gene Q values to see which genes produce transcripts whose abundance changes between conditions
 
@@ -187,14 +191,14 @@ perGeneQvals <- mutate(perGeneQvals,
                        )
                        )
 
-saveRDS(perGeneQvals, file = "../results/DEXSeq_DTU_perGeneQvals.rds")
+saveRDS(perGeneQvals, file = "./results/DEXSeq_DTU_perGeneQvals.rds")
 
 # Extract the genes with significant changes in the transcript pool composition
 DEXSeq_DTU_sig_Qvals <- perGeneQvals |> filter(significance == "significant") |> rename(minuslog10padj = `-log10padj`,
                                                                                         gene_name = groupID)
 
 # Write CSV of the genes with significantly changed transcript pool composition
-write.csv(DEXSeq_DTU_sig_Qvals, file = "../results/DEXSeq_DTU_sig_Qvals.csv", row.names = T)
+write.csv(DEXSeq_DTU_sig_Qvals, file = "./results/DEXSeq_DTU_sig_Qvals.csv", row.names = T)
 ```
 
 ```{r}
@@ -216,9 +220,10 @@ DEXSeq_DTU_res <- DEXSeq_DTU_res |>
   ) |>
   select(-significance)  # Remove the original `significance` column
 
-saveRDS(DEXSeq_DTU_res, file = "../results/DEXSeq_DTU_result.rds")
+saveRDS(DEXSeq_DTU_res, file = "./results/DEXSeq_DTU_result.rds")
 ```
 
+### Jitter strip plot exploring distribution of source genes of the analyzed transcripts across -log10(Q) values
 ```{r}
 plot_jitter_strip_qval <- plot_ly(
   perGeneQvals, 
@@ -255,7 +260,7 @@ plot_jitter_strip_qval
 
 
 # export plot as html file with htmlwidgets
-saveWidget(as_widget(plot_jitter_strip_qval), "../plots/DEXSeq_DTU_plot_jitter_strip_qval.html")
+saveWidget(as_widget(plot_jitter_strip_qval), "./plots/DEXSeq_DTU_plot_jitter_strip_qval.html")
 ```
 
 ## Plots DEXSeq (transcript-level analysis)
@@ -295,45 +300,45 @@ saveWidget(as_widget(plot_jitter_strip_qval), "../plots/DEXSeq_DTU_plot_jitter_s
 #   hoverinfo = 'text'
 # ) 
 
-DEXSeq_DTU_volcano_plot <- plot_ly() |>
-  add_trace(data = DEXSeq_DTU_res |> filter(significance_perGeneQValue == "significant Q value"),
-  x = ~log2fold_CONTROL_PREECLAMPSIA, 
-  y = ~`-log10padj`, 
-  type = 'scatter', 
-  mode = 'markers',
-  marker = list(size = 2, color = 'black'),  # Small black dots
-  #hoverinfo = 'none', # Disable hover for these points to avoid clutter
-  showlegend = TRUE,
-  name = "from gene with<br>significant Q value"
-  ) |>
-  add_trace(data = DEXSeq_DTU_res,
-  x = ~log2fold_CONTROL_PREECLAMPSIA, 
-  y = ~`-log10padj`, 
-  text = ~paste("Transcript:", featureID,
-                "<br>FDR:", formatC(padj, format = "e", digits = 3),
-                "<br>Source gene:", groupID,
-                "<br>Source gene Q val:", formatC(Q_value, format = "e", digits = 3)
-                ),  # Text to show on hover
-  mode = 'markers',
-  marker = list(size = 6,opacity = 0.5),  
-  color = ~regulation,  # Use regulation column for colors
-  colors = c("darkred", "lightgray","skyblue3"),  # Light gray for not significant, red for significant and downregulated, blue for significant and  upregulated
-   type = 'scatter', 
-  hoverinfo = 'text'
-  ) |>
-  plotly::layout(
-    title = paste("Transcripts from DEXSeq DTU analysis (", nrow(DEXSeq_DTU_res), " points plotted)", sep = ""),
-    xaxis = list(title = "Log2(Fold Change Preeclampsia vs Control)"),
-    yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of transcript)"),
-    legend = list(title = list(text = "Regulation"))
-  )
-
-# Display the plot
-DEXSeq_DTU_volcano_plot
-
-
-# export plot as html file with htmlwidgets
-saveWidget(as_widget(DEXSeq_DTU_volcano_plot), "../plots/DEXSeq_DTU_volcano_plot.html")
+# DEXSeq_DTU_volcano_plot <- plot_ly() |>
+#   add_trace(data = DEXSeq_DTU_res |> filter(significance_perGeneQValue == "significant Q value"),
+#   x = ~log2fold_CONTROL_PREECLAMPSIA, 
+#   y = ~`-log10padj`, 
+#   type = 'scatter', 
+#   mode = 'markers',
+#   marker = list(size = 2, color = 'black'),  # Small black dots
+#   #hoverinfo = 'none', # Disable hover for these points to avoid clutter
+#   showlegend = TRUE,
+#   name = "from gene with<br>significant Q value"
+#   ) |>
+#   add_trace(data = DEXSeq_DTU_res,
+#   x = ~log2fold_CONTROL_PREECLAMPSIA, 
+#   y = ~`-log10padj`, 
+#   text = ~paste("Transcript:", featureID,
+#                 "<br>FDR:", formatC(padj, format = "e", digits = 3),
+#                 "<br>Source gene:", groupID,
+#                 "<br>Source gene Q val:", formatC(Q_value, format = "e", digits = 3)
+#                 ),  # Text to show on hover
+#   mode = 'markers',
+#   marker = list(size = 6,opacity = 0.5),  
+#   color = ~regulation,  # Use regulation column for colors
+#   colors = c("darkred", "lightgray","skyblue3"),  # Light gray for not significant, red for significant and downregulated, blue for significant and  upregulated
+#    type = 'scatter', 
+#   hoverinfo = 'text'
+#   ) |>
+#   plotly::layout(
+#     title = paste("Transcripts from DEXSeq DTU analysis (", nrow(DEXSeq_DTU_res), " points plotted)", sep = ""),
+#     xaxis = list(title = "Log2(Fold Change Preeclampsia vs Control)"),
+#     yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of transcript)"),
+#     legend = list(title = list(text = "Regulation"))
+#   )
+# 
+# # Display the plot
+# DEXSeq_DTU_volcano_plot
+# 
+# 
+# # export plot as html file with htmlwidgets
+# saveWidget(as_widget(DEXSeq_DTU_volcano_plot), "./plots/DEXSeq_DTU_volcano_plot.html")
 ```
 
 ### Improved interactive plot
@@ -342,7 +347,7 @@ I figured out a better way of displaying the traces and colors when I returned t
 
 ```{r}
 
-DEXSeq_DTU_volcano_plot2 <- plot_ly(data = DEXSeq_DTU_res,
+plot_DEXSeq_DTU_volcano_2 <- plot_ly(data = DEXSeq_DTU_res,
   x = ~log2fold_CONTROL_PREECLAMPSIA, 
   y = ~`-log10padj`, 
   type = 'scatter',
@@ -366,7 +371,7 @@ DEXSeq_DTU_volcano_plot2 <- plot_ly(data = DEXSeq_DTU_res,
     type = 'scatter',
     mode = 'markers',
     marker = list(size = 2, opacity = 0.5),
-    color=I("black"), # I = collapse the mapping of all points onto one single color, which also ensure there's only one legend entry for this property, not 3 (there doesn't seem to be any easy way to prevent this second trace from inheriting the mapping to upregulated, downregulated, not significant from the first trace)
+    color=I("black"), # I = collapse the mapping of all points onto one single color, which also ensures there's only one legend entry for this property, not 3 (there doesn't seem to be any easy way to prevent this second trace from inheriting the mapping to upregulated, downregulated, not significant from the first trace)
    hoveron = "fills", # useful so that the annotations are taken from the trace underneath and the labels then have the color of the large points (red, gray, or blue)
    showlegend = TRUE,
    name = "from gene with<br>significant Q value"
@@ -391,7 +396,7 @@ DEXSeq_DTU_volcano_plot2 <- plot_ly(data = DEXSeq_DTU_res,
   )
 
 # export plot as html file with htmlwidgets
-saveWidget(as_widget(DEXSeq_DTU_volcano_plot2), "./plots/DEXSeq_DTU_volcano_plot2.html")
+saveWidget(as_widget(plot_DEXSeq_DTU_volcano_2), "./plots/DEXSeq_DTU_volcano_plot2.html")
 
 ```
 
@@ -399,10 +404,10 @@ saveWidget(as_widget(DEXSeq_DTU_volcano_plot2), "./plots/DEXSeq_DTU_volcano_plot
 
 ```{r}
 # Collect all variables from the global environment
-all_vars <- mget(ls(), envir = .GlobalEnv)
+all_vars_DEXSeq_DTU <- mget(ls(), envir = .GlobalEnv)
 
 # Save the collected variables as an RDS file
-saveRDS(all_vars, file = "./results/all_variables_DEXSeq_DTU.rds")
+saveRDS(all_vars_DEXSeq_DTU, file = "./results/all_variables_DEXSeq_DTU.rds")
 ```
 
 # Copy results to Shiny app www folder

@@ -53,10 +53,10 @@ In case needing to re-set working directory:
 
 ```{r}
 # Load the variables from the RDS file
-#loaded_vars <- readRDS("./results/all_variables_DEXSeq_DEU_res.rds")
+loaded_vars <- readRDS("./results/all_variables_DEXSeq_DEU_res.rds")
 
 # Optionally, assign them back to the global environment
-#list2env(loaded_vars, envir = .GlobalEnv)
+list2env(loaded_vars, envir = .GlobalEnv)
 ```
 
 # Import and prepare DEXSeq differential exon usage (DEU) results and the perGeneQvalues from CSVs
@@ -224,7 +224,7 @@ DEXSeq_DEU_res_sigUpDn <- DEXSeq_DEU_res |>
 filter(DEXSeq_DEU_res$regulation != "not significant")
 
 # export significantly more included and more skipped exons
-write.csv(DEXSeq_DEU_res_sigUpDn, file = "./results/DEXSeq_significant_UpDn_exons.csv", row.names = T)
+write.csv(DEXSeq_DEU_res_sigUpDn, file = "./results/DEXSeq_DEU_significant_UpDn_exons.csv", row.names = T)
 ```
 
 
@@ -261,23 +261,21 @@ summary(DEXSeq_DEU_res)
  Max.   : 2.04434              Max.   :49.39498                           
 > 
 
-# `{r} # # How many genes have a corrected p-value below 0.05? # sum(my_DEXSeqTc_result$padj < 0.05, na.rm= TRUE) # 2758 #  #  # # Extract significant results and sort them by the adjusted p-value # my_DEXSeqTc_result_sig <- my_DEXSeqTc_result[ #   which(my_DEXSeqTc_result$padj<0.05), #   ] #  # my_DEXSeqTc_result_sig <- my_DEXSeqTc_result_sig[ #   order(my_DEXSeqTc_result_sig$padj), #   ] #  # # Save significant values as .csv # write.csv(my_DEXSeqTc_result_sig, file = "./results/DEXSeqDTU_significant_tc-level.csv", row.names = T) #`
-
-## Explore per gene Q values to see which genes produce transcripts whose abundance changes between conditions
+## Explore per gene Q values to see which genes contain exons whose abundance changes between conditions
 
 ### Explore Q values tabularly and calculate -log10(padj) column, with correction for those cases where padj is 0
 
 ```{r}
-sum(perGeneQvals_DEU$padj < 0.05) # 550 genes
+sum(perGeneQvals_DEU$padj < 0.05) # 3587 genes
 
-# I noticed some genes seem to have a padj of 0.000000e+00 - wondering if that actually means 0
-sum(perGeneQvals_DEU$padj == 0) # indeed, there's 50 of them
+# Here, too, just like in the DTU analysis, some genes have a padj of 0.000000e+00
+sum(perGeneQvals_DEU$padj == 0) # there's 201 of them
 
 # Add a -log10 column to the perGeneQvals_DEU tibble
 perGeneQvals_DEU <- mutate(perGeneQvals_DEU,
                        `-log10padj` = case_when(
                         padj > 0 ~ -log10(padj),
-                        TRUE ~ -log10(1e-20) # this is arbitrarily chosen - the next- highest p values after the zero ones are around 5e-14, so this should separate the ones with padj=0 in a clear group from the others
+                        TRUE ~ -log10(1e-20) # this is arbitrarily chosen - the next- highest p values after the zero ones are around 8e-14, so this should separate the ones with padj=0 in a clear group from the others
                        ))
 
 # Add a -log10 column to the perGeneQvals_DEU tibble
@@ -288,14 +286,15 @@ perGeneQvals_DEU <- mutate(perGeneQvals_DEU,
                        )
                        )
 
-saveRDS(perGeneQvals_DEU, file = "../results/DEXSeq_DEU_res_perGeneQvals_DEU.rds")
+# save the modified perGeneQvals_DEU tibble as an R data structure
+saveRDS(perGeneQvals_DEU, file = "./results/DEXSeq_DEU_res_perGeneQvals_DEU.rds")
 
 # Extract the genes with significant changes in the transcript pool composition
 DEXSeq_DEU_res_sig_Qvals <- perGeneQvals_DEU |> filter(significance == "significant") |> rename(minuslog10padj = `-log10padj`,
                                                                                         gene_name = groupID)
 
 # Write CSV of the genes with significantly changed transcript pool composition
-write.csv(DEXSeq_DEU_res_sig_Qvals, file = "../results/DEXSeq_DEU_res_sig_Qvals.csv", row.names = T)
+write.csv(DEXSeq_DEU_res_sig_Qvals, file = "./results/DEXSeq_DEU_res_sig_Qvals.csv", row.names = T)
 ```
 
 ```{r}
@@ -317,11 +316,16 @@ DEXSeq_DEU_res <- DEXSeq_DEU_res |>
   ) |>
   select(-significance)  # Remove the original `significance` column
 
-saveRDS(DEXSeq_DEU_res, file = "../results/DEXSeq_DEU_result.rds")
+# save DEXSeq_DEU_res tibble as data structure
+saveRDS(DEXSeq_DEU_res, file = "./results/DEXSeq_DEU_result.rds")
+
+# Write CSV of the exons with valid log2FC and padj and info on source gene Q value significance
+write.csv(DEXSeq_DEU_res, file = "./results/DEXSeq_DEU_res.csv", row.names = T)
 ```
 
+### Jitter strip plot exploring distribution of source genes of the analyzed exons across their -log10(Q) values
 ```{r}
-plot_jitter_strip_qval <- plot_ly(
+plot_jitter_strip_qval_DEU <- plot_ly(
   perGeneQvals_DEU, 
   x = ~`-log10padj`, 
   y = ~jitter(rep(1, nrow(perGeneQvals_DEU)), factor = 0.015), # Jitter points on y-axis
@@ -336,7 +340,7 @@ plot_jitter_strip_qval <- plot_ly(
                 opacity = 0.5)
 ) |>
   layout(
-    title = "DEXSeq DTU: -log10(Q) Distribution of Genes",
+    title = "DEXSeq DTU: -log10(Q) Distribution of Exons",
     xaxis = list(title = "-log10(Q)",
                  tickvals = seq(0, ceiling(max(perGeneQvals_DEU$`-log10padj`)), by = 1),  # Set tick positions at 0, 1, 2, ...
       ticktext = seq(0, ceiling(max(perGeneQvals_DEU$`-log10padj`)), by = 1),  # Set tick labels corresponding to the positions
@@ -352,18 +356,17 @@ plot_jitter_strip_qval <- plot_ly(
   )
 
 # Display the plot
-plot_jitter_strip_qval
+plot_jitter_strip_qval_DEU
 
 
 # export plot as html file with htmlwidgets
-saveWidget(as_widget(plot_jitter_strip_qval), "../plots/DEXSeq_DEU_res_plot_jitter_strip_qval.html")
+saveWidget(as_widget(plot_jitter_strip_qval_DEU), "./plots/DEXSeq_DEU_res_plot_jitter_strip_qval.html")
 ```
 
 ## Plots DEXSeq (exon splicing analysis)
 
-### Improved interactive plot
+### Interactive volcano plots
 
-I figured out a better way of displaying the traces and colors when I returned to working with the DESeq2 (gene expression) data, so I updated this plot as well:
 
 ```{r}
 
@@ -375,30 +378,18 @@ DEXSeq_DEU_res_volcano_plot <- plot_ly(data = DEXSeq_DEU_res,
   marker = list(size = 6,
                 opacity = 0.4),
                 color = ~regulation,
- colors = c( "lightgray","darkred","skyblue3"),
+ colors = c( "darkred","lightgray","skyblue3"),
   hoverinfo = 'text',
-  text = ~paste("Transcript:", featureID,
+  text = ~paste("Source gene:", groupID,
+                "<br>Exon:", featureID,
                 "<br>FDR:", formatC(padj, format = "e", digits = 3),
-                "<br>Source gene:", groupID,
                 "<br>Source gene Q val:", formatC(Q_value, format = "e", digits = 3)
                 ),
  showlegend = TRUE
   ) |>
-  add_trace(
-    data = DEXSeq_DEU_res |> filter(significance_perGeneQValue == "significant Q value"),
-    x = ~log2fold_CONTROL_PREECLAMPSIA,
-    y = ~`-log10padj`,
-    type = 'scatter',
-    mode = 'markers',
-    marker = list(size = 2, opacity = 0.5),
-    color=I("black"), # I = collapse the mapping of all points onto one single color, which also ensure there's only one legend entry for this property, not 3 (there doesn't seem to be any easy way to prevent this second trace from inheriting the mapping to upregulated, downregulated, not significant from the first trace)
-   hoveron = "fills", # useful so that the annotations are taken from the trace underneath and the labels then have the color of the large points (red, gray, or blue)
-   showlegend = TRUE,
-   name = "from gene with<br>significant Q value"
-  ) |>
   layout(
     annotations = list(
-      text = paste("Transcripts from DEXSeq DTU analysis (", nrow(DEXSeq_DEU_res), " points plotted)", sep = ""),
+      text = paste("Exons from DEXSeq DEU analysis (", nrow(DEXSeq_DEU_res), " points plotted)", sep = ""),
       font = list(size = 14),  # Title font size
       x = 0.5,
       y = 1.08, # Position of the title (above the plot)
@@ -408,15 +399,64 @@ DEXSeq_DEU_res_volcano_plot <- plot_ly(data = DEXSeq_DEU_res,
      ),
     xaxis = list(title = list(text = "Log2(Fold Change Preeclampsia vs Control)"),
                  standoff = 1),
-    yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of transcript)"),
+    yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of exon)"),
     legend = list(title = list(text = "Regulation and Significance"),
                   orientation = 'h',
                   y = -0.15, x = 0.5,
                   xanchor = 'center')
   )
 
+# Version with extra trace for significant Q values (not used because too crowded)
+# DEXSeq_DEU_res_volcano_plot2 <- plot_ly(data = DEXSeq_DEU_res,
+#   x = ~log2fold_CONTROL_PREECLAMPSIA, 
+#   y = ~`-log10padj`, 
+#   type = 'scatter',
+#   mode = 'markers',
+#   marker = list(size = 6,
+#                 opacity = 0.4),
+#                 color = ~regulation,
+#  colors = c( "darkred","lightgray","skyblue3"),
+#   hoverinfo = 'text',
+#   text = ~paste("Source gene:", groupID,
+#                 "<br>Exon:", featureID,
+#                 "<br>FDR:", formatC(padj, format = "e", digits = 3),
+#                 "<br>Source gene Q val:", formatC(Q_value, format = "e", digits = 3)
+#                 ),
+#  showlegend = TRUE
+#   ) |>
+#   add_trace(
+#     data = DEXSeq_DEU_res |> filter(significance_perGeneQValue == "significant Q value"),
+#     x = ~log2fold_CONTROL_PREECLAMPSIA,
+#     y = ~`-log10padj`,
+#     type = 'scatter',
+#     mode = 'markers',
+#     marker = list(size = 2, opacity = 0.5),
+#     color=I("black"), # I = collapse the mapping of all points onto one single color, which also ensure there's only one legend entry for this property, not 3 (there doesn't seem to be any easy way to prevent this second trace from inheriting the mapping to upregulated, downregulated, not significant from the first trace)
+#    hoveron = "fills", # useful so that the annotations are taken from the trace underneath and the labels then have the color of the large points (red, gray, or blue)
+#    showlegend = TRUE,
+#    name = "from gene with<br>significant Q value"
+#   ) |>
+#   layout(
+#     annotations = list(
+#       text = paste("Exons from DEXSeq DEU analysis (", nrow(DEXSeq_DEU_res), " points plotted)", sep = ""),
+#       font = list(size = 14),  # Title font size
+#       x = 0.5,
+#       y = 1.08, # Position of the title (above the plot)
+#       xref = "paper",  # Position relative to the entire plot
+#       yref = "paper",
+#      showarrow = FALSE
+#      ),
+#     xaxis = list(title = list(text = "Log2(Fold Change Preeclampsia vs Control)"),
+#                  standoff = 1),
+#     yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of exon)"),
+#     legend = list(title = list(text = "Regulation and Significance"),
+#                   orientation = 'h',
+#                   y = -0.15, x = 0.5,
+#                   xanchor = 'center')
+#   )
+
 # export plot as html file with htmlwidgets
-saveWidget(as_widget(DEXSeq_DEU_res_volcano_plot2), "./plots/DEXSeq_DEU_res_volcano_plot.html")
+saveWidget(as_widget(DEXSeq_DEU_res_volcano_plot), "./plots/DEXSeq_DEU_res_volcano_plot.html")
 
 ```
 
