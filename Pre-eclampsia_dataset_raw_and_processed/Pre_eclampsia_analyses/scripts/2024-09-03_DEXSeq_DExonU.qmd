@@ -1,0 +1,449 @@
+---
+title: "2024-09-03_DEXSeq_DExonU"
+author: "Ioana Weber"
+format: html
+editor: visual
+---
+# Aim
+
+Explore which transcripts are differentially expressed between conditions from the DEXSeq DTU data output by the rnasplice pipeline for the experiment that analyzed the effect of pre-eclampsia on E 17.5 embryonic cortices.
+
+# Preparations
+
+## Install packages if needed
+
+```{r}
+#pacman::p_install(htmlwidgets)
+#pacman::p_install(rsconnect)
+```
+
+## Load packages, test for and resolve conflicts between functions of same name from different packages
+
+```{r}
+pacman::p_load(readxl,
+               plotly,
+               conflicted,
+               tidyverse,
+               ggplot2,
+               readr,
+               htmlwidgets,
+               rsconnect,
+               wrappedtools)
+
+conflict_scout()
+
+conflicts_prefer(dplyr::filter,
+                 plotly::layout)
+```
+
+In case needing to re-set working directory:
+
+```{r}
+#setwd("C:/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_analyses")
+```
+
+# If DEXSeq DEU analysis performed previously: load results (uncomment as needed)
+
+```{r}
+#DEXSeq_DEU_res <- readRDS("../results/DEXSeq_DEU_result.rds")
+#perGeneQvals_DEU_DEU <- readRDS("../results/DEXSeq_DEU_res_perGeneQvals_DEU.rds")
+```
+
+## If wanting to reload all variables
+
+```{r}
+# Load the variables from the RDS file
+#loaded_vars <- readRDS("./results/all_variables_DEXSeq_DEU_res.rds")
+
+# Optionally, assign them back to the global environment
+#list2env(loaded_vars, envir = .GlobalEnv)
+```
+
+# Import and prepare DEXSeq differential exon usage (DEU) results and the perGeneQvalues from CSVs
+## Read in result and check how many exons have padj or log2FC == NA
+
+```{r}
+# Read in DEXSeq DTU result
+DEXSeq_DEU_res_raw <- read_csv('../Pre_eclampsia_mice_rnasplice_results/dexseq_exon/results/DEXSeqResults.PREECLAMPSIA_CONTROL.csv') 
+
+# total number of exons analyzed: around 300k
+
+
+# read in the Q vals, which indicate significant changes in the transcript composition within the transcript pool produced from one gene locus
+perGeneQvals_DEU <- read_csv('../Pre_eclampsia_mice_rnasplice_results/dexseq_exon/results/perGeneQValue.PREECLAMPSIA_CONTROL.csv') # 14,014 genes with significant exon usage changes - interestingly, around double as many as identified by DEXSeq DTU in the smae pipeline!
+
+# remove "gene-" prefixes from the gene name column (groupID)
+perGeneQvals_DEU <- perGeneQvals_DEU |> mutate(
+  groupID = str_remove(groupID, "^gene-|^rna-|^id-")
+)
+```
+
+### log2FC that are NA
+```{r}
+# The results dataset contains NA values for the log2fold_CONTROL_PREECLAMPSIA calculation of many exons. How many?
+nr_log2fold_na <- sum(is.na(DEXSeq_DEU_res_raw$log2fold_CONTROL_PREECLAMPSIA)) # 90776 of 370704
+
+# Plot: how many NA values does dataset contain for log2fold
+# data.frame showing distribution
+log2fold_status <- data.frame(
+  Status = c("Valid log2 FC", "NA log2 FC"),
+  Count = c(sum(!is.na(DEXSeq_DEU_res_raw$log2fold_CONTROL_PREECLAMPSIA)),
+            sum(is.na(DEXSeq_DEU_res_raw$log2fold_CONTROL_PREECLAMPSIA)))
+)
+
+# Print the data frame to check the counts
+print(log2fold_status)
+# Valid log2 FC: 279928, NA log2 FC: 90776 (roughly 25% of dataset have log2FC = NA)
+
+# Create a ggplot bar plot of how many log2 FC are NA
+valid_log2fold_plot <- ggplot(log2fold_status,
+                              aes(x = Status,
+                                  y = Count,
+                                  fill = Status)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Valid log2 FC" = "seagreen3", "NA log2 FC" = "red4")) +
+  labs(
+    title = "Number of Exons with log2 Fold Change = NA vs Valid Fold Change",
+    x = "log2 Fold Change Status",
+    y = "Number of Exons"
+  ) +
+  theme_minimal()+
+  theme(
+    text = element_text(size = 18),
+    plot.title = element_text(size = 14, hjust = 0.5)
+  )
+
+# Save the plot
+ggsave(filename = "./plots/valid_log2fold_afterDEXSeqDEU_plot.png",
+       plot = valid_log2fold_plot,
+       width = 6,
+       height = 8,
+       dpi = 300,
+       bg = "white")
+```
+
+### Adjusted P values that are NA
+```{r}
+
+# data.frame showing distribution
+padj_status <- data.frame(
+  Status = c("Valid padj", "NA padj"),
+  Count = c(sum(!is.na(DEXSeq_DEU_res_raw$padj)),
+            sum(is.na(DEXSeq_DEU_res_raw$padj)))
+)
+
+ 
+# Print the data frame to check the counts
+print(padj_status) # Valid padj: 164564. NA padj: 115364
+
+# NOTE: quite a lot of the exons have a padj that is NA (42% of the dataset!)
+
+# Create a ggplot bar plot to depict how many padj are NA
+valid_padjExon_plot <- ggplot(padj_status, aes(x = Status, y = Count, fill = Status)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Valid padj" = "seagreen3", "NA padj" = "red4")) +
+  labs(
+    title = "Number of Exons with padj (FDR) = NA vs Valid padj (FDR)",
+    x = "padj Status",
+    y = "Number of Exons"
+  ) +
+  theme_minimal()+
+  theme(
+    text = element_text(size = 18),
+    plot.title = element_text(size = 14, hjust = 0.5)
+  )
+
+# Save the plot
+ggsave(filename = "./plots/valid_padjExon_afterDEXSeqDEU_plot.png",
+       plot = valid_padjExon_plot,
+       width = 6,
+       height = 8,
+       dpi = 300,
+       bg = "white")
+
+
+```
+
+
+
+## Clean up results
+```{r}
+# Filter out exons with NA for log2fold and adjusted p value
+DEXSeq_DEU_res <- DEXSeq_DEU_res_raw |> filter(!is.na(log2fold_CONTROL_PREECLAMPSIA) & !is.na(padj))
+
+# left with 164,564 exons
+
+
+# Remove gene-, id-, rna- prefixes
+DEXSeq_DEU_res <- DEXSeq_DEU_res |> mutate(
+  groupID = str_remove(groupID, "^gene-|^rna-|^id-")
+)
+
+# Add a column for -log10padj for the volcano plots
+DEXSeq_DEU_res$`-log10padj` <- -log10(DEXSeq_DEU_res$padj)
+
+# Add a column for regulation based on log2FoldChange and significance (padj < 0.05)
+DEXSeq_DEU_res <- DEXSeq_DEU_res |>
+  mutate(
+    regulation = case_when(
+      padj < 0.1 & log2fold_CONTROL_PREECLAMPSIA > 1 ~ "included exon",
+      padj < 0.1 & log2fold_CONTROL_PREECLAMPSIA < -1 ~ "skipped exon",
+      TRUE ~ "not significant"
+    )
+  )
+
+# turn regulation column into a factor for easier plotting
+DEXSeq_DEU_res <- mutate(DEXSeq_DEU_res,
+                         regulation = factor(regulation,
+                                             levels = c("skipped exon", "not significant", "included exon")
+                                             )
+                         ) # factor levels are now: "skipped exon" "not significant" "included exon" 
+```
+
+As alternative splicing is generally a more sensitive response mechanism than gene expression and hence more prone to fluctuation, I used a more stringent threshold for up- and downregulation of individual transcripts within the gene expression pool than I did for the gene regulation (here, I decided upregulation to be anything above a twofold change and downregulation anything below 0.5 to be downregulated)
+
+With padj (FDR) < 0.05, table(DEXSeq_DEU_res$regulation) returned
+
+exon less prevalent exon more prevalent     not significant 
+                278                  53              164233 
+
+This means ~0.2% of the exons are significantly regulated.
+
+If I set the FDR to 0.1, as the authors of DEXSeq do:
+
+skipped exon not significant   included exon 
+            311          164185              68
+
+The gain isn't groundbreaking (I gain 48 exons that are significantly regulated and up the percentage of significantly regulated exons to ~0.23% of all exons), so it doesn't seem to inflate the number of results a lot. I will stick to this because I have no experience that speaks against it. 
+
+### Export significantly more included and more skipped exons
+```{r}
+
+# create filtered tibble of significantly more included and more skipped exons
+DEXSeq_DEU_res_sigUpDn <- DEXSeq_DEU_res |>
+filter(DEXSeq_DEU_res$regulation != "not significant")
+
+# export significantly more included and more skipped exons
+write.csv(DEXSeq_DEU_res_sigUpDn, file = "./results/DEXSeq_significant_UpDn_exons.csv", row.names = T)
+```
+
+
+# Explore results DEXSeq (exon analysis)
+
+## Summaries and signficant results for raw results dataset
+
+```{r}
+# See a summary of results
+summary(DEXSeq_DEU_res)
+
+```
+
+   groupID           featureID          exonBaseMean        dispersion       
+ Length:164564      Length:164564      Min.   :    9.69   Min.   :0.0000156  
+ Class :character   Class :character   1st Qu.:   33.55   1st Qu.:0.0007415  
+ Mode  :character   Mode  :character   Median :   82.57   Median :0.0020603  
+                                       Mean   :  198.60   Mean   :0.0065385  
+                                       3rd Qu.:  189.60   3rd Qu.:0.0057408  
+                                       Max.   :90704.25   Max.   :1.4425474  
+      stat              pvalue             padj         PREECLAMPSIA        CONTROL       
+ Min.   : -0.2386   Min.   :0.00000   Min.   :0.0000   Min.   :  3.843   Min.   :  3.242  
+ 1st Qu.:  0.2227   1st Qu.:0.06268   1st Qu.:0.2507   1st Qu.: 10.496   1st Qu.: 10.225  
+ Median :  1.0527   Median :0.30489   Median :0.6098   Median : 16.378   Median : 16.071  
+ Mean   :  3.4637   Mean   :0.36810   Mean   :0.5483   Mean   : 19.670   Mean   : 19.544  
+ 3rd Qu.:  3.4650   3rd Qu.:0.63701   3rd Qu.:0.8493   3rd Qu.: 24.520   3rd Qu.: 24.373  
+ Max.   :245.5313   Max.   :1.00000   Max.   :1.0000   Max.   :225.115   Max.   :230.388  
+ log2fold_CONTROL_PREECLAMPSIA   -log10padj                 regulation    
+ Min.   :-2.43634              Min.   : 0.00000   skipped exon   :   311  
+ 1st Qu.:-0.16528              1st Qu.: 0.07092   not significant:164185  
+ Median :-0.02494              Median : 0.21483   included exon  :    68  
+ Mean   :-0.04323              Mean   : 0.63316                           
+ 3rd Qu.: 0.09356              3rd Qu.: 0.60085                           
+ Max.   : 2.04434              Max.   :49.39498                           
+> 
+
+# `{r} # # How many genes have a corrected p-value below 0.05? # sum(my_DEXSeqTc_result$padj < 0.05, na.rm= TRUE) # 2758 #  #  # # Extract significant results and sort them by the adjusted p-value # my_DEXSeqTc_result_sig <- my_DEXSeqTc_result[ #   which(my_DEXSeqTc_result$padj<0.05), #   ] #  # my_DEXSeqTc_result_sig <- my_DEXSeqTc_result_sig[ #   order(my_DEXSeqTc_result_sig$padj), #   ] #  # # Save significant values as .csv # write.csv(my_DEXSeqTc_result_sig, file = "./results/DEXSeqDTU_significant_tc-level.csv", row.names = T) #`
+
+## Explore per gene Q values to see which genes produce transcripts whose abundance changes between conditions
+
+### Explore Q values tabularly and calculate -log10(padj) column, with correction for those cases where padj is 0
+
+```{r}
+sum(perGeneQvals_DEU$padj < 0.05) # 550 genes
+
+# I noticed some genes seem to have a padj of 0.000000e+00 - wondering if that actually means 0
+sum(perGeneQvals_DEU$padj == 0) # indeed, there's 50 of them
+
+# Add a -log10 column to the perGeneQvals_DEU tibble
+perGeneQvals_DEU <- mutate(perGeneQvals_DEU,
+                       `-log10padj` = case_when(
+                        padj > 0 ~ -log10(padj),
+                        TRUE ~ -log10(1e-20) # this is arbitrarily chosen - the next- highest p values after the zero ones are around 5e-14, so this should separate the ones with padj=0 in a clear group from the others
+                       ))
+
+# Add a -log10 column to the perGeneQvals_DEU tibble
+perGeneQvals_DEU <- mutate(perGeneQvals_DEU,
+                       significance = case_when(
+                         padj < 0.05 ~ "significant",
+                         TRUE ~ "not significant"
+                       )
+                       )
+
+saveRDS(perGeneQvals_DEU, file = "../results/DEXSeq_DEU_res_perGeneQvals_DEU.rds")
+
+# Extract the genes with significant changes in the transcript pool composition
+DEXSeq_DEU_res_sig_Qvals <- perGeneQvals_DEU |> filter(significance == "significant") |> rename(minuslog10padj = `-log10padj`,
+                                                                                        gene_name = groupID)
+
+# Write CSV of the genes with significantly changed transcript pool composition
+write.csv(DEXSeq_DEU_res_sig_Qvals, file = "../results/DEXSeq_DEU_res_sig_Qvals.csv", row.names = T)
+```
+
+```{r}
+# Add a column to the DEXSeq_DEU_res result to indicate if that gene was found to have a significant Q value in the perGeneQvals_DEU
+
+# do a left join to add the values
+DEXSeq_DEU_res <- DEXSeq_DEU_res |>
+  left_join(perGeneQvals_DEU |> select(groupID,
+                                    significance,
+                                    padj) |>
+              rename(`Q_value` = padj),
+            by = "groupID")
+
+# Modify the `significance` column and rename it to `significance_perGeneQValue` to avoid later confusion
+DEXSeq_DEU_res <- DEXSeq_DEU_res |>
+  mutate(
+    significance_perGeneQValue = ifelse(
+      significance == "significant", "significant Q value", "not significant Q value")
+  ) |>
+  select(-significance)  # Remove the original `significance` column
+
+saveRDS(DEXSeq_DEU_res, file = "../results/DEXSeq_DEU_result.rds")
+```
+
+```{r}
+plot_jitter_strip_qval <- plot_ly(
+  perGeneQvals_DEU, 
+  x = ~`-log10padj`, 
+  y = ~jitter(rep(1, nrow(perGeneQvals_DEU)), factor = 0.015), # Jitter points on y-axis
+  type = 'scatter', 
+  mode = 'markers',
+  text = ~paste("Gene: ", groupID, "<br>Q: ", formatC(padj, format = "e", digits = 3),
+                "<br>-log10(Q): ", round(`-log10padj`, 3)),
+  hoverinfo = 'text',
+  color = ~significance,
+  colors = c("lightgray", "#29AF7FFF"),
+  marker = list(size = 6,
+                opacity = 0.5)
+) |>
+  layout(
+    title = "DEXSeq DTU: -log10(Q) Distribution of Genes",
+    xaxis = list(title = "-log10(Q)",
+                 tickvals = seq(0, ceiling(max(perGeneQvals_DEU$`-log10padj`)), by = 1),  # Set tick positions at 0, 1, 2, ...
+      ticktext = seq(0, ceiling(max(perGeneQvals_DEU$`-log10padj`)), by = 1),  # Set tick labels corresponding to the positions
+      tickmode = "array"
+      ),  # Use array mode for ticks),
+    yaxis = list(title = "Gene",
+                 showticklabels = FALSE,
+                 zeroline = FALSE, # Remove y-axis line
+                 showgrid = FALSE,
+                 showline = FALSE
+                 ),
+    hoverlabel = list(bgcolor = "white", font = list(size = 12))
+  )
+
+# Display the plot
+plot_jitter_strip_qval
+
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(plot_jitter_strip_qval), "../plots/DEXSeq_DEU_res_plot_jitter_strip_qval.html")
+```
+
+## Plots DEXSeq (exon splicing analysis)
+
+### Improved interactive plot
+
+I figured out a better way of displaying the traces and colors when I returned to working with the DESeq2 (gene expression) data, so I updated this plot as well:
+
+```{r}
+
+DEXSeq_DEU_res_volcano_plot <- plot_ly(data = DEXSeq_DEU_res,
+  x = ~log2fold_CONTROL_PREECLAMPSIA, 
+  y = ~`-log10padj`, 
+  type = 'scatter',
+  mode = 'markers',
+  marker = list(size = 6,
+                opacity = 0.4),
+                color = ~regulation,
+ colors = c( "lightgray","darkred","skyblue3"),
+  hoverinfo = 'text',
+  text = ~paste("Transcript:", featureID,
+                "<br>FDR:", formatC(padj, format = "e", digits = 3),
+                "<br>Source gene:", groupID,
+                "<br>Source gene Q val:", formatC(Q_value, format = "e", digits = 3)
+                ),
+ showlegend = TRUE
+  ) |>
+  add_trace(
+    data = DEXSeq_DEU_res |> filter(significance_perGeneQValue == "significant Q value"),
+    x = ~log2fold_CONTROL_PREECLAMPSIA,
+    y = ~`-log10padj`,
+    type = 'scatter',
+    mode = 'markers',
+    marker = list(size = 2, opacity = 0.5),
+    color=I("black"), # I = collapse the mapping of all points onto one single color, which also ensure there's only one legend entry for this property, not 3 (there doesn't seem to be any easy way to prevent this second trace from inheriting the mapping to upregulated, downregulated, not significant from the first trace)
+   hoveron = "fills", # useful so that the annotations are taken from the trace underneath and the labels then have the color of the large points (red, gray, or blue)
+   showlegend = TRUE,
+   name = "from gene with<br>significant Q value"
+  ) |>
+  layout(
+    annotations = list(
+      text = paste("Transcripts from DEXSeq DTU analysis (", nrow(DEXSeq_DEU_res), " points plotted)", sep = ""),
+      font = list(size = 14),  # Title font size
+      x = 0.5,
+      y = 1.08, # Position of the title (above the plot)
+      xref = "paper",  # Position relative to the entire plot
+      yref = "paper",
+     showarrow = FALSE
+     ),
+    xaxis = list(title = list(text = "Log2(Fold Change Preeclampsia vs Control)"),
+                 standoff = 1),
+    yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of transcript)"),
+    legend = list(title = list(text = "Regulation and Significance"),
+                  orientation = 'h',
+                  y = -0.15, x = 0.5,
+                  xanchor = 'center')
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(DEXSeq_DEU_res_volcano_plot2), "./plots/DEXSeq_DEU_res_volcano_plot.html")
+
+```
+
+# Save all variables from environment to an RDS file
+
+```{r}
+# Collect all variables from the global environment
+all_vars_DEXSeq_DEU <- mget(ls(), envir = .GlobalEnv)
+
+# Save the collected variables as an RDS file
+saveRDS(all_vars_DEXSeq_DEU, file = "./results/all_variables_DEXSeq_DEU_res.rds")
+```
+
+# Copy results to Shiny app www folder
+
+```{r}
+# Define paths
+source_folder <- "./plots"
+destination_folder <- "./results/Shiny_app_rnasplice_results/www"
+
+# Copy files from source to destination
+file.copy(list.files(source_folder, full.names = TRUE), destination_folder, overwrite = TRUE)
+
+```
+
+# Deploy app ONLINE (uncomment when ready to publish)
+
+```{r}
+#rsconnect::deployApp('./results/Shiny_app_rnasplice_results')
+```

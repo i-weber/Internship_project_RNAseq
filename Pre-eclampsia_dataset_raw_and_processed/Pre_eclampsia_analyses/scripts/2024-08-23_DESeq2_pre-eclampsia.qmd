@@ -74,15 +74,15 @@ conflicts_prefer(dplyr::filter,
 #my_DESeqGene_result <- readRDS("./results/my_DESeq_result_gene-level.rds")
 ```
 
-## If wanting to reload all variables, uncomment this chunk
+## If wanting to reload all variables
+
 ```{r}
-# Load the variables from the RDS file
-loaded_vars <- readRDS("./results/all_variables_DESeq2.rds")
-
-# Optionally, assign them back to the global environment
-list2env(loaded_vars, envir = .GlobalEnv)
+# # Load the variables from the RDS file
+# loaded_vars <- readRDS("./results/all_variables_DESeq2.rds")
+# 
+# # Optionally, assign them back to the global environment
+# list2env(loaded_vars, envir = .GlobalEnv)
 ```
-
 
 # Sample sheet and tx2gene import
 
@@ -610,12 +610,18 @@ resGene_tib$`-log10padj` <- -log10(resGene_tib$padj)
 resGene_tib <- resGene_tib |>
   mutate(
     regulation = case_when(
-      padj < 0.05 & log2FoldChange > 0.585  ~ "upregulated",
-      padj < 0.05 & log2FoldChange < -0.585 ~ "downregulated",
+      padj < 0.05 & log2FoldChange > 0.585  ~ "gene upregulated",
+      padj < 0.05 & log2FoldChange < -0.585 ~ "gene downregulated",
       TRUE ~ "not significant"
     )
   )
 
+resGene_tib <- resGene_tib |>
+  mutate(
+    regulation = factor(regulation,
+                        levels = ) 
+      )
+    
 # In the initial plotting process, got a warning that said "Ignoring 2071 observations", which is likely due to NA values in the "significance" or "regulation" columns. Find which and how many rows are lost due to NA values:
 resGene_tib_NA <- resGene_tib |>
 filter(is.na(resGene_tib$regulation) | is.na(resGene_tib$significance)) # 2071 rows indeed
@@ -632,7 +638,7 @@ Gene_raw_volcano_plot <- plot_ly(
   mode = 'markers',
   marker = list(size = 6, opacity = 0.5),  
   color = ~regulation,  # Use regulation column for colors
-  colors = c("darkred", "lightgray","skyblue3"),  # Light gray for not significant, red for significant and downregulated, blue for significant and  upregulated
+  colors = c("firebrick3", "cadetblue3", "lightgray"),  # Light gray for not significant, red for significant and downregulated, blue for significant and  upregulated
    type = 'scatter', 
   hoverinfo = 'text'
 ) |>
@@ -718,18 +724,6 @@ ggsave(filename = "./plots/Overlap_publicationVSmy_DEGs.png",
 
 # Add a new trace (layer) to the original volcano plot from the raw data to include strokes (contours) for the data points that are also present in the published dataset
 
-Gene_raw_volcano_overlap <- Gene_raw_volcano_plot |>
-  add_trace(
-    x = NA, y = NA,  # Invisible trace
-    mode = 'markers',
-    marker = list(
-      size = 2.5,
-      color = 'pink',
-      line = list(width = 0.5)
-    ),
-    showlegend = TRUE,
-    name = "In both datasets"  # Legend entry for the contour
-  )
 
 Gene_raw_volcano_overlap <- Gene_raw_volcano_plot |>
   add_trace(
@@ -745,8 +739,9 @@ Gene_raw_volcano_overlap <- Gene_raw_volcano_plot |>
       #stroke = list(width = 1.5, color='cyan'),
       opacity = 1
     ),
-    hoverinfo = 'text',
-    showlegend = FALSE
+    hoverinfo = 'none',
+    showlegend = FALSE,
+    name = "published DEG"
   ) |>
    layout(
     title = paste("Overlap publication DEGs with my DEGs.\nDark center = reported in publication", sep=""),
@@ -757,6 +752,57 @@ Gene_raw_volcano_overlap <- Gene_raw_volcano_plot |>
 
 # export plot as html file with htmlwidgets
 saveWidget(as_widget(Gene_raw_volcano_overlap), "./plots/Gene_raw_volcano_overlap.html")
+
+
+
+```
+
+### Interactive volcano plot try 2
+
+I didn't fully like the way in which my first plot attempt displayed - I could not previously set a legend entry for the dark dots that symbolize a gene that is also present in the DEG table provided in the publication's supplementary material. So I set out to make a better plot.
+
+```{r}
+
+Gene_raw_volcano_overlap2 <- plot_ly(data = resGene_tib,
+  x = ~log2FoldChange, 
+  y = ~`-log10padj`, 
+  type = 'scatter',
+  mode = 'markers',
+  marker = list(size = 6,
+                opacity = 0.4),
+                color = ~regulation,
+ colors = c("firebrick3", "cadetblue3", "lightgray"),#factor lelvels are downregulated, upregulated, not significant
+  hoverinfo = 'text',
+  text = ~paste("Gene:", gene,
+                "<br>log2 FC:", log2FoldChange,
+                "<br>FDR:", formatC(padj, format = "e", digits = 3)
+                ),
+ showlegend = TRUE
+  ) |>
+  add_trace(
+    data = resGene_tib |> filter(inPublication == TRUE),
+    x = ~log2FoldChange,
+    y = ~`-log10padj`,
+    type = 'scatter',
+    mode = 'markers',
+    marker = list(size = 3),
+    color=I("black"), # I = collapse the mapping of all points onto one single color, which also ensure there's only one legend entry for this property, not 3 (there doesn't seem to be any easy way to prevent this second trace from inheriting the mapping to upregulated, downregulated, not significant from the first trace)
+   hoveron = "fills", # useful so that the annotations are taken from the trace underneath and the labels then have the color of the large points (red, gray, or blue)
+   showlegend = TRUE,
+   name = "DEG identified in published data"
+  ) |>
+  layout(
+    #title = paste("DEGs from DESeq2 analysis (", nrow(resGene_tib), " points plotted)", sep = ""),
+    xaxis = list(title = "Log2(Fold Change Preeclampsia vs Control)"),
+    yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of gene)"),
+    legend = list(title = list(text = "Regulation and Dataset"),
+                  orientation = 'h',
+                  y = -0.15, x = 0.5,
+                  xanchor = 'center')
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(Gene_raw_volcano_overlap2), "./plots/Gene_raw_volcano_overlap2.html")
 
 ```
 
@@ -782,7 +828,37 @@ Gene_raw_volcano_overlap_labels <- Gene_raw_volcano_overlap |>
 
 # export plot as html file with htmlwidgets
 saveWidget(as_widget(Gene_raw_volcano_overlap_labels), "./plots/Gene_raw_volcano_overlap_labels.html")
-  
+```
+
+Same thing for the improved volcano plot:
+
+```{r}
+# Do the same thing for the improved plot
+# Create a plot that has persistent labels for the data points associated with these genes based on new plot
+Gene_raw_volcano_overlap_labels2 <- Gene_raw_volcano_overlap2 |>
+  layout(
+    annotations = list(
+      text = paste("Differentially expressed genes (DEGs) from my DESeq2 analysis.<br>Persistent labels = validated in publication.\n", sep=""),
+      font = list(size = 14),  # Title font size
+      x = 0.5,
+      y = 1.08, # Position of the title (above the plot)
+      xref = "paper",  # Position relative to the entire plot
+      yref = "paper",
+     showarrow = FALSE  # or else it shows an arrow pointing to the plot
+                 )
+    ) |>
+  add_annotations(
+    x = points_to_label$log2FoldChange,
+    y = points_to_label$`-log10padj`,
+    text = points_to_label$gene,
+    showarrow = TRUE,
+    arrowhead = 1,
+    ax = 20,
+    ay = -40
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(Gene_raw_volcano_overlap_labels2), "./plots/Gene_raw_volcano_overlap_labels2.html")
 ```
 
 # TO DO: PCA analysis samples
@@ -796,7 +872,6 @@ all_vars <- mget(ls(), envir = .GlobalEnv)
 # Save the collected variables as an RDS file
 saveRDS(all_vars, file = "./results/all_variables_DESeq2.rds")
 ```
-
 
 # Copy results to Shiny app www folder
 
@@ -813,5 +888,5 @@ file.copy(list.files(source_folder, full.names = TRUE), destination_folder, over
 # Deploy app ONLINE (uncomment when ready to publish)
 
 ```{r}
-#rsconnect::deployApp('results/Shiny_app_rnasplice_results')
+rsconnect::deployApp('results/Shiny_app_rnasplice_results')
 ```

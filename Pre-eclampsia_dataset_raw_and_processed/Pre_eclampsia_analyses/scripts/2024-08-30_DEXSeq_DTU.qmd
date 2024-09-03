@@ -26,7 +26,6 @@ pacman::p_load(readxl,
                conflicted,
                tidyverse,
                ggplot2,
-               EBSeq,
                htmlwidgets,
                rsconnect,
                wrappedtools)
@@ -37,50 +36,85 @@ conflicts_prefer(dplyr::filter,
                  plotly::layout)
 ```
 
+In case needing to re-set working directory:
+
+```{r}
+#setwd("C:/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_analyses/")
+```
+
 # If DEXSeq analysis performed previously: load results (uncomment as needed)
 
 ```{r}
-#my_DEXSeqTc_result <- readRDS("./results/my_DESeq_result_gene-level.rds")
+DEXSeq_DTU_res <- readRDS("../results/DEXSeq_DTU_result.rds")
+perGeneQvals <- readRDS("../results/DEXSeq_DTU_perGeneQvals.rds")
 ```
 
-# Import cts object from tximport 
+## If wanting to reload all variables
 
 ```{r}
-drimSeq_res <- readRDS("./Pre_eclampsia_mice_rnasplice_results/dexseq_dtu/filter/drimseq/dmDSdata.rds")
+# Load the variables from the RDS file
+loaded_vars <- readRDS("./results/all_variables_DEXSeq_DTU.rds")
+
+# Optionally, assign them back to the global environment
+list2env(loaded_vars, envir = .GlobalEnv)
 ```
 
-# Explore raw, non-normalized read counts from the object
-
-## Pre-filter transcripts with \<10 reads per sample
+# Import DEXSeq DTU results and the perGeneQvalues from TSVs
 
 ```{r}
+# Read in DEXSeq DTU result
+DEXSeq_DTU_res <- read_tsv('./dexseq_dtu/results/dexseq/DEXSeqResults.PREECLAMPSIA-CONTROL.tsv')
 
-# Set which rows should be pre-filtered (generates matrix of same size as my_ddsTxi filled with Booleans everywhere where the read counts are larger than ten, then sums them up per condition to make sure all samples of that condition have more than 10 reads for that gene - results in 4x TRUE if all four samples meet the condition, which is interpreted as 4*1 = 4. The TRUE/FALSE result for the row overall is stored in  a vector, keep, which indicates using TRUE or FALSE if the row with that gene kept.)
-keep <- rowSums(counts(my_ddsTxi) >= 10) >= 4 # Sets the smallest group size - we have 4 samples in control group, 4 samples in treatment group
+# Remove gene-, id-, rna- prefixes
+DEXSeq_DTU_res <- DEXSeq_DTU_res |> mutate(
+  featureID = str_remove(featureID, "^gene-|^rna-|^id-"),
+  groupID = str_remove(groupID, "^gene-|^rna-|^id-")
+)
 
-# Initial number of transcripts in the dataset was 42,855
-my_dds_filtered <- my_ddsTxi[keep,]
-# After filtering weakly expressed transcripts: 15,245 left
+DEXSeq_DTU_res$`-log10padj` <- -log10(DEXSeq_DTU_res$padj)
 
+# Add a column for regulation based on log2FoldChange and significance (padj < 0.05)
+DEXSeq_DTU_res <- DEXSeq_DTU_res |>
+  mutate(
+    regulation = case_when(
+      padj < 0.05 & log2fold_CONTROL_PREECLAMPSIA > 1 ~ "transcript upregulated",
+      padj < 0.05 & log2fold_CONTROL_PREECLAMPSIA < -1 ~ "transcript downregulated",
+      TRUE ~ "not significant"
+    )
+  )
+
+DEXSeq_DTU_res <- mutate(DEXSeq_DTU_res,
+                         regulation = factor(regulation)) # factor levels: "not significant","transcript downregulated", "transcript upregulated" 
 ```
 
-## If needed, remove "gene-", "rna-" identifiers from the dataset
+As alternative splicing is generally a more sensitive response mechanism than gene expression and hence more prone to fluctuation, I used a more stringent threshold for up- and downregulation of individual transcripts within the gene expression pool than I did for the gene regulation (here, I decided upregulation to be anything above a twofold change and downregulation anything below 0.5 to be downregulated)
+
+table(DEXSeq_DTU_res$regulation) returned
+
+downregulated not significant upregulated 190 22762 237
 
 ```{r}
-# check if rownames have prefixes
-head(rownames(my_dds_filtered))
+# create RDS object out of the DEXSeq DTU result to be able to easier retrieve result later
+saveRDS(DEXSeq_DTU_res, file = "./results/DEXSeq_DTU_result.rds")
 
-# Extract the row names (gene or transcript identifiers)
-rownames_original <- rownames(my_dds_filtered)
+# read in the Q vals, which indicate significant changes in the transcript composition within the transcript pool produced from one gene locus
+perGeneQvals <- read_tsv('./dexseq_dtu/results/dexseq/perGeneQValue.PREECLAMPSIA-CONTROL.tsv')
+# 7,750 genes
 
-# Use gsub() to remove the prefixes "gene-", "id-", or "rna-"
-rownames_modified <- gsub("^(gene-|id-|rna-)", "", rownames_original)
+perGeneQvals <- perGeneQvals |> mutate(
+  groupID = str_remove(groupID, "^gene-|^rna-|^id-")
+)
+```
 
-# Reassign the modified row names back to the ddsTxi object
-rownames(my_dds_filtered) <- rownames_modified
+### Export significantly up- and downregulated transcripts
+```{r}
 
-# check if prefixes were removed from rownames
-head(rownames(my_dds_filtered))
+# create filtered tibble of significantly up- and downregulated genes
+DEXSeq_DTU_res_sigUpDn <- DEXSeq_DTU_res |>
+filter(DEXSeq_DEU_res$regulation != "not significant")
+
+# export significantly up- and downregulated genes
+write.csv(DEXSeq_DTU_res_sigUpDn, file = "./results/DEXSeq_significant_UpDn_transcripts.csv", row.names = T)
 ```
 
 # Explore results DEXSeq (transcript-level analysis)
@@ -89,88 +123,286 @@ head(rownames(my_dds_filtered))
 
 ```{r}
 # See a summary of results
-summary(my_DEXSeqTc_result)
+summary(DEXSeq_DTU_res)
 
 ```
 
+```         
+ groupID           featureID          exonBaseMean         dispersion       
+```
+
+Length:23189 Length:23189 Min. : 2.508 Min. : 0.000738\
+Class :character Class :character 1st Qu.: 29.552 1st Qu.: 0.063558\
+Mode :character Mode :character Median : 99.416 Median : 0.260752\
+Mean : 316.428 Mean : 1.291682\
+3rd Qu.: 309.000 3rd Qu.: 1.770060\
+Max. :21783.660 Max. :16.000000
+
+```         
+  stat              pvalue            padj         PREECLAMPSIA      
+```
+
+Min. : -1.3975 Min. :0.0000 Min. :0.0000 Min. : 0.001417\
+1st Qu.: 0.1261 1st Qu.:0.1661 1st Qu.:0.6643 1st Qu.: 1.403392\
+Median : 0.6030 Median :0.4374 Median :0.8746 Median : 2.551537\
+Mean : 2.4685 Mean :0.4513 Mean :0.7554 Mean : 2.982635\
+3rd Qu.: 1.9179 3rd Qu.:0.7225 3rd Qu.:0.9633 3rd Qu.: 4.164265\
+Max. :785.3352 Max. :1.0000 Max. :1.0000 Max. :14.391478
+
+```         
+ CONTROL       log2fold_CONTROL_PREECLAMPSIA
+```
+
+Min. : 0.002271 Min. :-22.292357\
+1st Qu.: 1.435759 1st Qu.: -0.298577\
+Median : 2.571644 Median : 0.002694\
+Mean : 3.001355 Mean : 0.076015\
+3rd Qu.: 4.202713 3rd Qu.: 0.319994\
+Max. :13.085330 Max. : 23.540320
+
+# `{r} # # How many genes have a corrected p-value below 0.05? # sum(my_DEXSeqTc_result$padj < 0.05, na.rm= TRUE) # 2758 #  #  # # Extract significant results and sort them by the adjusted p-value # my_DEXSeqTc_result_sig <- my_DEXSeqTc_result[ #   which(my_DEXSeqTc_result$padj<0.05), #   ] #  # my_DEXSeqTc_result_sig <- my_DEXSeqTc_result_sig[ #   order(my_DEXSeqTc_result_sig$padj), #   ] #  # # Save significant values as .csv # write.csv(my_DEXSeqTc_result_sig, file = "./results/DEXSeqDTU_significant_tc-level.csv", row.names = T) #`
+
+## Explore per gene Q values to see which genes produce transcripts whose abundance changes between conditions
+
+### Explore Q values tabularly and calculate -log10(padj) column, with correction for those cases where padj is 0
+
 ```{r}
-# How many genes have a corrected p-value below 0.05?
-sum(my_DEXSeqTc_result$padj < 0.05, na.rm= TRUE) # 2758
+sum(perGeneQvals$padj < 0.05) # 550 genes
+
+# I noticed some genes seem to have a padj of 0.000000e+00 - wondering if that actually means 0
+sum(perGeneQvals$padj == 0) # indeed, there's 50 of them
+
+# Add a -log10 column to the perGeneQvals tibble
+perGeneQvals <- mutate(perGeneQvals,
+                       `-log10padj` = case_when(
+                        padj > 0 ~ -log10(padj),
+                        TRUE ~ -log10(1e-20) # this is arbitrarily chosen - the next- highest p values after the zero ones are around 5e-14, so this should separate the ones with padj=0 in a clear group from the others
+                       ))
+
+# Add a -log10 column to the perGeneQvals tibble
+perGeneQvals <- mutate(perGeneQvals,
+                       significance = case_when(
+                         padj < 0.05 ~ "significant",
+                         TRUE ~ "not significant"
+                       )
+                       )
+
+saveRDS(perGeneQvals, file = "../results/DEXSeq_DTU_perGeneQvals.rds")
+
+# Extract the genes with significant changes in the transcript pool composition
+DEXSeq_DTU_sig_Qvals <- perGeneQvals |> filter(significance == "significant") |> rename(minuslog10padj = `-log10padj`,
+                                                                                        gene_name = groupID)
+
+# Write CSV of the genes with significantly changed transcript pool composition
+write.csv(DEXSeq_DTU_sig_Qvals, file = "../results/DEXSeq_DTU_sig_Qvals.csv", row.names = T)
+```
+
+```{r}
+# Add a column to the DEXSeq_DTU result to indicate if that gene was found to have a significant Q value in the perGeneQvals
+
+# do a left join to add the values
+DEXSeq_DTU_res <- DEXSeq_DTU_res |>
+  left_join(perGeneQvals |> select(groupID,
+                                    significance,
+                                    padj) |>
+              rename(`Q_value` = padj),
+            by = "groupID")
+
+# Modify the `significance` column and rename it to `significance_perGeneQValue` to avoid later confusion
+DEXSeq_DTU_res <- DEXSeq_DTU_res |>
+  mutate(
+    significance_perGeneQValue = ifelse(
+      significance == "significant", "significant Q value", "not significant Q value")
+  ) |>
+  select(-significance)  # Remove the original `significance` column
+
+saveRDS(DEXSeq_DTU_res, file = "../results/DEXSeq_DTU_result.rds")
+```
+
+```{r}
+plot_jitter_strip_qval <- plot_ly(
+  perGeneQvals, 
+  x = ~`-log10padj`, 
+  y = ~jitter(rep(1, nrow(perGeneQvals)), factor = 0.015), # Jitter points on y-axis
+  type = 'scatter', 
+  mode = 'markers',
+  text = ~paste("Gene: ", groupID, "<br>Q: ", formatC(padj, format = "e", digits = 3),
+                "<br>-log10(Q): ", round(`-log10padj`, 3)),
+  hoverinfo = 'text',
+  color = ~significance,
+  colors = c("lightgray", "#29AF7FFF"),
+  marker = list(size = 6,
+                opacity = 0.5)
+) |>
+  layout(
+    title = "DEXSeq DTU: -log10(Q) Distribution of Genes",
+    xaxis = list(title = "-log10(Q)",
+                 tickvals = seq(0, ceiling(max(perGeneQvals$`-log10padj`)), by = 1),  # Set tick positions at 0, 1, 2, ...
+      ticktext = seq(0, ceiling(max(perGeneQvals$`-log10padj`)), by = 1),  # Set tick labels corresponding to the positions
+      tickmode = "array"
+      ),  # Use array mode for ticks),
+    yaxis = list(title = "Gene",
+                 showticklabels = FALSE,
+                 zeroline = FALSE, # Remove y-axis line
+                 showgrid = FALSE,
+                 showline = FALSE
+                 ),
+    hoverlabel = list(bgcolor = "white", font = list(size = 12))
+  )
+
+# Display the plot
+plot_jitter_strip_qval
 
 
-# Extract significant results and sort them by the adjusted p-value
-my_DEXSeqTc_result_sig <- my_DEXSeqTc_result[
-  which(my_DEXSeqTc_result$padj<0.05),
-  ]
-
-my_DEXSeqTc_result_sig <- my_DEXSeqTc_result_sig[
-  order(my_DEXSeqTc_result_sig$padj),
-  ]
-
-# Save significant values as .csv
-write.csv(my_DEXSeqTc_result_sig, file = "./results/DEXSeqDTU_significant_tc-level.csv", row.names = T)
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(plot_jitter_strip_qval), "../plots/DEXSeq_DTU_plot_jitter_strip_qval.html")
 ```
 
 ## Plots DEXSeq (transcript-level analysis)
 
-### Plotly interactive volcano plot of raw results
+### Plotly interactive volcano plot of log2fold change and FDR
 
 ```{r}
 
-# Add a column for -log10(padj)
-resGene_tib$`-log10padj` <- -log10(resGene_tib$padj)
+# # Create a separate trace to indicate transcripts that come from significant genes
+# trace_significant_genes <- plot_ly(
+#   data = DEXSeq_DTU_res |> filter(significance_perGeneQValue == "significant Q value"),
+#   x = ~log2fold_CONTROL_PREECLAMPSIA, 
+#   y = ~`-log10padj`, 
+#   type = 'scatter', 
+#   mode = 'markers',
+#   marker = list(size = 2, color = 'black'),  # Small black dots
+#   #hoverinfo = 'none', # Disable hover for these points to avoid clutter
+#   showlegend = TRUE,
+#   name = "from gene with<br>significant Q value"
+# )
+# 
+# 
+# # Create the volcano plot (all values)
+# trace_volcano_plot <- plot_ly(
+#   data = DEXSeq_DTU_res,
+#   x = ~log2fold_CONTROL_PREECLAMPSIA, 
+#   y = ~`-log10padj`, 
+#   text = ~paste("Transcript:", featureID,
+#                 "<br>Source gene:", groupID,
+#                 "<br>FDR:", formatC(padj, format = "e", digits = 3)
+#                 ),  # Text to show on hover
+#   mode = 'markers',
+#   marker = list(size = 6, opacity = 0.5),  
+#   color = ~regulation,  # Use regulation column for colors
+#   colors = c("darkred", "lightgray","skyblue3"),  # Light gray for not significant, red for significant and downregulated, blue for significant and  upregulated
+#    type = 'scatter', 
+#   hoverinfo = 'text'
+# ) 
 
-# Add a column for regulation based on log2FoldChange and significance (padj < 0.05)
-resGene_tib <- resGene_tib |>
-  mutate(
-    regulation = case_when(
-      padj < 0.05 & log2FoldChange > 0.585  ~ "upregulated",
-      padj < 0.05 & log2FoldChange < -0.585 ~ "downregulated",
-      TRUE ~ "not significant"
-    )
-  )
-
-# In the initial plotting process, got a warning that said "Ignoring 2071 observations", which is likely due to NA values in the "significance" or "regulation" columns. Find which and how many rows are lost due to NA values:
-resGene_tib_NA <- resGene_tib |>
-filter(is.na(resGene_tib$regulation) | is.na(resGene_tib$significance)) # 2071 rows indeed
-
-# how many data points actually plotted
-(plottable_points <- nrow(resGene_tib)-nrow(resGene_tib_NA))
-
-# Create the volcano plot (all values, will ignore NAs)
-Gene_raw_volcano_plot <- plot_ly(
-  data = resGene_tib,
-  x = ~log2FoldChange, 
+DEXSeq_DTU_volcano_plot <- plot_ly() |>
+  add_trace(data = DEXSeq_DTU_res |> filter(significance_perGeneQValue == "significant Q value"),
+  x = ~log2fold_CONTROL_PREECLAMPSIA, 
   y = ~`-log10padj`, 
-  text = ~gene,  # Text to show on hover
+  type = 'scatter', 
   mode = 'markers',
-  marker = list(size = 6, opacity = 0.5),  
+  marker = list(size = 2, color = 'black'),  # Small black dots
+  #hoverinfo = 'none', # Disable hover for these points to avoid clutter
+  showlegend = TRUE,
+  name = "from gene with<br>significant Q value"
+  ) |>
+  add_trace(data = DEXSeq_DTU_res,
+  x = ~log2fold_CONTROL_PREECLAMPSIA, 
+  y = ~`-log10padj`, 
+  text = ~paste("Transcript:", featureID,
+                "<br>FDR:", formatC(padj, format = "e", digits = 3),
+                "<br>Source gene:", groupID,
+                "<br>Source gene Q val:", formatC(Q_value, format = "e", digits = 3)
+                ),  # Text to show on hover
+  mode = 'markers',
+  marker = list(size = 6,opacity = 0.5),  
   color = ~regulation,  # Use regulation column for colors
   colors = c("darkred", "lightgray","skyblue3"),  # Light gray for not significant, red for significant and downregulated, blue for significant and  upregulated
    type = 'scatter', 
   hoverinfo = 'text'
-) |>
+  ) |>
   plotly::layout(
-    title = paste("DEGs from my DESeq2data (", plottable_points, " points plotted)", sep = ""),
-    xaxis = list(title = "Log2(Fold Change)"),
-    yaxis = list(title = "-Log10(Adjusted P-Value (FDR))"),
+    title = paste("Transcripts from DEXSeq DTU analysis (", nrow(DEXSeq_DTU_res), " points plotted)", sep = ""),
+    xaxis = list(title = "Log2(Fold Change Preeclampsia vs Control)"),
+    yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of transcript)"),
     legend = list(title = list(text = "Regulation"))
   )
 
 # Display the plot
-Gene_raw_volcano_plot
+DEXSeq_DTU_volcano_plot
 
 
 # export plot as html file with htmlwidgets
-saveWidget(as_widget(Gene_raw_volcano_plot), "./plots/Gene_raw_volcano_plot.html")
+saveWidget(as_widget(DEXSeq_DTU_volcano_plot), "../plots/DEXSeq_DTU_volcano_plot.html")
+```
 
-# create filtered tibble of significantly up- and downregulated genes
-resGene_tib_sigUpDn <- resGene_tib |>
-filter(resGene_tib$regulation != "not significant")
+### Improved interactive plot
 
-# export significantly up- and downregulated genes
-write.csv(resGene_tib_sigUpDn, file = "./results/DESeq2_significant_UpDn_gene-level.csv", row.names = T)
+I figured out a better way of displaying the traces and colors when I returned to working with the DESeq2 (gene expression) data, so I updated this plot as well:
 
+```{r}
+
+DEXSeq_DTU_volcano_plot2 <- plot_ly(data = DEXSeq_DTU_res,
+  x = ~log2fold_CONTROL_PREECLAMPSIA, 
+  y = ~`-log10padj`, 
+  type = 'scatter',
+  mode = 'markers',
+  marker = list(size = 6,
+                opacity = 0.4),
+                color = ~regulation,
+ colors = c( "lightgray","darkred","skyblue3"),
+  hoverinfo = 'text',
+  text = ~paste("Transcript:", featureID,
+                "<br>FDR:", formatC(padj, format = "e", digits = 3),
+                "<br>Source gene:", groupID,
+                "<br>Source gene Q val:", formatC(Q_value, format = "e", digits = 3)
+                ),
+ showlegend = TRUE
+  ) |>
+  add_trace(
+    data = DEXSeq_DTU_res |> filter(significance_perGeneQValue == "significant Q value"),
+    x = ~log2fold_CONTROL_PREECLAMPSIA,
+    y = ~`-log10padj`,
+    type = 'scatter',
+    mode = 'markers',
+    marker = list(size = 2, opacity = 0.5),
+    color=I("black"), # I = collapse the mapping of all points onto one single color, which also ensure there's only one legend entry for this property, not 3 (there doesn't seem to be any easy way to prevent this second trace from inheriting the mapping to upregulated, downregulated, not significant from the first trace)
+   hoveron = "fills", # useful so that the annotations are taken from the trace underneath and the labels then have the color of the large points (red, gray, or blue)
+   showlegend = TRUE,
+   name = "from gene with<br>significant Q value"
+  ) |>
+  layout(
+    annotations = list(
+      text = paste("Transcripts from DEXSeq DTU analysis (", nrow(DEXSeq_DTU_res), " points plotted)", sep = ""),
+      font = list(size = 14),  # Title font size
+      x = 0.5,
+      y = 1.08, # Position of the title (above the plot)
+      xref = "paper",  # Position relative to the entire plot
+      yref = "paper",
+     showarrow = FALSE
+     ),
+    xaxis = list(title = list(text = "Log2(Fold Change Preeclampsia vs Control)"),
+                 standoff = 1),
+    yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of transcript)"),
+    legend = list(title = list(text = "Regulation and Significance"),
+                  orientation = 'h',
+                  y = -0.15, x = 0.5,
+                  xanchor = 'center')
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(DEXSeq_DTU_volcano_plot2), "./plots/DEXSeq_DTU_volcano_plot2.html")
+
+```
+
+# Save all variables from environment to an RDS file
+
+```{r}
+# Collect all variables from the global environment
+all_vars <- mget(ls(), envir = .GlobalEnv)
+
+# Save the collected variables as an RDS file
+saveRDS(all_vars, file = "./results/all_variables_DEXSeq_DTU.rds")
 ```
 
 # Copy results to Shiny app www folder
@@ -188,5 +420,5 @@ file.copy(list.files(source_folder, full.names = TRUE), destination_folder, over
 # Deploy app ONLINE (uncomment when ready to publish)
 
 ```{r}
-#rsconnect::deployApp('results/Shiny_app_rnasplice_results')
+#rsconnect::deployApp('./results/Shiny_app_rnasplice_results')
 ```
