@@ -6,7 +6,7 @@ editor: visual
 ---
 # Aim
 
-Explore which transcripts are differentially expressed between conditions from the DEXSeq DTU data output by the rnasplice pipeline for the experiment that analyzed the effect of pre-eclampsia on E 17.5 embryonic cortices.
+Explore which exons are differentially included/excluded between conditions from the DEXSeq DEU data output by the rnasplice pipeline for the experiment that analyzed the effect of pre-eclampsia on E 17.5 embryonic cortices.
 
 # Preparations
 

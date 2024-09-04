@@ -1,0 +1,105 @@
+---
+title: "rMATS"
+author: "Ioana Weber"
+format: html
+editor: visual
+---
+
+# Aim
+
+Explore which splicing events change between conditions from the rMATS data output by the rnasplice pipeline for the experiment that analyzed the effect of pre-eclampsia on E 17.5 embryonic cortices.
+
+rMATS analyzes five types of splicing events:
+
+-   retained introns (RI) - normally, introns are chopped out of transcripts during the transcript maturation process, leaving only certain combinations of exons behind. However, for certain introns this removal doesn't happen under particular conditions.
+
+-   alternative 5' splice sites (A5SS)  - an exon's end towards the "left-hand side" includes some of the sequence that would normally be a part of the adjacent intron
+
+-   alternative 3' splice sites (A3SS) -an exon's end towards the "right-hand side" includes some of the sequence that would normally be a part of the adjacent intron
+
+-   spliced exons (SE) - single exons that get either included or skipped in their totality
+
+-   mutually exclusive exons (MXE) - pairs of exons where only one is included in transcripts at one time
+
+# Preparations
+
+## Install packages if needed
+
+```{r}
+#pacman::p_install(htmlwidgets)
+#pacman::p_install(rsconnect)
+```
+
+## Load packages, test for and resolve conflicts between functions of same name from different packages
+
+```{r}
+pacman::p_load(readxl,
+               plotly,
+               conflicted,
+               tidyverse,
+               ggplot2,
+               readr,
+               htmlwidgets,
+               rsconnect,
+               wrappedtools)
+
+conflict_scout()
+
+conflicts_prefer(dplyr::filter,
+                 plotly::layout)
+```
+
+In case needing to re-set working directory:
+
+```{r}
+#setwd("C:/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_analyses")
+```
+
+# If rMATS analysis performed previously: load results (uncomment as needed)
+
+```{r}
+#rMATS_res <- readRDS("../results/DEXSeq_DEU_result.rds")
+#perGeneQvals_DEU_DEU <- readRDS("../results/rMATS_res.rds")
+```
+
+## If wanting to reload all variables
+
+```{r}
+# Load the variables from the RDS file
+loaded_vars <- readRDS("./results/all_variables_rMATS.rds")
+
+# Optionally, assign them back to the global environment
+list2env(loaded_vars, envir = .GlobalEnv)
+```
+
+# Import and prepare DEXSeq differential exon usage (DEU) results and the perGeneQvalues from CSVs
+
+## 
+
+# Save all variables from environment to an RDS file
+
+```{r}
+# Collect all variables from the global environment
+all_vars_rMATS <- mget(ls(), envir = .GlobalEnv)
+
+# Save the collected variables as an RDS file
+saveRDS(all_vars_rMATS, file = "./results/all_variables_rMATS.rds")
+```
+
+# Copy results to Shiny app www folder
+
+```{r}
+# Define paths
+source_folder <- "./plots"
+destination_folder <- "./results/Shiny_app_rnasplice_results/www"
+
+# Copy files from source to destination
+file.copy(list.files(source_folder, full.names = TRUE), destination_folder, overwrite = TRUE)
+
+```
+
+# Deploy app ONLINE (uncomment when ready to publish)
+
+```{r}
+#rsconnect::deployApp('./results/Shiny_app_rnasplice_results')
+```
