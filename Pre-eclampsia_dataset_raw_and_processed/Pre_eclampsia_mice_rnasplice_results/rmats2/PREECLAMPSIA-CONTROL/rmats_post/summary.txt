@@ -1,0 +1,6 @@
+EventType	TotalEventsJC	TotalEventsJCEC	SignificantEventsJC	SigEventsJCSample1HigherInclusion	SigEventsJCSample2HigherInclusion	SignificantEventsJCEC	SigEventsJCECSample1HigherInclusion	SigEventsJCECSample2HigherInclusion
+SE	47570	47818	34	30	4	34	31	3
+A5SS	7637	7679	4	0	4	5	1	4
+A3SS	9238	9265	6	4	2	6	4	2
+MXE	8290	8344	1	0	1	4	2	2
+RI	2806	2829	2	2	0	3	3	0

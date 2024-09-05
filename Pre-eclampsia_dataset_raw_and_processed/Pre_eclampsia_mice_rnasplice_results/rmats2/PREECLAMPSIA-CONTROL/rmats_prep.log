@@ -1,0 +1,29 @@
+gtf: 7.944132566452026
+There are 43527 distinct gene ID in the gtf file
+There are 141898 distinct transcript ID in the gtf file
+There are 23753 one-transcript genes in the gtf file
+There are 1584265 exons in the gtf file
+There are 11329 one-exon transcripts in the gtf file
+There are 7836 one-transcript genes with only one exon in the transcript
+Average number of transcripts per gene is 3.260000
+Average number of exons per transcript is 11.164816
+Average number of exons per transcript excluding one-exon tx is 12.046780
+Average number of gene per geneGroup is 7.474234
+statistic: 0.01688671112060547
+
+read outcome totals across all BAMs
+USED: 291716590
+NOT_PAIRED: 165470
+NOT_NH_1: 26979054
+NOT_EXPECTED_CIGAR: 6027932
+NOT_EXPECTED_READ_LENGTH: 0
+NOT_EXPECTED_STRAND: 0
+EXON_NOT_MATCHED_TO_ANNOTATION: 13100854
+JUNCTION_NOT_MATCHED_TO_ANNOTATION: 2229628
+CLIPPED: 0
+total: 340219528
+outcomes by BAM written to: PREECLAMPSIA-CONTROL/rmats_temp/2024-09-04-19_23_21_365134_read_outcomes_by_bam.txt
+
+novel: 258.567754983902
+The splicing graph and candidate read have been saved into PREECLAMPSIA-CONTROL/rmats_temp/2024-09-04-19_23_21_365134_*.rmats
+save: 4.278113126754761

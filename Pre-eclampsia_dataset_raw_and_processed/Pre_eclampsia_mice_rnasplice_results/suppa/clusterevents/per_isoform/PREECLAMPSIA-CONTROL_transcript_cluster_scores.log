@@ -1,0 +1,6 @@
+Number of clustered events: 185/682 (27.126100%)
+Cluster 1 contains 46 events
+Cluster 0 contains 139 events
+The RMSSTD score for cluster 1 is 0.276039
+The RMSSTD score for cluster 0 is 0.358015
+The average silhouette score is : 0.848019
