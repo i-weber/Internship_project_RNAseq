@@ -13,7 +13,7 @@ rMATS analyzes five types of splicing events:
 
 -   retained introns (RI) - normally, introns are chopped out of transcripts during the transcript maturation process, leaving only certain combinations of exons behind. However, for certain introns this removal doesn't happen under particular conditions.
 
--   alternative 5' splice sites (A5SS)  - an exon's end towards the "left-hand side" includes some of the sequence that would normally be a part of the adjacent intron
+-   alternative 5' splice sites (A5SS) - an exon's end towards the "left-hand side" includes some of the sequence that would normally be a part of the adjacent intron
 
 -   alternative 3' splice sites (A3SS) -an exon's end towards the "right-hand side" includes some of the sequence that would normally be a part of the adjacent intron
 
@@ -41,7 +41,8 @@ pacman::p_load(readxl,
                readr,
                htmlwidgets,
                rsconnect,
-               wrappedtools)
+               wrappedtools,
+               RColorBrewer)
 
 conflict_scout()
 
@@ -58,23 +59,357 @@ In case needing to re-set working directory:
 # If rMATS analysis performed previously: load results (uncomment as needed)
 
 ```{r}
-#rMATS_res <- readRDS("../results/DEXSeq_DEU_result.rds")
-#perGeneQvals_DEU_DEU <- readRDS("../results/rMATS_res.rds")
-```
-
-## If wanting to reload all variables
-
-```{r}
 # Load the variables from the RDS file
-loaded_vars <- readRDS("./results/all_variables_rMATS.rds")
+#loaded_vars <- readRDS("./results/all_variables_rMATS.rds")
 
 # Optionally, assign them back to the global environment
-list2env(loaded_vars, envir = .GlobalEnv)
+#list2env(loaded_vars, envir = .GlobalEnv)
 ```
 
-# Import and prepare DEXSeq differential exon usage (DEU) results and the perGeneQvalues from CSVs
+# Import and prepare rMATS results from text files
 
-## 
+### read outcomes
+
+The read outcomes give valuable information on how many reads were used in each sample and for how many rMATS failed for which reasons.
+
+```{r}
+read_outcomes_raw <- readLines("../Pre_eclampsia_mice_rnasplice_results/rmats2/PREECLAMPSIA-CONTROL/rmats_temp/2024-09-04-19_23_21_365134_read_outcomes_by_bam.txt")
+
+# Create empty vectors for current sample and its metrics
+bam_names  <- c()
+metrics <- list()
+
+# structure repeats itself every 11 rows, so will set step size to 10
+for (i in seq(1, length(read_outcomes_raw), by = 11)) {
+  
+  # extract BAM file name
+  current_sample <- read_outcomes_raw[i]
+  bam_names <- c(bam_names, current_sample) # add name of current sample to the bam_names vector
+  
+  # Extract the numeric values from the next 9 lines
+  metric_values <- sapply(read_outcomes_raw[(i+1):(i+10)],
+                          function(line) {
+                            as.numeric(
+                              str_extract(line, "\\d+") # extract number from this line
+                              )
+                            }
+                          )
+  
+  # Append the metric values to the metrics list under the correct BAM file name
+  metrics[[current_sample]] <- metric_values
+}
+
+# bind rows into a tibble
+metrics_tib <- bind_cols(metrics)
+
+# transpose extracting the sample names into a new column
+metrics_tib <- t(metrics_tib) |> as_tibble(rownames = "Sample")
+
+# assign sensible column names
+colnames(metrics_tib) <- c("Sample", "Used", "Not paired", "Not NH 1", 
+                          "Not expected CIGAR", "Not expected read length", 
+                          "Not expected strand", "Exon not matched to annotation", "Junction not matched to annotation", "Clipped", "Total for sample")
+
+
+
+
+# pivot metrics tibble longer for easier plotting of stacked bars per sample. Remove the Total for sample column, as this does not directly add value to the plot (proportions can be seen directly.)
+metrics_tib_long <- pivot_longer(
+  metrics_tib,
+  cols = -Sample, # all except for the Sample name column
+  names_to = "Metric",
+  values_to = "Value"
+) 
+
+# Calculate relative percentages based on TOTAL_FOR_BAM
+metrics_tib_long <- metrics_tib_long |>
+  group_by(Sample) |>
+  mutate(Percentage = (Value / Value[Metric == "Total for sample"]) * 100)
+
+# Create a stacked bar plot using Plotly
+plot_rMATS_metrics <- plot_ly(
+  data = metrics_tib_long |> filter(Metric != "Total for sample"),
+  x = ~Sample,  # Set the sample names as the x-axis
+  y = ~Value,   # Set the metric values as the y-axis
+  color = ~Metric,  # Set the color by metric
+  colors = rev(brewer.pal(n = length(unique(metrics_tib_long$Metric)), "Set3")), # reversed color pallette bc otherwise "used" appears as gray
+  type = "bar",  # Create a bar plot
+  text = ~paste(Metric, ":", Value, "(", round(Percentage, 2), "% of reads in sample)"),  # Show both value and percentage on hover
+  hoverinfo = "text",
+  textposition = 'none'
+) |>
+  layout(
+    barmode = "stack",  # Stack the bars
+    title = "rMATS Metrics per Sample (BAM file)",
+    xaxis = list(title = "Sample"),
+    yaxis = list(title = "Counts per metric")
+  )
+```
+
+### SE raw data
+
+```{r}
+
+SE_jcec_raw <- read_delim("../Pre_eclampsia_mice_rnasplice_results/rmats2/PREECLAMPSIA-CONTROL/rmats_post/SE.MATS.JCEC.txt",
+                      #col_types = cols(.default = "c"),
+                      delim = "\t"
+                      )  # I tried importing with col_types as character to ensure all columns are read as character, but it doesn't seem to make sense - the conversion to numbers
+
+# a total of 47,818 exons resulted from the analysis
+
+```
+
+# Clean up results
+
+## Remove rows where \>1 samples had NAs in IncLevel1 and IncLevel2 and where FDR == NA
+
+Many of the rows have NAs in the IncLevel1 and IncLevel2 columns, which contain the PSI for each of the four replicates in a condition, (IncLevel1=control, 2=PE), but still have FDRs that are not NA. Since such results are likely not very reliable, I want to remove these rows from the dataset. Additionally, I want to remove any that don't have a valid FDR, as those won't plot properly in the volcano plot.
+
+### For SE data
+
+#### NA values
+
+```{r}
+# count how many non-NA values I have in the observations in the IncLevel1 and IncLevel2 columns save in new columns. 
+
+# Cast the PSI values stored as one single string for the four replicates from the IncLevel1 and IncLevel2 columns first as characters to be on the extra safe side in case anything was imported in a wrong way.
+
+# Split the PSI values in IncLevel1 and IncLevel2 into individual values with strsplit, which is automatically output as a list. Then, to cast the elements as numerics, use first unlist() to flatten the list into a vector, and then cast everything in that vector as numeric.
+
+# Use map() from purrr to apply the conversion function across all of the rows of the IncLevel columns. The conversion function is an anonymous function (similar to lambda functions in Python).
+
+
+SE_jcec_raw <- SE_jcec_raw |> mutate(
+    IncLevel1_clean = map(IncLevel1,
+                          function(x) as.numeric(
+                            unlist(
+                              strsplit(as.character(x), ",")
+                              )
+                            )
+                          ),
+    IncLevel2_clean = map(IncLevel2,
+                          function(x) as.numeric(
+                            unlist(
+                              strsplit(as.character(x), ",")
+                              )
+                            )
+                          )
+) # this gives quite a lot of warnings (6,317) because the NAs themselves can't be converted to numbers by as.numeric, but it works as expected.
+
+# create column with counts of how many non-NA values there are in the cleaned IncLevel1 and IncLevel2 columns. Use map_int in order to get proper integer numerics instead of one integer but as a list.
+
+SE_jcec_raw <- SE_jcec_raw |> mutate(
+    IncLevel1_nonNA = map_int(IncLevel1_clean, function(x) sum(!is.na(x))),
+    IncLevel2_nonNA = map_int(IncLevel2_clean, function(x) sum(!is.na(x)))
+)
+```
+
+#### Appropriate read coverage
+
+I wanted to see how many exons I'd be having I want to filter out events that have overall too low read coverage. The number of reads that each replicate had for the inclusion and skipping event at a particular exon-exon junction is stored in the IJC_SAMPLE\_ and SJC_SAMPLE\_ columns for each event (two for each- rMATS calls the control or treatment "SAMPLE").
+
+However, I want to avoid filtering out cases in which the read count is extremely low in only one of the conditions. From lab experience, I know that it does happen that certain exons are strictly and only included under one treatment condition and completely skipped under the other.
+
+```{r}
+# Filter out events with too low read coverage
+
+# extract read counts across the biological replicates in the IJC_SAMPLE_ and SJC_SAMPLE_ columns for each event. 
+SE_jcec_raw <- SE_jcec_raw |>
+  mutate(
+    IJC_SAMPLE_1_cleaned = map(IJC_SAMPLE_1,
+                          function(x) as.numeric(
+                            unlist(
+                              strsplit(as.character(x), ",")
+                              )
+                            )
+                          ),
+    IJC_SAMPLE_2_cleaned = map(IJC_SAMPLE_2,
+                          function(x) as.numeric(
+                            unlist(
+                              strsplit(as.character(x), ",")
+                              )
+                            )
+                          ),
+    SJC_SAMPLE_1_cleaned  = map(SJC_SAMPLE_1,
+                          function(x) as.numeric(
+                            unlist(
+                              strsplit(as.character(x), ",")
+                              )
+                            )
+                          ),
+    SJC_SAMPLE_2_cleaned = map(SJC_SAMPLE_2,
+                          function(x) as.numeric(
+                            unlist(
+                              strsplit(as.character(x), ",")
+                              )
+                            )
+                          ),
+  )
+
+# get minimum number of reads across the replicates in one condition for both the inclusion and skipping columns. Since I already filtered to not have more than 1 NA value per row, I can safely use na.rm = TRUE this time around and ignore the NAs.
+SE_jcec_raw <- SE_jcec_raw |> mutate(
+    IJC_SAMPLE_1_min = map_int(IJC_SAMPLE_1_cleaned,
+                               function(x) min(x, na.rm = TRUE)
+                               ),
+    IJC_SAMPLE_2_min = map_int(IJC_SAMPLE_2_cleaned,
+                               function(x) min(x, na.rm = TRUE)
+                               ),
+    SJC_SAMPLE_1_min = map_int(SJC_SAMPLE_1_cleaned,
+                               function(x) min(x, na.rm = TRUE)
+                               ),
+    SJC_SAMPLE_2_min = map_int(SJC_SAMPLE_2_cleaned,
+                               function(x) min(x, na.rm = TRUE)
+                               )
+)
+
+# In the case of an event where there would be zero inclusion in one condition and full inclusion under the other, then I should have IJC_SAMPLE_1_min = 0 and SJC_SAMPLE_1_min >= 5. At the same time, I should, for the other experimental condition, have IJC_SAMPLE_2_min >=5 and SJC_SAMPLE_2_min = 0.
+```
+
+#### Filter result and add "regulation" and "-log10FDR" columns for the volcano plot
+
+```{r}
+# create filtered SE_jcec, removing all entries where IncLevel1_nonNA <3 or IncLevel2_nonNA <3 or FDR == NA or total reads
+
+SE_jcec <- SE_jcec_raw |> filter(IncLevel1_nonNA >=3 & IncLevel2_nonNA >= 3 & !is.na(FDR)) # left with 45,500 observations. Double checked, there's no more NAs in the FDR (there used to be 537, as sum(is.na(SE_jcec_raw$FDR)) says)
+
+
+# Add a column for -log10padj for the volcano plots
+SE_jcec$`-log10FDR` <- -log10(SE_jcec$FDR)
+
+# Add a column for regulation based on log2FoldChange and significance (FDR < 0.1)
+SE_jcec <- SE_jcec |>
+  mutate(
+    regulation = case_when(
+      FDR < 0.1 & IncLevelDifference >= 0.05 ~ "included exon",
+      FDR < 0.1 & IncLevelDifference <= -0.05 ~ "skipped exon",
+      TRUE ~ "not significant"
+    )
+  )
+
+# How many exons are significantly regulated?
+nr_sig_exons <- sum(SE_jcec$regulation != "not significant") # 94 exons
+
+# turn regulation column into a factor for easier plotting
+SE_jcec <- mutate(SE_jcec,
+                         regulation = factor(regulation,
+                                             levels = c("skipped exon", "not significant", "included exon")
+                                             )
+                         ) # factor levels are now: "skipped exon" "not significant" "included exon"
+
+# export rMATS
+```
+
+# Explore results
+
+## FDR distribution plots
+
+### For SE data
+
+```{r}
+# How many exons have their inclusion significantly up- or downregulated? 
+nr_sig_FDR <- sum(SE_jcec$FDR < 0.1) # 263 exons 
+
+# Compute a histogram to get the max bin count for the FDR values
+hist_data <- hist(SE_jcec$FDR, plot = FALSE, breaks = seq(0, 1, by = 0.05))  # Adjust breaks as needed
+max_count <- max(hist_data$counts)  # This gives the max bin count
+
+
+# Create an interactive bar plot for log-transformed raw counts
+plot_FDR_SE <- plot_ly(
+  data = SE_jcec,
+  x = ~FDR,
+  type = 'histogram',  # Use 'histogram' as type for better control
+  marker = list(color = '#6DC2BB'),
+  hoverinfo = 'y',
+  nbinsx = 20,
+  textposition = 'none' # make sure no text within bars
+)
+
+plot_FDR_SE <- plot_FDR_SE |>
+  layout(
+    title = "Distribution of FDR values for SE",
+    xaxis = list(
+      title = "FDR",
+      tickmode = 'linear',  # Linear tick mode
+      dtick = 0.05,         # Set tick intervals to 0.05
+      tick0 = 0             # Start tick at 0
+      ),
+    yaxis = list(title = "Counts per bin"),
+    shapes = list(
+      list(
+        type = "line",
+        x0 = 0.1, x1 = 0.1,  # Vertical line at FDR = 0.1
+        y0 = 0, y1 = max_count,  # Set y1 to the maximum count in the histogram
+        line = list(dash = 'dash', color = 'darkred', width = 2),
+        name = "Significance Threshold"
+        )
+      ),
+      annotations = list(
+        list(
+      x = 0.1,
+      y = max_count,
+      text = paste("Number of FDR values < 0.1:", nr_sig_FDR),
+      showarrow = FALSE,
+      xref = "x",
+      yref = "y",
+      yshift = 10
+      )
+      )
+    )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(plot_FDR_SE), "./plots/rMATS_exon_FDR_plot.html")
+```
+
+## Interactive volcano plots
+
+### For SE data
+
+```{r}
+
+rMATS_SE_volcano_plot <- plot_ly(data = SE_jcec,
+  x = ~IncLevelDifference*100,  #*100 to really be able to talk about percentages 
+  y = ~`-log10FDR`, 
+  type = 'scatter',
+  mode = 'markers',
+  marker = list(size = 6,
+                opacity = 0.4),
+                color = ~regulation,
+ colors = c( "darkred","lightgray","skyblue3"),
+  hoverinfo = 'text',
+  text = ~paste("Source gene:", geneSymbol,
+                "<br>Chromosome:", chr,
+                "<br>Strand:", strand,
+                "<br>Exon start:", exonStart_0base,
+                "<br>Exon end:", exonEnd,
+                "<br>dPSI:", IncLevelDifference,
+                "<br>FDR:", formatC(FDR, format = "e", digits = 3)
+                ),
+ showlegend = TRUE
+  ) |>
+  layout(
+    annotations = list(
+      text = paste("Exons from rMATS analysis (", nrow(SE_jcec), " points plotted)", sep = ""),
+      font = list(size = 14),  # Title font size
+      x = 0.5,
+      y = 1.025, # Position of the title (above the plot)
+      xref = "paper",  # Position relative to the entire plot
+      yref = "paper",
+     showarrow = FALSE
+     ),
+    xaxis = list(title = list(text = "\u0394PSI (PSI in Preeclampsia - PSI in Control)",
+                 standoff = 1)
+                 ),
+    yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of event)"),
+    legend = list(title = list(text = "Regulation and Significance"),
+                  orientation = 'h',
+                  y = -0.15, x = 0.5,
+                  xanchor = 'center')
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(rMATS_SE_volcano_plot), "./plots/rMATS_SE_volcano_plot.html")
+```
 
 # Save all variables from environment to an RDS file
 

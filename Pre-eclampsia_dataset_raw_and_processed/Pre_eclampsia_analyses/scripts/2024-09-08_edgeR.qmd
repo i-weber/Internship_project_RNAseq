@@ -1,0 +1,272 @@
+---
+title: "2024-09-08_edgeR"
+author: "Ioana Weber"
+format: html
+editor: visual
+---
+
+# Aim
+
+Explore which exons are differentially included/excluded between conditions from the edgeR data output by the rnasplice pipeline for the experiment that analyzed the effect of pre-eclampsia on E 17.5 embryonic cortices.
+
+# Preparations
+
+## Install packages if needed
+
+```{r}
+#pacman::p_install(htmlwidgets)
+#pacman::p_install(rsconnect)
+```
+
+## Load packages, test for and resolve conflicts between functions of same name from different packages
+
+```{r}
+pacman::p_load(readxl,
+               plotly,
+               conflicted,
+               tidyverse,
+               ggplot2,
+               readr,
+               htmlwidgets,
+               rsconnect,
+               wrappedtools)
+
+conflict_scout()
+
+conflicts_prefer(dplyr::filter,
+                 plotly::layout)
+```
+
+In case needing to re-set working directory:
+
+```{r}
+#setwd("C:/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_analyses")
+```
+
+# If edgeR analysis performed previously: load results (uncomment as needed)
+
+```{r}
+#edgeR_res <- readRDS("../results/DEXSeq_DEU_result.rds")
+```
+
+## If wanting to reload all variables
+
+```{r}
+# Load the variables from the RDS file
+loaded_vars <- readRDS("./results/all_variables_edgeR_res.rds")
+
+# Optionally, assign them back to the global environment
+list2env(loaded_vars, envir = .GlobalEnv)
+```
+
+# Import and prepare edgeR results
+
+## Read in results
+
+### edgeR exon
+
+```{r}
+edgeR_exon_res <- read_csv('../Pre_eclampsia_mice_rnasplice_results/edger/contrast_PREECLAMPSIA_CONTROL.usage.exon.csv') # 163,963 exons analyzed in total
+
+sum(is.na(edgeR_exon_res$FDR)) # none have an undefined FDR
+sum(is.na(edgeR_exon_res$logFC)) # none have an undefined log2FC
+
+# remove "gene-" prefixes from the gene name column (groupID)
+edgeR_exon_res <- edgeR_exon_res |> mutate(
+  Geneid = str_remove(Geneid, "^gene-|^rna-|^id-")
+  
+)
+```
+
+
+## Filter results
+
+### edgeR exon
+
+```{r}
+# How many exons are significantly regulated? 
+nr_sig_FDR_exon <- sum(edgeR_exon_res$FDR < 0.1) # 9569 exons 
+
+# Add a column for -log10padj for the volcano plots
+edgeR_exon_res$`-log10FDR` <- -log10(edgeR_exon_res$FDR)
+
+# Add a column for regulation based on log2FoldChange and significance (FDR < 0.1)
+edgeR_exon_res <- edgeR_exon_res |>
+  mutate(
+    regulation = case_when(
+      FDR < 0.1 & logFC >= 1 ~ "included exon",
+      FDR < 0.1 & logFC <= -1 ~ "skipped exon",
+      TRUE ~ "not significant"
+    )
+  )
+
+# Export CSV of results
+write.csv(edgeR_exon_res, file = "./results/edgeR_exon_res.csv", row.names = T)
+
+# turn regulation column into a factor for easier plotting
+edgeR_exon_res <- mutate(edgeR_exon_res,
+                         regulation = factor(regulation,
+                                             levels = c("skipped exon", "not significant", "included exon")
+                                             )
+                         ) # factor levels are now: "skipped exon" "not significant" "included exon"
+
+
+# How many exons are significantly up- or downregulated more than 50%?
+nr_sig_UpDn_exons <- sum(edgeR_exon_res$regulation != "not significant") # 31 exons
+
+# create filtered tibble of significantly more included and more skipped exons
+edgeR_exon_res_sigUpDn <- edgeR_exon_res |>
+filter(edgeR_exon_res$regulation != "not significant")
+
+edgeR_exon_res_sigUpDn <- edgeR_exon_res_sigUpDn |> rename(minuslog10padj = `-log10FDR`)
+
+# export significantly more included and more skipped exons
+write.csv(edgeR_exon_res_sigUpDn, file = "./results/edgeR_exon_sig_UpDn_exons.csv", row.names = T)
+```
+
+
+# Explore results
+
+## FDR distribution plots
+
+### For exon data
+
+```{r}
+
+
+# Compute a histogram to get the max bin count for the FDR values
+hist_data_exon <- hist(edgeR_exon_res$FDR, plot = FALSE, breaks = seq(0, 1, by = 0.05))  # Adjust breaks as needed
+max_count_exon <- max(hist_data_exon$counts)  # This gives the max bin count
+
+
+# Create an interactive bar plot for log-transformed raw counts
+plot_FDR_edgeR_exon <- plot_ly(
+  data = edgeR_exon_res,
+  x = ~FDR,
+  type = 'histogram',  # Use 'histogram' as type for better control
+  marker = list(color = '#6DC2BB'),
+  hoverinfo = 'y',
+  nbinsx = 20,
+  textposition = 'none' # make sure no text within bars
+)
+
+plot_FDR_edgeR_exon <- plot_FDR_edgeR_exon |>
+  layout(
+    title = "Distribution of FDR values for SE",
+    xaxis = list(
+      title = "FDR",
+      tickmode = 'linear',  # Linear tick mode
+      dtick = 0.05,         # Set tick intervals to 0.05
+      tick0 = 0             # Start tick at 0
+      ),
+    yaxis = list(title = "Counts per bin"),
+    shapes = list(
+      list(
+        type = "line",
+        x0 = 0.1, x1 = 0.1,  # Vertical line at FDR = 0.1
+        y0 = 0, y1 = max_count_exon,  # Set y1 to the maximum count in the histogram
+        line = list(dash = 'dash', color = 'darkred', width = 2),
+        name = "Significance Threshold"
+        )
+      ),
+      annotations = list(
+        list(
+      x = 0.1,
+      y = max_count_exon,
+      text = paste("Number of FDR values < 0.1:", nr_sig_FDR_exon),
+      showarrow = FALSE,
+      xref = "x",
+      yref = "y",
+      yshift = 10
+      )
+      )
+    )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(plot_FDR_edgeR_exon), "./plots/edgeR_exon_FDR_plot.html")
+```
+
+
+
+## Interactive volcano plots
+
+### For exon data
+
+```{r}
+
+plot_edgeR_exon_volcano <- plot_ly(data = edgeR_exon_res,
+  x = ~logFC, 
+  y = ~`-log10FDR`, 
+  type = 'scatter',
+  mode = 'markers',
+  marker = list(size = 6,
+                opacity = 0.5),
+                color = ~regulation,
+ colors = c( "darkred","lightgray","skyblue3"),
+  hoverinfo = 'text',
+  text = ~paste("Source gene:", Geneid,
+                "<br>Chromosome:", Chr,
+                "<br>Strand:", Strand,
+                "<br>Exon start:", Start,
+                "<br>Exon end:", End,
+                "<br>Exon length:", End-Start+1,
+                "<br>log2(fold change):", round(logFC, digits = 3),
+                "<br>FDR:", formatC(FDR, format = "e", digits = 3),
+                "<br>Exon F statistic:", exon.F
+                ),
+ showlegend = TRUE
+  ) |>
+  layout(
+    annotations = list(
+      text = paste("Exons from edgeR analysis (", nrow(edgeR_exon_res), " points plotted)", sep = ""),
+      font = list(size = 14),  # Title font size
+      x = 0.5,
+      y = 1.025, # Position of the title (above the plot)
+      xref = "paper",  # Position relative to the entire plot
+      yref = "paper",
+     showarrow = FALSE
+     ),
+    xaxis = list(title = list(text = "log2(Fold Change in Preeclampsia vs Control)",
+                 standoff = 1)
+                 ),
+    yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of event)"),
+    legend = list(title = list(text = "Regulation and Significance"),
+                  orientation = 'h',
+                  y = -0.15, x = 0.5,
+                  xanchor = 'center')
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(plot_edgeR_exon_volcano), "./plots/edgeR_exon_volcano_plot.html")
+```
+
+
+
+
+# Save all variables from environment to an RDS file
+
+```{r}
+# Collect all variables from the global environment
+all_vars_edgeR <- mget(ls(), envir = .GlobalEnv)
+
+# Save the collected variables as an RDS file
+saveRDS(all_vars_edgeR, file = "./resultsall_variables_edgeR_res.rds")
+```
+
+# Copy results to Shiny app www folder
+
+```{r}
+# Define paths
+source_folder <- "./plots"
+destination_folder <- "./results/Shiny_app_rnasplice_results/www"
+
+# Copy files from source to destination
+file.copy(list.files(source_folder, full.names = TRUE), destination_folder, overwrite = TRUE)
+
+```
+
+# Deploy app ONLINE (uncomment when ready to publish)
+
+```{r}
+#rsconnect::deployApp('./results/Shiny_app_rnasplice_results')
+```
