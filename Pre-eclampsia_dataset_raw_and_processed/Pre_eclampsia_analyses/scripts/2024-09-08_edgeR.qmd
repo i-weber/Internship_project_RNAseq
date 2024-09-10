@@ -212,7 +212,7 @@ plot_edgeR_exon_volcano <- plot_ly(data = edgeR_exon_res,
                 "<br>Exon length:", End-Start+1,
                 "<br>log2(fold change):", round(logFC, digits = 3),
                 "<br>FDR:", formatC(FDR, format = "e", digits = 3),
-                "<br>Exon F statistic:", exon.F
+                "<br>Exon F statistic:", round(exon.F, digits = 3)
                 ),
  showlegend = TRUE
   ) |>
@@ -250,7 +250,7 @@ saveWidget(as_widget(plot_edgeR_exon_volcano), "./plots/edgeR_exon_volcano_plot.
 all_vars_edgeR <- mget(ls(), envir = .GlobalEnv)
 
 # Save the collected variables as an RDS file
-saveRDS(all_vars_edgeR, file = "./resultsall_variables_edgeR_res.rds")
+saveRDS(all_vars_edgeR, file = "./results/all_variables_edgeR_res.rds")
 ```
 
 # Copy results to Shiny app www folder

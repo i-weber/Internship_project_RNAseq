@@ -314,7 +314,7 @@ hist_data <- hist(SE_jcec$FDR, plot = FALSE, breaks = seq(0, 1, by = 0.05))  # A
 max_count <- max(hist_data$counts)  # This gives the max bin count
 
 
-# Create an interactive bar plot for log-transformed raw counts
+# Create an interactive bar plot for FDR values
 plot_FDR_SE <- plot_ly(
   data = SE_jcec,
   x = ~FDR,

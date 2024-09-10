@@ -1,0 +1,392 @@
+---
+title: "2024-09-10_SUPPA"
+author: "Ioana Weber"
+format: html
+editor: visual
+---
+
+# Aim
+
+Explore which exons are differentially included/excluded between conditions from the SUPPA data output by the rnasplice pipeline for the experiment that analyzed the effect of pre-eclampsia on E 17.5 embryonic cortices.
+
+SUPPA collects all kinds of alternative splicing events into one single result, stored either as a .dpsi file, which harbors the delta PSI (in this case, difference between how frequently even occurs in one condition versus the other) or a .psivec file.
+
+# Preparations
+
+## Install packages if needed
+
+```{r}
+#pacman::p_install(htmlwidgets)
+#pacman::p_install(rsconnect)
+```
+
+## Load packages, test for and resolve conflicts between functions of same name from different packages
+
+```{r}
+pacman::p_load(readxl,
+               plotly,
+               conflicted,
+               tidyverse,
+               ggplot2,
+               readr,
+               htmlwidgets,
+               rsconnect,
+               wrappedtools)
+
+conflict_scout()
+
+conflicts_prefer(dplyr::filter,
+                 plotly::layout)
+```
+
+In case needing to re-set working directory:
+
+```{r}
+#setwd("C:/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_analyses")
+```
+
+# If SUPPA analysis performed previously: load results (uncomment as needed)
+
+```{r}
+#SUPPA_diffspli_local_raw <- readRDS("../results/SUPPA_diffspli_local_res.rds")
+#SUPPA_diffspli_isoform_raw <- readRDS("../results/SUPPA_diffspli_isoform_res.rds")
+```
+
+## If wanting to reload all variables
+
+```{r}
+# Load the variables from the RDS file
+# loaded_vars <- readRDS("./results/all_variables_SUPPA_res.rds")
+
+# Optionally, assign them back to the global environment
+# list2env(loaded_vars, envir = .GlobalEnv)
+```
+
+# Import and prepare edgeR results
+
+## Read in results
+
+```{r}
+SUPPA_diffspli_local_raw <- read_tsv('../Pre_eclampsia_mice_rnasplice_results/suppa/diffsplice/per_local_event/PREECLAMPSIA-CONTROL_local_diffsplice.dpsi', col_names = TRUE) # 111,718 events analyzed in total
+```
+
+What I get is a tibble with two columns. The first has the gene name, type of alternative splicing event, the chromosome ID, the start and end coordinates of the sequence that's included or skipped, and the strand, in the form "gene-0610005C13Rik;SE:NC_000073.7:45217803-45220410:45220616-45223837:-". The second contains the delta PSI and the p-values, in the form "0.0190102993\t0.3328100471". I want to separate each of these two columns in their parts.
+
+The first column, with, for example, an entry like "gene-0610005C13Rik;SE:NC_000073.7:45217803-45220410:45220616-45223837:-", seems to contain: 1. the gene name ("gene-0610005C13Rik") before a semicolon 2. the type of alternative splicing event ("SE", skipped exon), followed by a colon 3. the chromosome where the affected region is ("NC_000073.7", chromosome 7 in this case), followed by a colon 4. the start and end coordinates of the intron upstream of the exon, "45217803-45220410", followed by a colon to separate it from 5. the start and end coordinates of the intron downstream of the exon, "45220616-45223837", followed by a colon 6. the strand that the transcript containing the affected region is transcribed from.
+
+This, however, is only the case for skipped exons. The way in which SUPPA defines coordinates for the other kinds of events is described here: <https://github.com/comprna/SUPPA?tab=readme-ov-file#generation-of-transcript-events-and-local-alternative-splicing-events>
+
+The start and end coordinates that are indicated differ between the forward (+) and the reverse strand (-) but also from event to event, and the notation is rather complex. I therefore will first split the first column while leaving all of the coordinates in one single column, and, once that is done, I will split the tibble according to splicing event type, which will make it easier to split the sets of coordinates correctly.
+
+## Clean up result
+
+I use a regex creates several groups between the start (\^) and the end (\$) of the string:
+
+-   (\[\^;\]+); - any number of characters before the first semicolon that are not a semicolon (; = negation of semicolon) at the beginning of the string (\^ at the start)
+
+-   (\[A-Z\]+\[0-9\]?) to capture AS events, which are always of the form "capital letter-capital letter" or "capital letter-number", so one or more capital letters (\[A-Z\]+) and one optional digit (\[0-9\]?)
+
+-   (\[\\\\w.\]+) for the chromosome identifier (a word, which includes anything alphanumeric and hyphens). The dot is inside the character class identifier in the square brackets, so it is understood as a literal dot and not the "any character" indicator (wildcard)
+
+-   (\[\\\\d:-\]+) any number of digits and a hyphen or colon - character class that captures the set of coordinates
+
+-   (\[+-\])\$ the strand, the + or - at the end of the string
+
+```{r}
+SUPPA_diffspli_local <- SUPPA_diffspli_local_raw |>
+  extract(
+    col = 1, # The first column
+    into = c("Gene", "Event_Type", "Chromosome", "Coordinates", "Strand"),
+    regex = "^([^;]+);([A-Z]+[0-9]?):([\\w.]+):([\\d:-]+):([+-])$", 
+    remove = TRUE # to remove original column 
+  ) |> extract (col = 6,
+                into = c("dPSI_PE-Ctrl", "p-val_PE-Ctrl"),
+                regex = "^(.+)\\t(.+)$" ,
+                remove = TRUE
+                )
+
+# remove "gene-" prefixes from the gene name column
+SUPPA_diffspli_local <- SUPPA_diffspli_local |> mutate(
+  Gene = str_remove(Gene, "gene-")
+)
+```
+
+Brief exploration - how many NA values are in each?
+
+```{r}
+sum(SUPPA_diffspli_local$`dPSI_PE-Ctrl` != "nan") # 61,149 events have a non-NaN dPSI and should be kept
+
+sum(SUPPA_diffspli_local$`p-val_PE-Ctrl` == "nan") # none have an undefined p-value
+```
+
+Is the p-value nominal or adjusted? The pipeline does perform a gene-level correction for the p-value ("diffsplice_gene_correction = true" in the config file of the rnasplice pipeline) and another correction, "**-al** \| **--alpha**: Family-wise error rate to use for the multiple test correction. (Default: 0.05).", which I also know is performed by the pipeline (diffSplice from the suppa.py script is executed with the following options:
+
+suppa.py\
+diffSplice\
+-m empirical\
+-gc -pa -s -c\
+-a 1000\
+-l 0\
+-al 0.05\
+-th 0\
+-nan 0\
+)
+
+So it is safe to assume that the p-values returned in these scripts are, in fact, adjusted p-values. (and a rather strict one at that - more info on the family-wise error rate [here](https://www.statology.org/family-wise-error-rate/) ).
+
+Remove rows that have nan for the dPSI
+
+```{r}
+SUPPA_diffspli_local <- SUPPA_diffspli_local |> filter(SUPPA_diffspli_local$`dPSI_PE-Ctrl` != "nan") #61,149 events left
+```
+
+## Create "-log10(p-adj)" column
+
+Noticed that the p-vals and dPSIs were stored as characters
+
+```{r}
+# change dPSI and p-val cols to double type
+SUPPA_diffspli_local$`dPSI_PE-Ctrl` <- as.numeric(SUPPA_diffspli_local$`dPSI_PE-Ctrl`)
+
+SUPPA_diffspli_local$`p-val_PE-Ctrl` <- as.numeric(SUPPA_diffspli_local$`p-val_PE-Ctrl`)
+
+
+# create "-log10 p-adj" and "regulation" columns
+SUPPA_diffspli_local$`-log10(p-adj PE-Ctrl)` <-  case_when(
+                        SUPPA_diffspli_local$`p-val_PE-Ctrl` > 0 ~ -log10(SUPPA_diffspli_local$`p-val_PE-Ctrl`),
+                        TRUE ~ -log10(0.0001)
+                        )# this is arbitrarily chosen - the next- highest p values after the zero ones is 0.000999001, so this should separate the ones with padj=0 in a clear group from the others
+```
+
+## Separate result in tibbles for the different alternative splicing event types
+
+I have several thousands of events for each subtype:
+
+```         
+A3    A5    AF     AL    MX    RI    SE
+9156  8909  19027  1863  1258  2929  18007
+```
+
+### SE
+
+```{r}
+SUPPA_diffspli_local_SE <- SUPPA_diffspli_local |> filter(SUPPA_diffspli_local$Event_Type == "SE") # 18,007 exons
+
+# crete regulation column for exons and make it a factor
+SUPPA_diffspli_local_SE <- SUPPA_diffspli_local_SE|>
+  mutate(
+    regulation = case_when(
+      `p-val_PE-Ctrl` < 0.1 & `dPSI_PE-Ctrl` >= 0.05 ~ "included exon",
+      `p-val_PE-Ctrl` < 0.1 & `dPSI_PE-Ctrl` <= -0.05 ~ "skipped exon",
+      TRUE ~ "not significant"
+    ) 
+  ) |> mutate(regulation = factor(regulation,
+                                  levels = c("skipped exon", "not significant", "included exon")
+                                  )
+              ) 
+
+```
+
+```         
+ skipped exon not significant   included exon
+ 147           17760             100
+```
+
+# Explore results
+
+## Adjusted p-value distribution plots
+
+### SE
+
+```{r}
+# How many exons have their inclusion significantly up- or downregulated?}
+nr_sig_padj <- sum(SUPPA_diffspli_local_SE$`p-val_PE-Ctrl` < 0.1) # 278 exons 
+# 
+# # Compute a histogram to get the max bin count for the FDR values
+# hist_data <- hist(SUPPA_diffspli_local_SE$`p-val_PE-Ctrl`, plot = FALSE, breaks = seq(0, 1, by = 0.05))  # Adjust breaks as needed
+# max_count <- max(hist_data$counts)  # This gives the max bin count
+# 
+# 
+# # Create an interactive bar plot for p values
+# plot_padj_SE <- plot_ly(
+#   data = SUPPA_diffspli_local_SE,
+#   x = ~`p-val_PE-Ctrl`,
+#   type = 'histogram',  # Use 'histogram' as type for better control
+#   marker = list(color = '#6DC2BB'),
+#   hoverinfo = 'y',
+#   nbinsx = 20,
+#   textposition = 'none' # make sure no text within bars
+# ) |>
+#   layout(
+#     title = "Distribution of adj. p values for SE (SUPPA)",
+#     xaxis = list(
+#       title = "Adj. p value",
+#       tickmode = 'linear',  # Linear tick mode
+#       dtick = 0.05,         # Set tick intervals to 0.05
+#       tick0 = 0             # Start tick at 0
+#       ),
+#     yaxis = list(title = "Counts per bin"),
+#     shapes = list(
+#       list(
+#         type = "line",
+#         x0 = 0.1, x1 = 0.1,  # Vertical line after p-adj = 0.1
+#         y0 = 0, y1 = max_count,  # Set y1 to the maximum count in the histogram
+#         line = list(dash = 'dash', color = 'darkred', width = 2),
+#         name = "Significance Threshold"
+#         )
+#       ),
+#       annotations = list(
+#         list(
+#       x = 0.125,
+#       y = max_count,
+#       text = paste("Number of adj. p values < 0.1:", nr_sig_padj),
+#       showarrow = FALSE,
+#       xref = "x",
+#       yref = "y",
+#       yshift = 10
+#       )
+#       )
+#     )
+
+```
+
+I noticed here that my data viz does not entirely make sense: I have a line in the center of the 0.1 bin that talks about the number of exons with p values < 0.1, when the p values in that bin are a jumble of values between 0.05 and 0.09(9). So I tried making an interactive density plot instead:
+
+```{r}
+# Calculate the density for the adjusted p-values
+density_data_SE <- density(SUPPA_diffspli_local_SE$`p-val_PE-Ctrl`,
+                           adjust = 0.1, 
+                           from = 0, to = 1)
+
+# the adjust parameter sets how closely the KDE function follows the shape of the data (>1 - more smooth, close to 0 - more detailed and jagged)
+
+# Convert densities to approximate counts to show upon hovering
+total_points_SE <- length(SUPPA_diffspli_local_SE$`p-val_PE-Ctrl`)
+counts_SE <- density_data_SE$y * total_points_SE * diff(density_data_SE$x)[1]  # Multiply by total points and bin width
+
+# Create the density plot with counts and semi-transparent fill
+plot_density_padj_SE <- plot_ly() |>
+  add_trace(
+    x = density_data_SE$x,
+    y = counts_SE,  # Use counts instead of density
+    type = 'scatter',
+    mode = 'lines+markers',  # Shows both lines and hoverable points
+    line = list(color = '#6DC2BB'),
+    marker = list(size = 1),
+    fill = 'tozeroy',  # Tozeroy = technique to fill to the x-axis
+    fillcolor = 'rgba(109, 194, 187, 0.3)',  # Semi-transparent fill (30% opacity)
+    hovertemplate = paste(
+      "<b>Approx. p-val:</b> %{x:.2f}<br>",  # Rounds P-value to 2 decimal places
+      "<b>Approx. count for p-val:</b> %{y:.0f}<extra></extra>"),  # Rounds Count to 2 decimal places  # Show both x and y (p-value and count) on hover
+    name = "Counts Curve"
+  ) |>
+  layout(
+    title = "Density plot of adj. p values for SE (SUPPA) with Counts",
+    xaxis = list(
+      title = "Adj. p value",
+      tickmode = 'linear',
+      dtick = 0.05,
+      tick0 = 0
+    ),
+    yaxis = list(title = "Counts"),
+    shapes = list(
+      list(
+        type = "line",
+        x0 = 0.1, x1 = 0.1,
+        y0 = 0, y1 = max(counts_SE),  # Y1 set to the maximum count value
+        line = list(dash = 'dash', color = 'darkred', width = 2),
+        name = "Significance Threshold"
+      )
+    ),
+    annotations = list(
+      list(
+        x = 0.125,
+        y = max(counts_SE),
+        text = paste("Number of adj. p values < 0.1:", nr_sig_padj),
+        showarrow = FALSE,
+        xref = "x",
+        yref = "y",
+        yshift = 10
+      )
+    )
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(plot_density_padj_SE), "./plots/SUPPA_SE_padj_plot.html")
+```
+
+## Interactive volcano plots
+
+### For SE data
+
+```{r}
+
+SUPPA_SE_volcano_plot <- plot_ly(data = SUPPA_diffspli_local_SE,
+  x = ~`dPSI_PE-Ctrl`*100,  #*100 to really be able to talk about percentages 
+  y = ~`-log10(p-adj PE-Ctrl)`, 
+  type = 'scatter',
+  mode = 'markers',
+  marker = list(size = 6,
+                opacity = 0.4),
+                color = ~regulation,
+ colors = c( "darkred","lightgray","skyblue3"),
+  hoverinfo = 'text',
+  text = ~paste("Source gene:", Gene,
+                "<br>Chromosome:", Chromosome,
+                "<br>Strand:", Strand,
+                "<br>Exon coordinates:", Coordinates,
+                "<br>dPSI:", round(`dPSI_PE-Ctrl`*100, digits =2), "%",
+                "<br>Adj. p-val:", formatP(`p-val_PE-Ctrl`, ndigits = 3)
+                ),
+ showlegend = TRUE
+  ) |>
+  layout(
+    annotations = list(
+      text = paste("Exons from SUPPA analysis (", nrow(SUPPA_diffspli_local_SE), " points plotted)", sep = ""),
+      font = list(size = 14),  # Title font size
+      x = 0.5,
+      y = 1.05, # Position of the title (above the plot)
+      xref = "paper",  # Position relative to the entire plot
+      yref = "paper",
+     showarrow = FALSE
+     ),
+    xaxis = list(title = list(text = "\u0394PSI (PSI in Preeclampsia - PSI in Control)",
+                 standoff = 1)
+                 ),
+    yaxis = list(title = "-Log10(Adjusted P-Value of event)"),
+    legend = list(title = list(text = "Regulation and Significance"),
+                  orientation = 'h',
+                  y = -0.15, x = 0.5,
+                  xanchor = 'center')
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(SUPPA_SE_volcano_plot), "./plots/SUPPA_SE_volcano_plot.html")
+```
+
+# Save all variables from environment to an RDS file
+
+```{r}
+# Collect all variables from the global environment 
+all_vars_SUPPA <- mget(ls(), envir = .GlobalEnv)
+
+# Save the collected variables as an RDS file
+saveRDS(all_vars_SUPPA, file = "./results/all_variables_SUPPA.rds")
+```
+
+# Copy results to Shiny app www folder
+
+```{r}
+# Define paths
+source_folder <- "./plots" 
+destination_folder <- "./results/Shiny_app_rnasplice_results/www"  
+
+# Copy files from source to destination 
+file.copy(list.files(source_folder, full.names = TRUE), destination_folder, overwrite = TRUE)
+```
+
+# Deploy app ONLINE (uncomment when ready to publish)
+
+```{r}
+#rsconnect::deployApp('./results/Shiny_app_rnasplice_results')
+```
