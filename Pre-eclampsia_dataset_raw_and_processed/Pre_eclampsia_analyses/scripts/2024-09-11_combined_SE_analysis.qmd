@@ -1,0 +1,150 @@
+---
+title: "2024-09-11_combined_SE_analysis"
+author: "Ioana Weber"
+format: html
+editor: visual
+---
+
+# Aim
+
+Explore overlap between exons from the different datasets
+
+# Preparations
+
+## Install packages if needed
+
+```{r}
+#pacman::p_install(htmlwidgets) #pacman::p_install(rsconnect)
+```
+
+## Load packages, test for and resolve conflicts between functions of same name from different packages
+
+```{r}
+pacman::p_load(readxl,
+               plotly,
+               conflicted,
+               tidyverse,
+               ggplot2,
+               readr,
+               htmlwidgets,
+               rsconnect,
+               wrappedtools,
+               RColorBrewer,
+               UpSetR)
+
+conflict_scout()
+conflicts_prefer(dplyr::filter,
+                 plotly::layout)
+```
+
+In case needing to re-set working directory:
+
+```{r}
+#setwd("C:/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_analyses")
+```
+
+# If rMATS analysis performed previously: load results (uncomment as needed)
+
+```{r}
+# Load the variables from the RDS file
+# loaded_vars <- readRDS("./results/all_variables_rMATS.rds")
+# Optionally, assign them back to the global environment
+# list2env(loaded_vars, envir = .GlobalEnv)
+```
+
+# Import and prepare results from CSV files containing data of exons with significantly increased inclusion or skipping, produced by the analyses by DEXSeq DEU, rMATS, SUPPA, edgeR
+```{r}
+DEXSeq_DEU_exons <- read_csv("./results/DEXSeq_DEU_significant_UpDn_exons.csv")
+rMATS_exons <- read_csv("./results/rMATS_SE_jcec_sigUpDn.csv")
+SUPPA_exons <- read_csv("./results/SUPPA_sig_UpDn_exons.csv")
+edgeR_exons <- read_csv("./results/edgeR_exon_sig_UpDn_exons.csv")
+```
+
+# Analyze overlap between genes among the four datasets with an UpSet plot
+
+## Create data structures for UpSet plot and a basic version of it
+```{r}
+# Combine all unique gene names from all datasets
+all_genes <- unique(c(rMATS_exons$geneSymbol, DEXSeq_DEU_exons$groupID, edgeR_exons$Geneid, SUPPA_exons$Gene))
+
+# Create a binary membership matrix
+set_matrix <- tibble(gene_id = all_genes) |>
+  mutate(
+    rMATS = gene_id %in% rMATS_exons$geneSymbol,
+    DEXSeq = gene_id %in% DEXSeq_DEU_exons$groupID,
+    edgeR = gene_id %in% edgeR_exons$Geneid,
+    SUPPA = gene_id %in% SUPPA_exons$Gene
+  )
+
+# Create a list of genes for each tool
+input_list <- list(
+  rMATS = rMATS_exons$geneSymbol,
+  DEXSeq = DEXSeq_DEU_exons$groupID,
+  edgeR = edgeR_exons$Geneid,
+  SUPPA = SUPPA_exons$Gene
+)
+
+# Visualize an UpSet plot
+upset(fromList(input_list), sets = c("rMATS", "DEXSeq", "edgeR", "SUPPA"))
+```
+
+
+## Make an interactive plot showing which gene is represented in which dataset
+```{r}
+# Count intersections for each dataset combination
+set_counts <- set_matrix |>
+  rowwise() |>
+  mutate(count = sum(c_across(rMATS:SUPPA)))
+
+# Example of interactive bar chart for gene intersections
+fig <- plot_ly(
+  data = set_counts,
+  x = ~gene_id,
+  y = ~count,
+  type = 'bar',
+  text = ~paste("rMATS:", rMATS, "<br>",
+                "DEXSeq:", DEXSeq, "<br>",
+                "edgeR:", edgeR, "<br>",
+                "SUPPA:", SUPPA),
+  hoverinfo = 'text'
+)
+
+fig <- fig |> layout(
+  title = "Interactive UpSet Plot of Shared Genes",
+  xaxis = list(title = "Gene IDs"),
+  yaxis = list(title = "Set Membership Count")
+)
+
+fig
+```
+
+
+
+# Save all variables from environment to an RDS file
+
+```{r}
+# Collect all variables from the global environment
+all_vars_exons <- mget(ls(), envir = .GlobalEnv)
+
+# Save the collected variables as an RDS file
+saveRDS(all_vars_exons, file = "./results/all_variables_exons.rds")
+```
+
+# Copy results to Shiny app www folder
+
+```{r}
+# Define paths
+source_folder <- "./plots"
+destination_folder <- "./results/Shiny_app_rnasplice_results/www"
+
+# Copy files from source to destination
+file.copy(list.files(source_folder, full.names = TRUE), destination_folder, overwrite = TRUE)
+
+```
+
+# Deploy app ONLINE (uncomment when ready to publish)
+
+```{r}
+#rsconnect::deployApp('./results/Shiny_app_rnasplice_results')
+```
+
