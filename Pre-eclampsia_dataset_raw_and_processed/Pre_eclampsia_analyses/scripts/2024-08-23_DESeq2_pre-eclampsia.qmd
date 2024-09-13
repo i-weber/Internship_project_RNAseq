@@ -195,6 +195,8 @@ PREECLAMPSIA_REP1 PREECLAMPSIA_REP2   PREECLAMPSIA_REP3   PREECLAMPSIA_REP4
     14331056          14746690           14453073           15098198
 ```
 
+These are precisely the values that I see in the MultiQC report that the rnasplice pipeline generated, and they correspond to the numbers of reads that Salmon generated per sample.
+
 ```{r}
 # create a named vector of the log2 transformed sum of counts (+1 to avoid issues where counts are 0)
 log2count_sums_vector <- colSums(log2(raw_nonnorm_counts+1))
@@ -622,9 +624,17 @@ resGene_tib <- resGene_tib |>
                         levels = ) 
       )
     
+
+
 # In the initial plotting process, got a warning that said "Ignoring 2071 observations", which is likely due to NA values in the "significance" or "regulation" columns. Find which and how many rows are lost due to NA values:
 resGene_tib_NA <- resGene_tib |>
 filter(is.na(resGene_tib$regulation) | is.na(resGene_tib$significance)) # 2071 rows indeed
+
+# Export result without NAs
+resGene_tib_nonNA <- resGene_tib |>
+filter(!is.na(resGene_tib$regulation) & !is.na(resGene_tib$significance))
+
+write.csv(resGene_tib_nonNA |> rename(minuslog10padj = `-log10padj`), file = "./results/DESeq2_non-NA_res.csv", row.names = T)
 
 # how many data points actually plotted
 (plottable_points <- nrow(resGene_tib)-nrow(resGene_tib_NA))
@@ -863,6 +873,76 @@ saveWidget(as_widget(Gene_raw_volcano_overlap_labels2), "./plots/Gene_raw_volcan
 
 # save plot as an RDS
 saveRDS(Gene_raw_volcano_overlap_labels2, file = "./plots/Gene_raw_volcano_overlap_labels2.rds")
+```
+
+## FDR distribution plot
+
+```{r}
+
+# How many genes have their inclusion significantly up- or downregulated?}
+nr_sig_padj <- sum(resGene_tib$padj < 0.05, na.rm = TRUE) # 2758 genes 
+
+# Calculate the density for the adjusted p-values
+density_data_DESeq <- density(resGene_tib$padj,
+                           adjust = 0.1, 
+                           from = 0, to = 1,
+                           na.rm = TRUE)
+
+# the adjust parameter sets how closely the KDE function follows the shape of the data (>1 - more smooth, close to 0 - more detailed and jagged)
+
+# Convert densities to approximate counts to show upon hovering
+total_points <- length(resGene_tib$padj)
+counts <- density_data_DESeq$y * total_points * diff(density_data_DESeq$x)[1]  # Multiply by total points and bin width
+
+# Create the density plot with counts and semi-transparent fill
+plot_density_padj_DESeq <- plot_ly() |>
+  add_trace(
+    x = density_data_DESeq$x,
+    y = counts,  # Use counts instead of density
+    type = 'scatter',
+    mode = 'lines+markers',  # Shows both lines and hoverable points
+    line = list(color = '#6DC2BB'),
+    marker = list(size = 1),
+    fill = 'tozeroy',  # Tozeroy = technique to fill to the x-axis
+    fillcolor = 'rgba(109, 194, 187, 0.3)',  # Semi-transparent fill (30% opacity)
+    hovertemplate = paste(
+      "<b>Approx. p-val:</b> %{x:.2f}<br>",  # Rounds P-value to 2 decimal places
+      "<b>Approx. count for p-val:</b> %{y:.0f}<extra></extra>"),  # Rounds Count to 2 decimal places  # Show both x and y (p-value and count) on hover
+    name = "Counts Curve"
+  ) |>
+  layout(
+    title = "Density plot of adj. p values for genes from DESeq2 analysis with Counts",
+    xaxis = list(
+      title = "Adj. p value",
+      tickmode = 'linear',
+      dtick = 0.05,
+      tick0 = 0
+    ),
+    yaxis = list(title = "Counts"),
+    shapes = list(
+      list(
+        type = "line",
+        x0 = 0.05, x1 = 0.05,
+        y0 = 0, y1 = max(counts),  # Y1 set to the maximum count value
+        line = list(dash = 'dash', color = 'darkred', width = 2),
+        name = "Significance Threshold"
+      )
+    ),
+    annotations = list(
+      list(
+        x = 0.15,
+        y = max(counts),
+        text = paste("Number of adj. p values < 0.05:", nr_sig_padj),
+        showarrow = FALSE,
+        xref = "x",
+        yref = "y",
+        yshift = 10
+      )
+    )
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(plot_density_padj_DESeq), "./plots/DESeq2_padj_plot.html")
 ```
 
 # TO DO: PCA analysis samples

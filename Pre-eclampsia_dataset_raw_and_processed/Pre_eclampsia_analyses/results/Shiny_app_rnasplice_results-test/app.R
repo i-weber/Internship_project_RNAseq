@@ -11,6 +11,7 @@ DEXSeq_DEU_exon_plot <- readRDS("www/DEXSeq_DEU_res_volcano_plot.rds")
 
 # load libraries
 pacman::p_load(shiny,
+               shinydashboard,
                rsconnect,
                DT,
                plotly)
@@ -19,7 +20,7 @@ pacman::p_load(shiny,
 ui <- fluidPage(
 
   tags$head(
-    tags$title("Expression and Alternative Splicing Changes in a Pre-eclampsia Mouse Model"),  # Set the title for the browser tab
+    tags$title("Gene Expression and Alternative Splicing Changes in a Pre-eclampsia Mouse Model"),  # Set the title for the browser tab
     tags$link(rel = "icon", type = "image/png", href = "./results/Shiny_app_rnasplice_results-test/www/favicon_RNA.png"),  # Set the icon for the tab
 
   tags$link(rel = "stylesheet", type = "text/css", href = "./results/Shiny_app_rnasplice_results-test/www/bootstrap.min.css"),  # Link to custom Lux theme CSS (free theme from Bootswatch)

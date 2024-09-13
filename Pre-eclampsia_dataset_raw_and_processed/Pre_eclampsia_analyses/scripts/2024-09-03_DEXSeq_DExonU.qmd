@@ -365,6 +365,77 @@ saveWidget(as_widget(plot_jitter_strip_qval_DEU), "./plots/DEXSeq_DEU_res_plot_j
 
 ## Plots DEXSeq (exon splicing analysis)
 
+### FDR distribution plot
+
+```{r}
+
+# How many exons have their inclusion significantly up- or downregulated?}
+nr_sig_padj <- sum(DEXSeq_DEU_res$padj < 0.05, na.rm = TRUE) # 18,752 exons 
+
+# Calculate the density for the adjusted p-values
+density_data_DEXSeq_DEU <- density(DEXSeq_DEU_res$padj,
+                           adjust = 0.1, 
+                           from = 0, to = 1,
+                           na.rm = TRUE)
+
+# the adjust parameter sets how closely the KDE function follows the shape of the data (>1 - more smooth, close to 0 - more detailed and jagged)
+
+# Convert densities to approximate counts to show upon hovering
+total_points <- length(DEXSeq_DEU_res$padj)
+counts <- density_data_DEXSeq_DEU$y * total_points * diff(density_data_DEXSeq_DEU$x)[1]  # Multiply by total points and bin width
+
+# Create the density plot with counts and semi-transparent fill
+plot_density_padj_DEXSeq_DEU <- plot_ly() |>
+  add_trace(
+    x = density_data_DEXSeq_DEU$x,
+    y = counts,  # Use counts instead of density
+    type = 'scatter',
+    mode = 'lines+markers',  # Shows both lines and hoverable points
+    line = list(color = '#6DC2BB'),
+    marker = list(size = 1),
+    fill = 'tozeroy',  # Tozeroy = technique to fill to the x-axis
+    fillcolor = 'rgba(109, 194, 187, 0.3)',  # Semi-transparent fill (30% opacity)
+    hovertemplate = paste(
+      "<b>Approx. p-val:</b> %{x:.2f}<br>",  # Rounds P-value to 2 decimal places
+      "<b>Approx. count for p-val:</b> %{y:.0f}<extra></extra>"),  # Rounds Count to 2 decimal places  # Show both x and y (p-value and count) on hover
+    name = "Counts Curve"
+  ) |>
+  layout(
+    title = "Density plot of adj. p values for genes from DEXSeq DEU analysis with Counts",
+    xaxis = list(
+      title = "Adj. p value",
+      tickmode = 'linear',
+      dtick = 0.05,
+      tick0 = 0
+    ),
+    yaxis = list(title = "Counts"),
+    shapes = list(
+      list(
+        type = "line",
+        x0 = 0.05, x1 = 0.05,
+        y0 = 0, y1 = max(counts),  # Y1 set to the maximum count value
+        line = list(dash = 'dash', color = 'darkred', width = 2),
+        name = "Significance Threshold"
+      )
+    ),
+    annotations = list(
+      list(
+        x = 0.15,
+        y = max(counts),
+        text = paste("Number of adj. p values < 0.05:", nr_sig_padj),
+        showarrow = FALSE,
+        xref = "x",
+        yref = "y",
+        yshift = 10
+      )
+    )
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(plot_density_padj_DEXSeq_DEU), "./plots/DEXSeq_DEU_padj_plot.html")
+```
+
+
 ### Interactive volcano plots
 
 

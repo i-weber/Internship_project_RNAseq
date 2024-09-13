@@ -60,10 +60,10 @@ In case needing to re-set working directory:
 
 ```{r}
 # Load the variables from the RDS file
-#loaded_vars <- readRDS("./results/all_variables_rMATS.rds")
+loaded_vars <- readRDS("./results/all_variables_rMATS.rds")
 
 # Optionally, assign them back to the global environment
-#list2env(loaded_vars, envir = .GlobalEnv)
+list2env(loaded_vars, envir = .GlobalEnv)
 ```
 
 # Import and prepare rMATS results from text files
@@ -204,74 +204,12 @@ SE_jcec_raw <- SE_jcec_raw |> mutate(
 )
 ```
 
-#### Appropriate read coverage
-
-I wanted to see how many exons I'd be having I want to filter out events that have overall too low read coverage. The number of reads that each replicate had for the inclusion and skipping event at a particular exon-exon junction is stored in the IJC_SAMPLE\_ and SJC_SAMPLE\_ columns for each event (two for each- rMATS calls the control or treatment "SAMPLE").
-
-However, I want to avoid filtering out cases in which the read count is extremely low in only one of the conditions. From lab experience, I know that it does happen that certain exons are strictly and only included under one treatment condition and completely skipped under the other.
-
-```{r}
-# Filter out events with too low read coverage
-
-# extract read counts across the biological replicates in the IJC_SAMPLE_ and SJC_SAMPLE_ columns for each event. 
-SE_jcec_raw <- SE_jcec_raw |>
-  mutate(
-    IJC_SAMPLE_1_cleaned = map(IJC_SAMPLE_1,
-                          function(x) as.numeric(
-                            unlist(
-                              strsplit(as.character(x), ",")
-                              )
-                            )
-                          ),
-    IJC_SAMPLE_2_cleaned = map(IJC_SAMPLE_2,
-                          function(x) as.numeric(
-                            unlist(
-                              strsplit(as.character(x), ",")
-                              )
-                            )
-                          ),
-    SJC_SAMPLE_1_cleaned  = map(SJC_SAMPLE_1,
-                          function(x) as.numeric(
-                            unlist(
-                              strsplit(as.character(x), ",")
-                              )
-                            )
-                          ),
-    SJC_SAMPLE_2_cleaned = map(SJC_SAMPLE_2,
-                          function(x) as.numeric(
-                            unlist(
-                              strsplit(as.character(x), ",")
-                              )
-                            )
-                          ),
-  )
-
-# get minimum number of reads across the replicates in one condition for both the inclusion and skipping columns. Since I already filtered to not have more than 1 NA value per row, I can safely use na.rm = TRUE this time around and ignore the NAs.
-SE_jcec_raw <- SE_jcec_raw |> mutate(
-    IJC_SAMPLE_1_min = map_int(IJC_SAMPLE_1_cleaned,
-                               function(x) min(x, na.rm = TRUE)
-                               ),
-    IJC_SAMPLE_2_min = map_int(IJC_SAMPLE_2_cleaned,
-                               function(x) min(x, na.rm = TRUE)
-                               ),
-    SJC_SAMPLE_1_min = map_int(SJC_SAMPLE_1_cleaned,
-                               function(x) min(x, na.rm = TRUE)
-                               ),
-    SJC_SAMPLE_2_min = map_int(SJC_SAMPLE_2_cleaned,
-                               function(x) min(x, na.rm = TRUE)
-                               )
-)
-
-# In the case of an event where there would be zero inclusion in one condition and full inclusion under the other, then I should have IJC_SAMPLE_1_min = 0 and SJC_SAMPLE_1_min >= 5. At the same time, I should, for the other experimental condition, have IJC_SAMPLE_2_min >=5 and SJC_SAMPLE_2_min = 0.
-```
-
 #### Filter result and add "regulation" and "-log10FDR" columns for the volcano plot
 
 ```{r}
 # create filtered SE_jcec, removing all entries where IncLevel1_nonNA <3 or IncLevel2_nonNA <3 or FDR == NA or total reads
 
 SE_jcec <- SE_jcec_raw |> filter(IncLevel1_nonNA >=3 & IncLevel2_nonNA >= 3 & !is.na(FDR)) # left with 45,500 observations. Double checked, there's no more NAs in the FDR (there used to be 537, as sum(is.na(SE_jcec_raw$FDR)) says)
-
 
 # Add a column for -log10padj for the volcano plots
 SE_jcec$`-log10FDR` <- -log10(SE_jcec$FDR)
@@ -296,7 +234,18 @@ SE_jcec <- mutate(SE_jcec,
                                              )
                          ) # factor levels are now: "skipped exon" "not significant" "included exon"
 
-# export rMATS
+# export rMATS result. Had to first flatten the columns I had previously created (ones ending in _clean) that now contained lists to turn them to strings, as write.csv cannot handle lists
+write.csv(SE_jcec |>
+  mutate(across(where(is.list), ~ sapply(., toString))) 
+  |> rename(minuslog10FDR = `-log10FDR`),
+  file = "./results/rMATS_SE_jcec.csv", row.names = T)
+
+# export rMATS significant exons. Had to first flatten the columns I had previously created (ones ending in _clean) that now contained lists to turn them to strings, as write.csv cannot handle lists
+write.csv(SE_jcec |> filter(SE_jcec$regulation != "not significant") |>
+  mutate(across(where(is.list), ~ sapply(., toString))) 
+  |> rename(minuslog10FDR = `-log10FDR`),
+  file = "./results/rMATS_SE_jcec_sigUpDn.csv", row.names = T)
+
 ```
 
 # Explore results
@@ -304,6 +253,8 @@ SE_jcec <- mutate(SE_jcec,
 ## FDR distribution plots
 
 ### For SE data
+
+Here, too, I first started with a histogram for the p-values, but then decided to switch to a density curve instead for an easier to understand output.
 
 ```{r}
 # How many exons have their inclusion significantly up- or downregulated? 
@@ -359,6 +310,72 @@ plot_FDR_SE <- plot_FDR_SE |>
 
 # export plot as html file with htmlwidgets
 saveWidget(as_widget(plot_FDR_SE), "./plots/rMATS_exon_FDR_plot.html")
+```
+
+Alternative FDR plot with density curve instead of histogram
+
+```{r}
+# Calculate the density for the adjusted p-values
+density_data_SE <- density(SE_jcec$FDR,
+                           adjust = 0.1, 
+                           from = 0, to = 1,
+                           na.rm = TRUE)
+
+# the adjust parameter sets how closely the KDE function follows the shape of the data (>1 - more smooth, close to 0 - more detailed and jagged)
+
+# Convert densities to approximate counts to show upon hovering
+total_points_SE <- length(SE_jcec$FDR)
+counts_SE <- density_data_SE$y * total_points_SE * diff(density_data_SE$x)[1]  # Multiply by total points and bin width
+
+# Create the density plot with counts and semi-transparent fill
+plot_density_FDR_SE <- plot_ly() |>
+  add_trace(
+    x = density_data_SE$x,
+    y = counts_SE,  # Use counts instead of density
+    type = 'scatter',
+    mode = 'lines+markers',  # Shows both lines and hoverable points
+    line = list(color = '#6DC2BB'),
+    marker = list(size = 1),
+    fill = 'tozeroy',  # Tozeroy = technique to fill to the x-axis
+    fillcolor = 'rgba(109, 194, 187, 0.3)',  # Semi-transparent fill (30% opacity)
+    hovertemplate = paste(
+      "<b>Approx. FDR:</b> %{x:.2f}<br>",  # Rounds P-value to 2 decimal places
+      "<b>Approx. count for p-val:</b> %{y:.0f}<extra></extra>"),  # Rounds Count to 2 decimal places  # Show both x and y (p-value and count) on hover
+    name = "Counts Curve"
+  ) |>
+  layout(
+    title = "Density plot of FDR values for SE (rMATS) with Counts",
+    xaxis = list(
+      title = "FDR",
+      tickmode = 'linear',
+      dtick = 0.05,
+      tick0 = 0
+    ),
+    yaxis = list(title = "Counts"),
+    shapes = list(
+      list(
+        type = "line",
+        x0 = 0.1, x1 = 0.1,
+        y0 = 0, y1 = max(counts_SE),  # Y1 set to the maximum count value
+        line = list(dash = 'dash', color = 'darkred', width = 2),
+        name = "Significance Threshold"
+      )
+    ),
+    annotations = list(
+      list(
+        x = 0.125,
+        y = max(counts_SE),
+        text = paste("Number of adj. p values < 0.1:", nr_sig_FDR),
+        showarrow = FALSE,
+        xref = "x",
+        yref = "y",
+        yshift = 10
+      )
+    )
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(plot_density_FDR_SE), "./plots/rMATS_SE_FDR_plot_density.html")
 ```
 
 ## Interactive volcano plots

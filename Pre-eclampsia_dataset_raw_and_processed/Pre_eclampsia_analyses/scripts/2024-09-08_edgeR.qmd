@@ -78,7 +78,6 @@ edgeR_exon_res <- edgeR_exon_res |> mutate(
 )
 ```
 
-
 ## Filter results
 
 ### edgeR exon
@@ -124,7 +123,6 @@ edgeR_exon_res_sigUpDn <- edgeR_exon_res_sigUpDn |> rename(minuslog10padj = `-lo
 write.csv(edgeR_exon_res_sigUpDn, file = "./results/edgeR_exon_sig_UpDn_exons.csv", row.names = T)
 ```
 
-
 # Explore results
 
 ## FDR distribution plots
@@ -132,8 +130,6 @@ write.csv(edgeR_exon_res_sigUpDn, file = "./results/edgeR_exon_sig_UpDn_exons.cs
 ### For exon data
 
 ```{r}
-
-
 # Compute a histogram to get the max bin count for the FDR values
 hist_data_exon <- hist(edgeR_exon_res$FDR, plot = FALSE, breaks = seq(0, 1, by = 0.05))  # Adjust breaks as needed
 max_count_exon <- max(hist_data_exon$counts)  # This gives the max bin count
@@ -186,7 +182,72 @@ plot_FDR_edgeR_exon <- plot_FDR_edgeR_exon |>
 saveWidget(as_widget(plot_FDR_edgeR_exon), "./plots/edgeR_exon_FDR_plot.html")
 ```
 
+Alternative FDR plot with density curve instead of histogram
 
+```{r}
+# Calculate the density for the adjusted p-values
+density_data_SE <- density(edgeR_exon_res$FDR,
+                           adjust = 0.1, 
+                           from = 0, to = 1,
+                           na.rm = TRUE)
+
+# the adjust parameter sets how closely the KDE function follows the shape of the data (>1 - more smooth, close to 0 - more detailed and jagged)
+
+# Convert densities to approximate counts to show upon hovering
+total_points_SE <- length(edgeR_exon_res$FDR)
+counts_SE <- density_data_SE$y * total_points_SE * diff(density_data_SE$x)[1]  # Multiply by total points and bin width
+
+# Create the density plot with counts and semi-transparent fill
+plot_density_FDR_SE <- plot_ly() |>
+  add_trace(
+    x = density_data_SE$x,
+    y = counts_SE,  # Use counts instead of density
+    type = 'scatter',
+    mode = 'lines+markers',  # Shows both lines and hoverable points
+    line = list(color = '#6DC2BB'),
+    marker = list(size = 1),
+    fill = 'tozeroy',  # Tozeroy = technique to fill to the x-axis
+    fillcolor = 'rgba(109, 194, 187, 0.3)',  # Semi-transparent fill (30% opacity)
+    hovertemplate = paste(
+      "<b>Approx. FDR:</b> %{x:.2f}<br>",  # Rounds P-value to 2 decimal places
+      "<b>Approx. count for p-val:</b> %{y:.0f}<extra></extra>"),  # Rounds Count to 2 decimal places  # Show both x and y (p-value and count) on hover
+    name = "Counts Curve"
+  ) |>
+  layout(
+    title = "Density plot of FDR values for SE (edgeR) with Counts",
+    xaxis = list(
+      title = "FDR",
+      tickmode = 'linear',
+      dtick = 0.05,
+      tick0 = 0
+    ),
+    yaxis = list(title = "Counts"),
+    shapes = list(
+      list(
+        type = "line",
+        x0 = 0.1, x1 = 0.1,
+        y0 = 0, y1 = max(counts_SE),  # Y1 set to the maximum count value
+        line = list(dash = 'dash', color = 'darkred', width = 2),
+        name = "Significance Threshold"
+      )
+    ),
+    annotations = list(
+      list(
+        x = 0.125,
+        y = max(counts_SE),
+        text = paste("Number of FDR values < 0.1:", nr_sig_FDR_exon),
+        showarrow = FALSE,
+        xref = "x",
+        yref = "y",
+        yshift = 10
+      )
+    )
+  )
+
+# export plot as html file with htmlwidgets
+saveWidget(as_widget(plot_density_FDR_SE), "./plots/edgeR_SE_FDR_plot_density.html")
+
+```
 
 ## Interactive volcano plots
 
@@ -239,9 +300,6 @@ plot_edgeR_exon_volcano <- plot_ly(data = edgeR_exon_res,
 # export plot as html file with htmlwidgets
 saveWidget(as_widget(plot_edgeR_exon_volcano), "./plots/edgeR_exon_volcano_plot.html")
 ```
-
-
-
 
 # Save all variables from environment to an RDS file
 
