@@ -1,32 +1,43 @@
 # THIS IS A TEST APP TO IMPROVE AND ENHANCE THE FUNCTIONALITY OF MY INITIAL APP
 
-# Load the interactive plots saved as RDS files
-DESeq_gene_plot <- readRDS("www/Gene_raw_volcano_overlap_labels2.rds")
 
-DEXSeq_DTU_tx_plot <- readRDS("www/DEXSeq_DTU_volcano_plot2.rds")
+# ___________________________________________ -----------------------------------------------------
 
-DEXSeq_DEU_exon_plot <- readRDS("www/DEXSeq_DEU_res_volcano_plot.rds")
+# Preparations -----------------------------------------------
 
-# DEXSeq_DEU_exon_plot <- readRDS("./results/Shiny_app_rnasplice_results-test/www/DEXSeq_DTU_volcano_plot2.rds")
-
-# load libraries
+# * loading libraries -------------------------------------------------------
 pacman::p_load(shiny,
                shinydashboard,
                rsconnect,
                DT,
-               plotly)
+               plotly,
+               readr)
 
-# Define UI for application
+# ___________________________________________ -----------------------------------------------------
+
+# Define UI for application -----------------------------------------------
+
+
 ui <- fluidPage(
 
-  tags$head(
-    tags$title("Gene Expression and Alternative Splicing Changes in a Pre-eclampsia Mouse Model"),  # Set the title for the browser tab
-    tags$link(rel = "icon", type = "image/png", href = "./results/Shiny_app_rnasplice_results-test/www/favicon_RNA.png"),  # Set the icon for the tab
+# ___________________ -----------------------------------------------------
+## * Tab title, icon, and style settings ---------------------------------------
+ tags$head(
 
-  tags$link(rel = "stylesheet", type = "text/css", href = "./results/Shiny_app_rnasplice_results-test/www/bootstrap.min.css"),  # Link to custom Lux theme CSS (free theme from Bootswatch)
+#### * *  Set the title for the browser tab ----------------------------------
+    tags$title("Gene Expression and Alternative Splicing Changes in a Pre-eclampsia Mouse Model"),
 
 
-  # Custom CSS to remove borders and scroll bars
+### * * Set the icon for the tab --------------------------------------------
+    tags$link(rel = "icon", type = "image/png", href = "./results/Shiny_app_rnasplice_results-test/www/favicon_RNA.png"),
+
+### * *  Link to custom Lux theme CSS (free theme from Bootswatch) ----------
+  tags$link(rel = "stylesheet", type = "text/css", href = "./results/Shiny_app_rnasplice_results-test/www/bootstrap.min.css"),
+
+
+
+### * * remove border from Plotly outputs with custom CSS styling -----------
+
   tags$style(HTML("
     .shiny-plot-output, .plotly-output {
       border: none;             /* Remove borders */
@@ -39,7 +50,8 @@ ui <- fluidPage(
   ")),
 
 
-  # Custom CSS for iframe and container styling to remove borders and scroll bars
+
+### * * remove border from iframe and container with custom CSS styling  --------
   tags$style(HTML("
     .iframe-container {
       border: none;
@@ -58,8 +70,9 @@ ui <- fluidPage(
   ")),
   ),
 
-  # Application title
-  titlePanel(title = div("Gene and Transcript Expression Differences in Pre-eclampsia E 17.5 Mouse Cortices vs Controls",
+# ___________________ -----------------------------------------------------
+## * Set application title for page -----------------------------------------------
+  titlePanel(title = div("Gene Expression and Alternative pre-mRNA Splicing Changes in the Embryonic Cerebral Cortices of a Pre-eclampsia Mouse Model vs Controls at Embryonic Day 17.5",
                          style = "text-align: center;"
                          )
              ),
@@ -68,41 +81,129 @@ ui <- fluidPage(
   br(),
   div(style = "height: 5px;"),
 
-  # Tab Layout
+# ___________________ -----------------------------------------------------
+## * Tab Layout ----------------------------------------------------------
   tabsetPanel(
     id = "main_tabs",
 
-    # Overview Dashboard Tab
+
+### * * Overview Dashboard Tab --------------------------------------------
+
     tabPanel(
       "Overview",
       fluidRow(
         column(12,
-               h3("Overview Dashboard"),
-               p("Welcome to the gene and transcript expression analysis dashboard. Use the tabs above to explore specific analyses."),
+               h3("Overview"),
+               p("Welcome to the gene and transcript expression analysis. Use the tabs above to explore specific analyses, or click the buttons below"),
+
+               # Insert some space after title
+               br(),
+               div(style = "height: 5px;"),
+
+               p("General statistics and quality control of the dataset:"),
+               actionButton("general_tab", "General statistics and quality control"),
+
+               # Insert some space after overview tab button
+               br(),
+               div(style = "height: 20px;"),
+
                p("Below are links to the specific analyses:"),
-               actionButton("gene_tab", "Gene-Level Volcano Plot"),
-               actionButton("exon_tab", "Exon-Level Volcano Plot")
+               actionButton("gene_tab", "Gene- and Transcript-Level Analysis"),
+               actionButton("exon_tab", "Exon-Level Analysis")
         )
       )
     ),
 
-    # Gene-Level Analysis Tab
-    tabPanel(
-      "Gene-Level Volcano Plot",
+### * * Geneneral Stats of RNA-Seq dataset GSE167193 --------------------------------------------
+
+ tabPanel(
+      "General statistics and quality control",
+
+      # Insert some space after title bar
+      br(),
+      div(style = "height: 5px;"),
+
       fluidRow(
         column(
-          width = 12,
-          textInput("geneSearch1", "Search for a Gene:", ""),
-          plotlyOutput("DESeq_gene_plot", height = "auto", width = "auto"),
-          DTOutput("geneDataTable"),
-          downloadButton("downloadGeneData", "Download Selected Gene Data")
-        )
-      )
-    ),
+          width = 6,
+          box(
+            title = "Counts",
+            status = "primary",
+            plotlyOutput(""),
+            p("Add explanations or details here")
+            ),
 
-    # Exon-Level Analysis Tab
+          ),
+        column(
+          width = 6,
+          box(
+            title = "NAs",
+            status = "primary",
+            plotlyOutput(""),
+            p("Add explanations or details here")
+          )
+        )
+        )
+      ),
+
+### * * Gene- and Transcript-Level Analysis Tab --------------------------------------------
     tabPanel(
-      "Exon-Level Volcano Plot",
+
+      "Gene- and Transcript-Level Analysis", # name of the tab (must be same in server logic below)
+
+     # Insert some space after title bar
+      br(),
+      div(style = "height: 5px;"),
+
+      ### * * * Row with search box and data download button ----
+      fluidRow(
+        column(
+          width = 6,
+          textInput("geneSearch", "Search for a gene and its associated transcripts:", ""),
+        ),
+        column(
+          width = 6,
+          downloadButton("downloadGeneData", "Click here to download data of selected points"),
+        ),
+      ),
+
+
+     ### * * * Row with volcano plots ----
+      fluidRow(
+        column(
+          width = 6,
+          box(
+            title = "Gene expression levels (DESeq2)",
+            status = "primary",
+            plotlyOutput("plot_DESeq2"),
+            p("Add explanations or details here")
+            ),
+
+          ),
+        column(
+          width = 6,
+          box(
+            title = "Transcript expression levels (DEXSeq DTU)",
+            status = "primary",
+            plotlyOutput("plot_DEXSeq_DTU"),
+            p("Add explanations or details here")
+          )
+        )
+        )
+      ),
+
+### * * Exon-Level Analysis Tab --------------------------------------------
+
+
+
+    tabPanel(
+      "Exon-Level Analysis",
+
+      # Insert some space after title
+      br(),
+      div(style = "height: 5px;"),
+
+      ### * * * Row with volcano plots ----
       fluidRow(
         column(
           width = 12,
@@ -112,44 +213,131 @@ ui <- fluidPage(
           downloadButton("downloadExonData", "Download Selected Exon Data")
         )
       )
+
+
+
+    ),
+
+### * * Sources Tab --------------------------------------------
+
+tabPanel(
+  "Sources",
+
+
+  fluidRow(
+    column(
+      width = 12,
+      textInput("geneSearch2", "Search for an Exon:", ""),
+      plotlyOutput("DEXSeq_DEU_exon_plot", height = "auto", width = "auto"),
+      DTOutput("exonDataTable"),
+      downloadButton("downloadExonData", "Download Selected Exon Data")
     )
   )
+
+  ### * * * Row with volcano plots ----
+
 )
-#
-#   fluidRow(
-#     column(width = 6,
-#            style = "margin-bottom: 0px;",
-#            tags$iframe(src = "Gene_raw_volcano_overlap_labels2.html", style = "height: 1000px;") #, height = "1000px", width = "100%"
-#            ),
-#
-#
-#     column(width = 6,
-#            #style = "padding-left: 100px; padding-right: 100px;"
-#     ),
-#
-#     column(width = 6,
-#            style = "margin-bottom: 0px;",
-#            tags$iframe(src = "DEXSeq_DTU_volcano_plot2.html", style = "height: 1000px;")
-#            ),
-#   )
-# )
+
+  )
+
+)
 
 
-# Define server logic
+# ___________________________________________ -----------------------------------------------------
+
+# Define server logic -----------------------------------------------------
 server <- function(input, output, session) {
 
+# ___________________________________________ -----------------------------------------------------
 
+# ___________________________________________
+# Import CSV files as tibbles ----
+  DESeq2_data <- read_csv("www/DESeq2_non-NA_res.csv")
+  DEXSeq_DTU_data <- read_csv("www/DEXSeq_DTU_all.csv")
+  DEXSeq_DEU_data <- read_csv("www/DEXSeq_DEU_res.csv")
+  rMATS_SE_data <- read_csv("www/rMATS_SE_jcec.csv")
+  SUPPA_SE_data <- read_csv("www/SUPPA_SE_res.csv")
+  edgeR_SE_data <- read_csv("www/edgeR_exon_res.csv")
 
-  # Navigate between tabs using action buttons
+  # Extract a mini tibble with the data for the differentially expressed genes the authors have validated in the paper
+  points_to_label <- DESeq2_data[DESeq2_data$gene %in% c("Grin2a","Grin2b","Ube2c","Celsr1","Kif18","Creb5", "Gli2", "Plk1"), ] # Kif18 not found in my data
+
+  # ___________________ -----------------------------------------------------
+# Overview tab -----------------------------------------------------
+
+### Navigate between tabs using action buttons ----
+  observeEvent(input$general_tab, {
+    updateTabsetPanel(session, "main_tabs", selected = "General statistics and quality control")
+  })
+
   observeEvent(input$gene_tab, {
-    updateTabsetPanel(session, "main_tabs", selected = "Gene-Level Volcano Plot")
+    updateTabsetPanel(session, "main_tabs", selected = "Gene- and Transcript-Level Analysis")
   })
 
   observeEvent(input$exon_tab, {
-    updateTabsetPanel(session, "main_tabs", selected = "Exon-Level Volcano Plot")
+    updateTabsetPanel(session, "main_tabs", selected = "Exon-Level Analysis")
   })
 
-  # Reactive expression to highlight a gene in gene-level plot
+  observeEvent(input$citation_tab, {
+    updateTabsetPanel(session, "main_tabs", selected = "Sources")
+  })
+  # ___________________ -----------------------------------------------------
+# Gene and transcript expression tab ----
+#
+## * * Plots ----
+### * * * Gene-level plot ----
+  output$plot_DESeq2 <- renderPlotly(
+    {
+    plot_ly(DESeq2_data,
+            x = ~log2FoldChange,
+            y = ~minuslog10padj,
+            type = 'scatter',
+            mode = 'markers',
+            marker = list(size = 6,
+                          opacity = 0.4),
+            color = ~regulation,
+            colors = c("firebrick3", "cadetblue3", "lightgray"),#factor lelvels are downregulated, upregulated, not significant
+            hoverinfo = 'text',
+            text = ~paste("Gene:", gene,
+                          "<br>log2 FC:", log2FoldChange,
+                          "<br>FDR:", formatC(padj, format = "e", digits = 3)
+            ),
+            showlegend = TRUE
+    ) |>
+        add_trace(
+          data = DESeq2_data |> filter(inPublication == TRUE),
+          x = ~log2FoldChange,
+          y = ~minuslog10padj,
+          type = 'scatter',
+          mode = 'markers',
+          marker = list(size = 3),
+          color=I("black"), # I = collapse the mapping of all points onto one single color, which also ensure there's only one legend entry for this property, not 3 (there doesn't seem to be any easy way to prevent this second trace from inheriting the mapping to upregulated, downregulated, not significant from the first trace)
+          hoveron = "fills", # useful so that the annotations are taken from the trace underneath and the labels then have the color of the large points (red, gray, or blue)
+          showlegend = TRUE,
+          name = "DEG identified in published data"
+        ) |>
+        layout(
+          title = list(text = paste(nrow(DESeq2_data), " points plotted", sep = ""), x = 0.5),
+          xaxis = list(title = "Log2(Fold Change Preeclampsia vs Control)"),
+          yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of gene)"),
+          legend = list(title = list(text = "Regulation and Dataset"),
+                        orientation = 'h',
+                        y = -0.25, x = 0.5,
+                        xanchor = 'center')
+        ) |>
+        add_annotations(
+          x = points_to_label$log2FoldChange,
+          y = points_to_label$minuslog10padj,
+          text = points_to_label$gene,
+          showarrow = TRUE,
+          arrowhead = 1,
+          ax = 20,
+          ay = -40
+        )
+      }
+    )
+
+## * * Reactive expression to highlight a gene in gene-level plot ----
   highlighted_gene1 <- reactive({
     req(input$geneSearch1)
     df_gene <- DESeq_gene_plot$x$data[[1]]$customdata  # Assuming you stored custom data
@@ -206,6 +394,9 @@ server <- function(input, output, session) {
     }
   )
 
+  # ___________________ -----------------------------------------------------
+  # Exon-Level tab ----
+  #
   # Reactive expression to highlight a gene in exon-level plot
   highlighted_gene2 <- reactive({
     req(input$geneSearch2)
