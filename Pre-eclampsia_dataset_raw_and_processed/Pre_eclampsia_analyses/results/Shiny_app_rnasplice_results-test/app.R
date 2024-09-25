@@ -311,7 +311,7 @@ server <- function(input, output, session) {
           type = 'scatter',
           mode = 'markers',
           marker = list(size = 3),
-          color=I("black"), # I = collapse the mapping of all points onto one single color, which also ensure there's only one legend entry for this property, not 3 (there doesn't seem to be any easy way to prevent this second trace from inheriting the mapping to upregulated, downregulated, not significant from the first trace)
+          color = I("black"), # I = collapse the mapping of all points onto one single color, which also ensure there's only one legend entry for this property, not 3 (there doesn't seem to be any easy way to prevent this second trace from inheriting the mapping to upregulated, downregulated, not significant from the first trace)
           hoveron = "fills", # useful so that the annotations are taken from the trace underneath and the labels then have the color of the large points (red, gray, or blue)
           showlegend = TRUE,
           name = "DEG identified in published data"
@@ -337,6 +337,59 @@ server <- function(input, output, session) {
       }
     )
 
+  ### * * * Transcript-level plot ----
+  output$plot_DEXSeq_DTU <- renderPlotly(
+    {
+      plot_ly(data = DEXSeq_DTU_data,
+              x = ~log2fold_CONTROL_PREECLAMPSIA,
+              y = ~minuslog10padj,
+              type = 'scatter',
+              mode = 'markers',
+              marker = list(size = 6,
+                            opacity = 0.4),
+              color = ~regulation,
+              colors = c( "lightgray","darkred","skyblue3"),
+              hoverinfo = 'text',
+              text = ~paste("Transcript:", featureID,
+                            "<br>FDR:", formatC(padj, format = "e", digits = 3),
+                            "<br>Source gene:", groupID,
+                            "<br>Source gene Q val:", formatC(Q_value, format = "e", digits = 3)
+              ),
+              showlegend = TRUE
+      ) |>
+        add_trace(
+          data = DEXSeq_DTU_data |> filter(significance_perGeneQValue == "significant Q value"),
+          x = ~log2fold_CONTROL_PREECLAMPSIA,
+          y = ~minuslog10padj,
+          type = 'scatter',
+          mode = 'markers',
+          marker = list(size = 2, opacity = 0.5),
+          color = I("black"), # I = collapse the mapping of all points onto one single color, which also ensures there's only one legend entry for this property, not 3 (there doesn't seem to be any easy way to prevent this second trace from inheriting the mapping to upregulated, downregulated, not significant from the first trace)
+          hoveron = "fills", # useful so that the annotations are taken from the trace underneath and the labels then have the color of the large points (red, gray, or blue)
+          showlegend = TRUE,
+          name = "from gene with<br>significant Q value"
+        ) |>
+        layout(
+          title = list(text = paste(nrow(DEXSeq_DTU_data), " points plotted", sep = ""), x = 0.5),
+          annotations = list(
+            font = list(size = 14),  # Title font size
+            x = 0.5,
+            y = 1.08, # Position of the title (above the plot)
+            xref = "paper",  # Position relative to the entire plot
+            yref = "paper",
+            showarrow = FALSE
+          ),
+          xaxis = list(title = list(text = "Log2(Fold Change Preeclampsia vs Control)"),
+                       standoff = 1),
+          yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of transcript)"),
+          legend = list(title = list(text = "Regulation and Significance"),
+                        orientation = 'h',
+                        y = -0.25, x = 0.5,
+                        xanchor = 'center')
+      )
+    }
+  )
+
 ## * * Reactive expression to highlight a gene in gene-level plot ----
   highlighted_gene1 <- reactive({
     req(input$geneSearch1)
@@ -352,11 +405,11 @@ server <- function(input, output, session) {
   # Render gene-level plot with highlighting
   output$DESeq_gene_plot <- renderPlotly({
     # Register the plotly_selected event for DESeq_gene_plot
-    plot <- event_register(DESeq_gene_plot, "plotly_selected")
+    DESeq_gene_plot <- event_register(DESeq_gene_plot, "plotly_selected")
 
     # Add highlighted points if applicable
     if (!is.null(highlighted_gene1())) {
-      plot <- plot %>% add_markers(
+      plot <- plot |> add_markers(
         x = highlighted_gene1()$log2FoldChange,
         y = -log10(highlighted_gene1()$pvalue),
         text = highlighted_gene1()$Gene,
@@ -370,7 +423,7 @@ server <- function(input, output, session) {
 
   # Reactive expression to capture selected data points from gene plot
   selected_gene_data <- reactive({
-    event_data("plotly_selected", source = "DESeq_gene_plot")
+    event_data("plotly_selected", source = "plot_DESeq2")
   })
 
   # Display selected gene data in a table

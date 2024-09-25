@@ -43,11 +43,11 @@ In case needing to re-set working directory:
 #setwd("C:/Win_Ubuntu_shared/Pre-eclampsia_dataset_raw_and_processed/Pre_eclampsia_analyses")
 ```
 
-# If rMATS analysis performed previously: load results (uncomment as needed)
+# If analysis performed previously: load results (uncomment as needed)
 
 ```{r}
 # Load the variables from the RDS file
-# loaded_vars <- readRDS("./results/all_variables_rMATS.rds")
+# loaded_vars <- readRDS("./results/all_variables_exons.rds")
 # Optionally, assign them back to the global environment
 # list2env(loaded_vars, envir = .GlobalEnv)
 ```
