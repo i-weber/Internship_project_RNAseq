@@ -48,7 +48,7 @@ In case needing to re-set working directory:
 
 ```{r}
 # Load the variables from the RDS file
-loaded_vars <- readRDS("./results/all_variables_general_stats.rds")
+loaded_vars <- readRDS("./results/all_vars_general_stats.rds")
 # Optionally, assign them back to the global environment
 list2env(loaded_vars, envir = .GlobalEnv)
 ```
@@ -57,36 +57,29 @@ list2env(loaded_vars, envir = .GlobalEnv)
 
 ## Import
 
+I create a column "paired_reads_millions" , which represents the smaller of the two counts of reads from the reverse (\_R1) and forward (R2) FastQ files. This should reflect the count of reads available to be paired by STAR before it attempts to align them and I therefore consider them the total initial reads that are avaialable to the pipeline. I chose to work with the minimum of the two because the million read counts I generated in the Excel file stem from the BAM files suffixed with `val_1` or `val_2` , which should be the BAM files with the reads that remain after the trimming process (trimming sometimes cuts some reads so short that they are discarded based on a pre-defined cutoff). In the case of this experiment, the remaining read numbers are identical, but that might be different in some other cases. I use apply() with a function instead of min(), because this performs the operation rowwise between the two columns, whereas min() operates with the entirety of the two columns, yielding the same value for all samples. Alternatively, can use pmin() for a simple mutate operation, but I wanted to practice apply().
+
 ```{r}
 general_stats <- read_excel("../Pre_eclampsia_mice_rnasplice_results/multiqc/2024-08-21_general_statistics_dataset.xlsx", sheet = "overview_simplified")
 
 general_stats <- mutate(general_stats,
-                        total_reads_millions = `FastQC_total_sequences_[millions]_R1`+`FastQC_total_sequences_[millions]_R2`,
-                        total_duplicates_millions = `FasQC_%_duplicate_reads_R1`*`FastQC_total_sequences_[millions]_R1`+`FasQC_%_duplicate_reads_R2`*`FastQC_total_sequences_[millions]_R2`
+                        paired_reads_millions = apply(
+                          cbind(`FastQC_total_sequences_[millions]_R1`,`FastQC_total_sequences_[millions]_R2`),
+                          1, # 1 = the margin, with 1 representing row-wise and 2 column-wise
+                          function(row){ # cbind creates a small matrix containing only these two columns. To access it, the function uses each row separately (the side-by-side total sequences from _R1 and _R2) and performs whatever is defined between the curly braces on that row. The row itself is treated as a vector inside of the function, hence this particular use of the indices to indicate how the cells should be used in the computation
+                            min(row[1], row[2])
+                          }) 
                         )
 
 # save as CSV
 write.csv(general_stats, file = "./results/General_stats.csv", row.names = T )
 ```
 
-## Pivot to long for plotting
-
-```{r}
-general_stats_long <- pivot_longer(general_stats,
-                                   cols = c(total_reads_millions,
-                                            total_duplicates_millions,
-                                            STAR_M_Uniquely_mapped_reads,
-                                            Salmon_M_mapped_reads),
-                                   names_to = "Analysis Stage",
-                                   values_to = "Reads (millions)") |>
-  select(`Sample Name`, `Analysis Stage`, `Reads (millions)`)
-
-# save as CSV
-write.csv(general_stats_long, file = "./results/General_stats_long_form.csv", row.names = T )
-```
 
 # Sankey/alluvial plots to visualize how reads were used in the pipeline
+
 ## Test plot for one sample
+
 ```{r}
 # test plot for one sample to make sure flow of info is correct in alluvial plot
  # extract data for this sample only
@@ -95,15 +88,13 @@ write.csv(general_stats_long, file = "./results/General_stats_long_form.csv", ro
     filter(`Sample Name` == "CONTROL_REP1") |>
     # select which columns to include the data from
     select(`Sample Name` = `Sample Name`, 
-           total_reads_millions = total_reads_millions,
-           total_duplicates_millions = total_duplicates_millions,
+           paired_reads_millions = paired_reads_millions,
            uniquely_mapped_reads_STAR = STAR_M_Uniquely_mapped_reads,
            mapped_reads_Salmon = Salmon_M_mapped_reads)
   
   # Pivot the sample data to long format for easier plotting and select relevant data only
   CONTROL_REP1_data_long <- CONTROL_REP1_data |>
-    pivot_longer(cols = c(total_reads_millions,
-                          total_duplicates_millions,
+    pivot_longer(cols = c(paired_reads_millions,
                           uniquely_mapped_reads_STAR,
                           mapped_reads_Salmon),
                  names_to = "Analysis Stage",
@@ -132,8 +123,7 @@ write.csv(general_stats_long, file = "./results/General_stats_long_form.csv", ro
     link = list(
       source = c(0, 0, 1, 2),  # Defining the flow between the stages (start at index 0, I suspect because Plotly is originally a Python package)
       target = c(1, 2, 2, 3),  # The target of each stage of the analysis
-      value = c(sample_data_long$`Reads (millions)`[sample_data_long$`Analysis Stage` == "total_reads_millions"],
-              sample_data_long$`Reads (millions)`[sample_data_long$`Analysis Stage` == "total_duplicates_millions"],
+      value = c(sample_data_long$`Reads (millions)`[sample_data_long$`Analysis Stage` == "paired_reads_millions"],
               sample_data_long$`Reads (millions)`[sample_data_long$`Analysis Stage` == "uniquely_mapped_reads_STAR"],
               sample_data_long$`Reads (millions)`[sample_data_long$`Analysis Stage` == "mapped_reads_Salmon"]
               ),
@@ -144,10 +134,11 @@ write.csv(general_stats_long, file = "./results/General_stats_long_form.csv", ro
 
   sample_plot
 ```
+
 An interesting thing I noticed is that some of the numbers don't add up after looking at the general stats: even though I see that many reads are flagged as duplicates by FastQC, it seems that these aren't removed by default. It looks like STAR uses *absolutely all* reads that are present in the FastQ files, or else I can't explain why the sum of STAR-aligned reads and duplicates is higher than the total number of reads. To make the Sankey plots more easy to understand, I removed the info about the duplicates from most of them, but it's good to know that, for further analyses, I should look into the duplicates issue before proceeding with the pipeline.
 
-
 ## Create all of the alluvial plots in a loop
+
 ```{r}
 # Define a custom color palette for nodes, flows, and labels
 # # nodes are: total read count (node 0), aligned by STAR (node 1), mapped by Salmon (node 2), not aligned by STAR (node 3), not mapped by Salmon (node 4)
@@ -170,7 +161,7 @@ flow_colors <- c("rgba(102,194,165, 0.5)", # total reads -> aligned by STAR
 
 # Define custom colors for each label using HTML styling
 label_text <- c(
-  "<span style='color:rgba(114,114,114, 1);'>Total Reads (FastQC)</span>",  # node 0
+  "<span style='color:rgba(114,114,114, 1);'>Available<br>Read Pairs<br>R1 and R2<br>(FastQC)</span>",  # node 0
   "<span style='color:rgba(45,150,137, 1);'>Uniquely<br>Aligned<br>(STAR)</span>",  # node 1
   "<span style='color:rgba(55,89,195, 1);'>Mapped <br> (Salmon)</span>",  # node 2
   "<span style='color:rgba(197,168,108, 1);'>Not aligned by STAR/<br>not unique</span>",  # node 3
@@ -189,13 +180,13 @@ for(sample_name in sample_list){
     filter(`Sample Name` == sample_name) |>
     # select which columns to include the data from
     select(`Sample Name` = `Sample Name`, 
-           total_reads_millions = total_reads_millions,
+           paired_reads_millions = paired_reads_millions,
            uniquely_mapped_reads_STAR = STAR_M_Uniquely_mapped_reads,
            mapped_reads_Salmon = Salmon_M_mapped_reads)
   
   # Pivot the sample data to long format for easier plotting and select relevant data columns only
   sample_data_long <- sample_data |>
-    pivot_longer(cols = c(total_reads_millions,
+    pivot_longer(cols = c(paired_reads_millions,
                           uniquely_mapped_reads_STAR,
                           mapped_reads_Salmon),
                  names_to = "Analysis Stage",
@@ -205,7 +196,7 @@ for(sample_name in sample_list){
            `Reads (millions)`)
   
   # Calculate unmapped reads as difference between total reads and uniquely mapped reads (need this for plotting so that Plotly is not confused about what's happening with the reads left from the total reads that were not mapped by STAR)
-  unaligned_reads <- sample_data$total_reads_millions - sample_data$uniquely_mapped_reads_STAR
+  unaligned_reads <- sample_data$paired_reads_millions - sample_data$uniquely_mapped_reads_STAR
   unmapped_reads <- sample_data$uniquely_mapped_reads_STAR - sample_data$mapped_reads_Salmon
   
   # Create the alluvial plot using plotly
@@ -261,7 +252,7 @@ for(sample_name in sample_list){
       target = c(1, 3, 2, 4),  # The target of each stage of the analysis
       
       # the values indicate how thick the flows should be between the bars that represent the analysis stages
-      value = c(#sample_data_long$`Reads (millions)`[sample_data_long$`Analysis Stage` == "total_reads_millions"],
+      value = c(#sample_data_long$`Reads (millions)`[sample_data_long$`Analysis Stage` == "paired_reads_millions"],
               sample_data_long$`Reads (millions)`[sample_data_long$`Analysis Stage` == "uniquely_mapped_reads_STAR"],
               unaligned_reads,
               sample_data_long$`Reads (millions)`[sample_data_long$`Analysis Stage` == "mapped_reads_Salmon"],
@@ -292,6 +283,7 @@ for(sample_name in sample_list){
 plot_list[8]
 ```
 
+I'm looking at my interactive Sankey plots I created with Plotly for how the reads were processed in the pipeline, and I somehow have the feeling that something is not right. For instance, for this one sample, I have a total of 42.4 million reads from the \_R1 and \_R2 files put together. Then, STAR says it aligned 94.4% uniquely mapped reads, amounting to a total of 20 million uniquely mapped reads. Do I misunderstand how STAR works? Does the 94.4% refer to the average between the number of reads in the \_R1 file and the \_R2 file, and does STAR report its aligned percentage only to reads that were successfully paired?
 
 # Save all variables from environment to an RDS file
 

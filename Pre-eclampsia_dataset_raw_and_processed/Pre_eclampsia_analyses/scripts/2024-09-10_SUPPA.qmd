@@ -191,7 +191,7 @@ skipped exon not significant included exon
 
 ```{r}
 # export SE events to CSV
-(SUPPA_diffspli_local_SE, file = "./results/SUPPA_SE_res.csv", row.names = T)
+write.csv(SUPPA_diffspli_local_SE, file = "./results/SUPPA_SE_res.csv", row.names = T)
 
 # significant events
 # create filtered tibble of significantly more included and more skipped exons
@@ -202,7 +202,7 @@ filter(SUPPA_diffspli_local_SE$regulation != "not significant")
 SUPPA_diffspli_local_SE_sigUpDn <- SUPPA_diffspli_local_SE_sigUpDn |> rename(minuslog10padj = `-log10(p-adj PE-Ctrl)`)
 
 # export significantly more included and more skipped exons
-(SUPPA_diffspli_local_SE_sigUpDn, file = "./results/SUPPA_sig_UpDn_exons.csv", row.names = T)
+write.csv(SUPPA_diffspli_local_SE_sigUpDn, file = "./results/SUPPA_sig_UpDn_exons.csv", row.names = T)
 ```
 
 # Explore results
