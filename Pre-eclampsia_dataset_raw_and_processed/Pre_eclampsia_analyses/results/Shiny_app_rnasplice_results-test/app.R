@@ -20,25 +20,94 @@ pacman::p_load(shiny,
 
 ui <- fluidPage(
 
-# ___________________ -----------------------------------------------------
-## * Tab title, icon, and style settings ---------------------------------------
- tags$head(
+  # ___________________ -----------------------------------------------------
+  ## * Set application title for page -----------------------------------------------
+  titlePanel(title = div("Gene Expression and Alternative pre-mRNA Splicing Changes in the Embryonic Cerebral Cortices of a Pre-eclampsia Mouse Model at Embryonic Day 17.5",
+                         style = "text-align: center;"
+  )
+  ),
 
-#### * *  Set the title for the browser tab ----------------------------------
+  #div(class = "title", titlePanel("Gene Expression and Alternative pre-mRNA Splicing Changes")),
+
+  # Insert some space after title
+  br(),
+  div(style = "height: 5px;"),
+
+
+  # ___________________ -----------------------------------------------------
+  ## * Browser tab title, icon, and style settings ---------------------------------------
+  tags$head(
+
+    #### * *  Set the title for the browser tab ----------------------------------
     tags$title("Gene Expression and Alternative Splicing Changes in a Pre-eclampsia Mouse Model"),
 
 
-### * * Set the icon for the tab --------------------------------------------
+    ### * * Set the icon for the tab --------------------------------------------
     tags$link(rel = "icon", type = "image/png", href = "./results/Shiny_app_rnasplice_results-test/www/favicon_RNA.png"),
 
-### * *  Link to custom Lux theme CSS (free theme from Bootswatch) ----------
-  tags$link(rel = "stylesheet", type = "text/css", href = "./results/Shiny_app_rnasplice_results-test/www/bootstrap.min.css"),
+    ### * *  Link to custom Lux theme CSS (free theme from Bootswatch) ----------
+    tags$link(rel = "stylesheet", type = "text/css", href = "./results/Shiny_app_rnasplice_results-test/www/bootstrap.min.css"),
+
+    ### * * fix title, top bar, and navigation pane in place   --------
+
+    tags$style(HTML("
+      /* Sticky tab row */
+      .nav-tabs {
+        position: sticky;
+        top: 0px;  /* Sticky below the title */
+        background-color: white;
+        z-index: 999;
+      }
+
+      /* Sticky sidebar (navigation) */
+      .sidebar {
+        position: sticky;
+        background-color: white;
+        border: none;  /* Remove the border */
+        box-shadow: none;  /* Remove any shadow */
+        top: 100px;  /* Below title and tab row */
+        height: calc(100vh - 100px);
+        overflow-y: auto;
+        z-index: 998;
+      }
+
+      /* Scrollable main content */
+      .main-panel {
+        overflow-y: auto;
+        max-height: calc(100vh - 100px);  /* Subtract fixed elements' height */
+      }
 
 
+    ")),
 
-### * * remove border from Plotly outputs with custom CSS styling -----------
+    ### * * Remove gray background from the sidebar list  --------
+    tags$style(HTML("
+      /* Remove gray background from the sidebar list */
+      .sidebar ul {
+        background-color: white;
+        padding: 0;  /* Remove padding */
+        margin: 0;  /* Remove margin */
+      }
+    ")),
 
-  tags$style(HTML("
+
+    ### * * decrease space between main panel and sidebar panel   --------
+    tags$style(HTML("
+      .row {
+        margin-left: 0px;
+        margin-right: 0px;
+      }
+      .col-sm-10 {
+        padding-right: -10px; /* Reduce space in main panel */
+      }
+      .col-sm-2 {
+        padding-left: -10px;  /* Reduce space in sidebar panel */
+      }
+    ")),
+
+    ### * * remove border from Plotly outputs  -----------
+
+    tags$style(HTML("
     .shiny-plot-output, .plotly-output {
       border: none;             /* Remove borders */
       box-shadow: none;         /* Remove any box shadows */
@@ -49,10 +118,25 @@ ui <- fluidPage(
     }
   ")),
 
+    ### * * remove padding within fluidRows to make most of the space   --------
+    tags$style(HTML("
+  /* Remove padding and margin from the fluidRow */
+  .custom-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
 
+  /* Remove padding and margin from columns inside the fluidRow */
+  .custom-row .col-sm-6 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+")),
 
-### * * remove border from iframe and container with custom CSS styling  --------
-  tags$style(HTML("
+    ### * * remove border from iframe and container   --------
+    tags$style(HTML("
     .iframe-container {
       border: none;
       box-shadow: none;
@@ -67,27 +151,19 @@ ui <- fluidPage(
       height: auto;
       overflow: hidden;
     }
-  ")),
+  "))
+
+
   ),
 
-# ___________________ -----------------------------------------------------
-## * Set application title for page -----------------------------------------------
-  titlePanel(title = div("Gene Expression and Alternative pre-mRNA Splicing Changes in the Embryonic Cerebral Cortices of a Pre-eclampsia Mouse Model vs Controls at Embryonic Day 17.5",
-                         style = "text-align: center;"
-                         )
-             ),
 
-  # Insert some space after title
-  br(),
-  div(style = "height: 5px;"),
-
-# ___________________ -----------------------------------------------------
-## * Tab Layout ----------------------------------------------------------
+  # ___________________ -----------------------------------------------------
+  ## * Tab Layout ----------------------------------------------------------
   tabsetPanel(
     id = "main_tabs",
 
 
-### * * Overview Dashboard Tab --------------------------------------------
+    ### * * Overview Dashboard Tab --------------------------------------------
 
     tabPanel(
       "Overview",
@@ -114,9 +190,9 @@ ui <- fluidPage(
       )
     ),
 
-### * * Geneneral Stats of RNA-Seq dataset GSE167193 --------------------------------------------
+    ### * * Geneneral Stats of RNA-Seq dataset GSE167193 --------------------------------------------
 
- tabPanel(
+    tabPanel(
       "General statistics and quality control",
 
       # Insert some space after title bar
@@ -129,150 +205,163 @@ ui <- fluidPage(
           box(
             title = "Counts",
             status = "primary",
-            plotlyOutput(""),
             p("Add explanations or details here")
-            ),
+          )
 
-          ),
+        ),
         column(
           width = 6,
           box(
             title = "NAs",
             status = "primary",
-            plotlyOutput(""),
-            p("Add explanations or details here")
-          )
-        )
-        )
-      ),
-
-### * * Gene- and Transcript-Level Analysis Tab --------------------------------------------
-tabPanel(
-  "Gene- and Transcript-Level Analysis", # name of the tab (must be same in server logic below)
-
-  # Insert some space after title bar
-  br(),
-  div(style = "height: 5px;"),
-
-  sidebarLayout( # split the tab contents into a main panel and a side panel with the navigation
-    mainPanel(
-      width = 9, # Leave space for the navigation panel on the right
-
-
-      ### * * * Section: explanations --------------------------------------------
-      ### * * * * Row with explanation box ----
-      h3(id = "section1", "How the analysis was performed"),
-      p("For the gene expression, performed analysis of quant.sf files using DESeq2. For the more granular transcript expression analysis, used the data output by the pipeline for the differential transcript usage with DEXSeq2 (DEXSeq2 DTU)."),
-
-      ### * * * Section: quality checks --------------------------------------------
-      h3(id = "section2", "Data quality checks"),
-      p("NA counts, p-value distribution plots"),
-
-      ### * * * Section: gene and transcript analysis results --------------------------------------------
-      h3(id = "section3", "Gene and transcript expression changes"),
-      p("Results of the analyses. Data points are color-coded for significance and direction of the expression change. Only points with a significant FDR are colored as dark red (decreased expression) or light blue (increased expression).
-        <br><br>
-        In the gene expression analysis, the points that have dark centers represent genes that were also reported to be significantly changed in the publication that this dataset relates to.
-        <br><br>
-        Hover above data points to see what gene or transcript they represent. Click on the legend components to show expression+significance categories in isolation. Click and drag to zoom to particular points. Double click to exit zoom."),
-
-      ### * * * * Row with search box and data download button ----
-      fluidRow(
-        column(
-          width = 6,
-          textInput("geneSearch", "Search for a gene and its associated transcripts:", ""),
-        ),
-        column(
-          width = 6,
-          downloadButton("downloadGeneData", "Click here to download data of selected points"),
-        ),
-      ),
-
-
-      ### * * * * Row with volcano plots ----
-      fluidRow(
-        column(
-          width = 6,
-          box(
-            title = "Gene expression levels (DESeq2)",
-            status = "primary",
-            plotlyOutput("plot_DESeq2"),
-            p("Add explanations or details here")
-          ),
-
-        ),
-        column(
-          width = 6,
-          box(
-            title = "Transcript expression levels (DEXSeq DTU)",
-            status = "primary",
-            plotlyOutput("plot_DEXSeq_DTU"),
             p("Add explanations or details here")
           )
         )
       )
     ),
 
-    sidebarPanel(
-      width = 3, # Adjust width of the sidebar for navigation
-      h4("Navigation"),
-      tags$ul(
-        tags$li(tags$a(href = "#section1", "How the analysis was performed")),
-        tags$li(tags$a(href = "#section2", "Data quality checks")),
-        tags$li(tags$a(href = "#section3", "Gene and transcript expression changes"))
-      )
-    )
-  ),
-
-
-### * * Exon-Level Analysis Tab --------------------------------------------
-
-
-
+    ### * * Gene- and Transcript-Level Analysis Tab --------------------------------------------
     tabPanel(
-      "Exon-Level Analysis",
+      "Gene- and Transcript-Level Analysis", # name of the tab (must be same in server logic below)
 
-      # Insert some space after title
+      # Insert some space after title bar
       br(),
       div(style = "height: 5px;"),
 
-        ### * * * * Row with volcano plots ----
-      fluidRow(
-        column(
-          width = 12,
-          textInput("geneSearch2", "Search for an Exon:", ""),
-          plotlyOutput("DEXSeq_DEU_exon_plot", height = "auto", width = "auto"),
-          DTOutput("exonDataTable"),
-          downloadButton("downloadExonData", "Download Selected Exon Data")
+      sidebarLayout( # split the tab contents into a main panel and a side panel with the navigation
+        mainPanel(
+          class = "main-panel",
+          width = 10, # Leave space for the navigation panel on the right
+
+
+          ### * * * Section: explanations --------------------------------------------
+          ### * * * * Row with explanation box ----
+          h3(id = "section1", "How the analysis was performed"),
+          p(HTML("For the gene expression, performed analysis of quant.sf files using DESeq2. For the more granular transcript expression analysis, used the data output by the pipeline for the differential transcript usage with DEXSeq2 (DEXSeq2 DTU).")),
+
+
+          ### * * * Section: quality checks --------------------------------------------
+          h3(id = "section2", "Data quality checks"),
+          p("NA counts, p-value distribution plots"),
+
+          ### * * * * Row with p-val and data flow plots ----
+          fluidRow(
+            column(
+              width = 6,
+              box(
+                title = "DESeq2 quality checks",
+                status = "primary",
+                #plotlyOutput("plot_DESeq2"),
+                p("Add explanations or details here")
+              )
+            ),
+            column(
+              width = 6,
+              box(
+                title = "DEXSeq DTU quality checks",
+                status = "primary",
+                #plotlyOutput("plot_DEXSeq_DTU"),
+                p("Add explanations or details here")
+              )
+            )
+          ),
+
+
+          ### * * * Section: gene and transcript analysis results --------------------------------------------
+          h3(id = "section3", "Gene and transcript expression changes"),
+          p(HTML("Results of the analyses. Data points are color-coded for significance and direction of the expression change. Only points with a significant FDR are colored as dark red (decreased expression) or light blue (increased expression).
+        <br><br>
+        In the gene expression analysis, the points that have dark centers represent genes that were also reported to be significantly changed in the publication that this dataset relates to.
+        <br><br>
+        Hover above data points to see what gene or transcript they represent. Click on the legend components to show expression+significance categories in isolation. Click and drag to zoom to particular points. Double click to exit zoom.")),
+
+          # ### * * * * Row with search box and data download button ----
+          # fluidRow(
+          #   class = "custom-row",
+          #   column(
+          #     width = 6,
+          #     textInput("geneSearch", "Search for a gene and its associated transcripts:", "")
+          #   ),
+          #   column(
+          #     width = 6,
+          #     downloadButton("downloadGeneData", "Click here to download data of selected points")
+          #   )
+          # ),
+
+
+          ### * * * * Row with volcano plots ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 6,
+              box(
+                title = "Gene expression levels (DESeq2)",
+                status = "primary",
+                plotlyOutput("plot_DESeq2", height = "600px", width = "100%"),
+                p("Add explanations or details here")
+              )
+            ),
+            column(
+              width = 6,
+              box(
+                title = "Transcript expression levels (DEXSeq DTU)",
+                status = "primary",
+                plotlyOutput("plot_DEXSeq_DTU", height = "600px", width = "100%"),
+                p("Add explanations or details here")
+              )
+            )
+          )
+        ),
+
+        sidebarPanel(
+          class = "sidebar",
+          width = 2, # Adjust width of the sidebar for navigation
+          h4("Navigation"),
+          tags$ul(
+            tags$li(tags$a(href = "#section1", "How the analysis was performed")),
+            tags$li(tags$a(href = "#section2", "Data quality checks")),
+            tags$li(tags$a(href = "#section3", "Gene and transcript expression changes"))
+          )
         )
+      ),
+
+
+
+
+      # ### * * Exon-Level Analysis Tab --------------------------------------------
+      #
+      # tabPanel(
+      #   "Exon-Level Analysis",
+      #
+      #   # Insert some space after title
+      #   br(),
+      #   div(style = "height: 5px;"),
+      #
+      #   ### * * * * Row with volcano plots ----
+      #   fluidRow(
+      #     column(
+      #       width = 12,
+      #       #textInput("geneSearch2", "Search for an Exon:", ""),
+      #       plotlyOutput("DEXSeq_DEU_exon_plot", height = "auto", width = "auto"),
+      #       DTOutput("exonDataTable"),
+      #       downloadButton("downloadExonData", "Download Selected Exon Data")
+      #     )
+      #   )
+      # ),
+
+
+
+
+      ### * * Sources Tab --------------------------------------------
+
+      tabPanel(
+        "Sources",
+
+
+
       )
-
-
-
-    ),
-
-### * * Sources Tab --------------------------------------------
-
-tabPanel(
-  "Sources",
-
-
-  fluidRow(
-    column(
-      width = 12,
-      textInput("geneSearch2", "Search for an Exon:", ""),
-      plotlyOutput("DEXSeq_DEU_exon_plot", height = "auto", width = "auto"),
-      DTOutput("exonDataTable"),
-      downloadButton("downloadExonData", "Download Selected Exon Data")
     )
   )
-
-    ### * * * * Row with volcano plots ----
-
-)
-
-  )
-
 )
 
 
@@ -423,118 +512,118 @@ server <- function(input, output, session) {
     }
   )
 
-## * * Reactive expression to highlight a gene in gene-level plot ----
-  highlighted_gene1 <- reactive({
-    req(input$geneSearch1)
-    df_gene <- DESeq_gene_plot$x$data[[1]]$customdata  # Assuming you stored custom data
-    match <- df_gene[df_gene$Gene == input$geneSearch1, ]
-    if (nrow(match) == 0) {
-      return(NULL)
-    } else {
-      return(match)
-    }
-  })
-
-  # Render gene-level plot with highlighting
-  output$DESeq_gene_plot <- renderPlotly({
-    # Register the plotly_selected event for DESeq_gene_plot
-    DESeq_gene_plot <- event_register(DESeq_gene_plot, "plotly_selected")
-
-    # Add highlighted points if applicable
-    if (!is.null(highlighted_gene1())) {
-      plot <- plot |> add_markers(
-        x = highlighted_gene1()$log2FoldChange,
-        y = -log10(highlighted_gene1()$pvalue),
-        text = highlighted_gene1()$Gene,
-        marker = list(size = 10, color = "red"),
-        name = "Highlighted Gene"
-      )
-    }
-
-    plot
-  })
-
-  # Reactive expression to capture selected data points from gene plot
-  selected_gene_data <- reactive({
-    event_data("plotly_selected", source = "plot_DESeq2")
-  })
-
-  # Display selected gene data in a table
-  output$geneDataTable <- renderDT({
-    req(selected_gene_data())
-    df_gene <- DESeq_gene_plot$x$data[[1]]$customdata  # Assuming you stored custom data
-    selected_points <- selected_gene_data()
-    df_gene[selected_points$pointNumber + 1, ]
-  })
-
-  # Download handler for selected gene data
-  output$downloadGeneData <- downloadHandler(
-    filename = function() {
-      paste("selected_gene_data_", Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      req(selected_gene_data())
-      df_gene <- DESeq_gene_plot$x$data[[1]]$customdata
-      selected_points <- selected_gene_data()
-      write.csv(df_gene[selected_points$pointNumber + 1, ], file, row.names = FALSE)
-    }
-  )
+# ## * * Reactive expression to highlight a gene in gene-level plot ----
+#   highlighted_gene1 <- reactive({
+#     req(input$geneSearch1)
+#     df_gene <- DESeq_gene_plot$x$data[[1]]$customdata  # Assuming you stored custom data
+#     match <- df_gene[df_gene$Gene == input$geneSearch1, ]
+#     if (nrow(match) == 0) {
+#       return(NULL)
+#     } else {
+#       return(match)
+#     }
+#   })
+#
+#   # Render gene-level plot with highlighting
+#   output$DESeq_gene_plot <- renderPlotly({
+#     # Register the plotly_selected event for DESeq_gene_plot
+#     DESeq_gene_plot <- event_register(DESeq_gene_plot, "plotly_selected")
+#
+#     # Add highlighted points if applicable
+#     if (!is.null(highlighted_gene1())) {
+#       plot <- plot |> add_markers(
+#         x = highlighted_gene1()$log2FoldChange,
+#         y = -log10(highlighted_gene1()$pvalue),
+#         text = highlighted_gene1()$Gene,
+#         marker = list(size = 10, color = "red"),
+#         name = "Highlighted Gene"
+#       )
+#     }
+#
+#     plot
+#   })
+#
+#   # Reactive expression to capture selected data points from gene plot
+#   selected_gene_data <- reactive({
+#     event_data("plotly_selected", source = "plot_DESeq2")
+#   })
+#
+#   # Display selected gene data in a table
+#   output$geneDataTable <- renderDT({
+#     req(selected_gene_data())
+#     df_gene <- DESeq_gene_plot$x$data[[1]]$customdata  # Assuming you stored custom data
+#     selected_points <- selected_gene_data()
+#     df_gene[selected_points$pointNumber + 1, ]
+#   })
+#
+#   # Download handler for selected gene data
+#   output$downloadGeneData <- downloadHandler(
+#     filename = function() {
+#       paste("selected_gene_data_", Sys.Date(), ".csv", sep = "")
+#     },
+#     content = function(file) {
+#       req(selected_gene_data())
+#       df_gene <- DESeq_gene_plot$x$data[[1]]$customdata
+#       selected_points <- selected_gene_data()
+#       write.csv(df_gene[selected_points$pointNumber + 1, ], file, row.names = FALSE)
+#     }
+#   )
 
   # ___________________ -----------------------------------------------------
-  # Exon-Level tab ----
+  # # Exon-Level tab ----
+  # #
+  # # Reactive expression to highlight a gene in exon-level plot
+  # highlighted_gene2 <- reactive({
+  #   req(input$geneSearch2)
+  #   df_exon <- DEXSeq_DEU_exon_plot$x$data[[1]]$customdata  # Assuming you stored custom data
+  #   match <- df_exon[df_exon$Exon == input$geneSearch2, ]
+  #   if (nrow(match) == 0) {
+  #     return(NULL)
+  #   } else {
+  #     return(match)
+  #   }
+  # })
   #
-  # Reactive expression to highlight a gene in exon-level plot
-  highlighted_gene2 <- reactive({
-    req(input$geneSearch2)
-    df_exon <- DEXSeq_DEU_exon_plot$x$data[[1]]$customdata  # Assuming you stored custom data
-    match <- df_exon[df_exon$Exon == input$geneSearch2, ]
-    if (nrow(match) == 0) {
-      return(NULL)
-    } else {
-      return(match)
-    }
-  })
-
-  # Render exon-level plot with highlighting
-  output$DEXSeq_DEU_exon_plot <- renderPlotly({
-    plot <- DEXSeq_DEU_exon_plot %>% event_register("plotly_selected")
-    if (!is.null(highlighted_gene2())) {
-      plot <- plot %>% add_markers(
-        x = highlighted_gene2()$log2FoldChange,
-        y = -log10(highlighted_gene2()$pvalue),
-        text = highlighted_gene2()$Exon,
-        marker = list(size = 10, color = "red"),
-        name = "Highlighted Gene"
-      )
-    }
-    plot
-  })
-
-  # Reactive expression to capture selected data points from exon plot
-  selected_exon_data <- reactive({
-    event_data("plotly_selected", source = "DEXSeq_DEU_exon_plot")
-  })
-
-  # Display selected exon data in a table
-  output$exonDataTable <- renderDT({
-    req(selected_exon_data())
-    df_exon <- DEXSeq_DEU_exon_plot$x$data[[1]]$customdata
-    selected_points <- selected_exon_data()
-    df_exon[selected_points$pointNumber + 1, ]
-  })
-
-  # Download handler for selected exon data
-  output$downloadExonData <- downloadHandler(
-    filename = function() {
-      paste("selected_exon_data_", Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      req(selected_exon_data())
-      df_exon <- DEXSeq_DEU_exon_plot$x$data[[1]]$customdata
-      selected_points <- selected_exon_data()
-      write.csv(df_exon[selected_points$pointNumber + 1, ], file, row.names = FALSE)
-    }
-  )
+  # # Render exon-level plot with highlighting
+  # output$DEXSeq_DEU_exon_plot <- renderPlotly({
+  #   plot <- DEXSeq_DEU_exon_plot %>% event_register("plotly_selected")
+  #   if (!is.null(highlighted_gene2())) {
+  #     plot <- plot %>% add_markers(
+  #       x = highlighted_gene2()$log2FoldChange,
+  #       y = -log10(highlighted_gene2()$pvalue),
+  #       text = highlighted_gene2()$Exon,
+  #       marker = list(size = 10, color = "red"),
+  #       name = "Highlighted Gene"
+  #     )
+  #   }
+  #   plot
+  # })
+  #
+  # # Reactive expression to capture selected data points from exon plot
+  # selected_exon_data <- reactive({
+  #   event_data("plotly_selected", source = "DEXSeq_DEU_exon_plot")
+  # })
+  #
+  # # Display selected exon data in a table
+  # output$exonDataTable <- renderDT({
+  #   req(selected_exon_data())
+  #   df_exon <- DEXSeq_DEU_exon_plot$x$data[[1]]$customdata
+  #   selected_points <- selected_exon_data()
+  #   df_exon[selected_points$pointNumber + 1, ]
+  # })
+  #
+  # # Download handler for selected exon data
+  # output$downloadExonData <- downloadHandler(
+  #   filename = function() {
+  #     paste("selected_exon_data_", Sys.Date(), ".csv", sep = "")
+  #   },
+  #   content = function(file) {
+  #     req(selected_exon_data())
+  #     df_exon <- DEXSeq_DEU_exon_plot$x$data[[1]]$customdata
+  #     selected_points <- selected_exon_data()
+  #     write.csv(df_exon[selected_points$pointNumber + 1, ], file, row.names = FALSE)
+  #   }
+#  )
 }
 
 # Run the application
