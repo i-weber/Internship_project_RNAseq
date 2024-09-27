@@ -1,9 +1,9 @@
-"","Sample Name","FasQC_%_duplicate_reads_R1","FasQC_%_duplicate_reads_R2","FastQC_total_sequences_[millions]_R1","FastQC_total_sequences_[millions]_R2","Cutadapt_%_BP_Trimmed_R1","Cutadapt_%_BP_Trimmed_R2","STAR_%_Uniquely_mapped_reads","STAR_M_Uniquely_mapped_reads","Salmon_%_mapped_reads","Salmon_M_mapped_reads","total_reads_millions","total_duplicates_millions"
-"1","CONTROL_REP1",0.336,0.287,21.2,21.2,0.005,0.011,0.944,20,0.726,15.4,42.4,13.2076
-"2","CONTROL_REP2",0.335,0.296,21.6,21.6,0.005,0.011,0.947,20.5,0.733,15.8,43.2,13.6296
-"3","CONTROL_REP3",0.344,0.298,21.1,21.1,0.005,0.011,0.949,20,0.735,15.5,42.2,13.5462
-"4","CONTROL_REP4",0.328,0.285,19.3,19.3,0.005,0.01,0.951,18.4,0.728,14.1,38.6,11.8309
-"5","PREECLAMPSIA_REP1",0.334,0.283,20.4,20.4,0.006,0.011,0.947,19.3,0.713,14.5,40.8,12.5868
-"6","PREECLAMPSIA_REP2",0.337,0.283,21.4,21.4,0.006,0.01,0.95,20.3,0.7,14.9,42.8,13.268
-"7","PREECLAMPSIA_REP3",0.344,0.322,20.1,20.1,0.006,0.018,0.944,18.9,0.735,14.7,40.2,13.3866
-"8","PREECLAMPSIA_REP4",0.356,0.336,20.7,20.7,0.006,0.016,0.943,19.4,0.743,15.3,41.4,14.3244
+"","Sample Name","FasQC_%_duplicate_reads_R1","FasQC_%_duplicate_reads_R2","FastQC_total_sequences_[millions]_R1","FastQC_total_sequences_[millions]_R2","Cutadapt_%_BP_Trimmed_R1","Cutadapt_%_BP_Trimmed_R2","STAR_%_Uniquely_mapped_reads","STAR_M_Uniquely_mapped_reads","Salmon_%_mapped_reads","Salmon_M_mapped_reads","paired_reads_millions"
+"1","CONTROL_REP1",0.336,0.287,21.2,21.2,0.005,0.011,0.944,20,0.726,15.4,21.2
+"2","CONTROL_REP2",0.335,0.296,21.6,21.6,0.005,0.011,0.947,20.5,0.733,15.8,21.6
+"3","CONTROL_REP3",0.344,0.298,21.1,21.1,0.005,0.011,0.949,20,0.735,15.5,21.1
+"4","CONTROL_REP4",0.328,0.285,19.3,19.3,0.005,0.01,0.951,18.4,0.728,14.1,19.3
+"5","PREECLAMPSIA_REP1",0.334,0.283,20.4,20.4,0.006,0.011,0.947,19.3,0.713,14.5,20.4
+"6","PREECLAMPSIA_REP2",0.337,0.283,21.3,21.3,0.006,0.01,0.95,20.3,0.7,14.9,21.3
+"7","PREECLAMPSIA_REP3",0.344,0.322,20,20,0.006,0.018,0.944,18.9,0.735,14.7,20
+"8","PREECLAMPSIA_REP4",0.356,0.336,20.6,20.6,0.006,0.016,0.943,19.4,0.743,15.3,20.6

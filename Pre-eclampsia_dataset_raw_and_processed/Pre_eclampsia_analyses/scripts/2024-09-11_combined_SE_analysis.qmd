@@ -14,7 +14,8 @@ Explore overlap between exons from the different datasets
 ## Install packages if needed
 
 ```{r}
-#pacman::p_install(htmlwidgets) #pacman::p_install(rsconnect)
+# pacman::p_install(rsconnect)
+# pacman::p_install(webshot2)
 ```
 
 ## Load packages, test for and resolve conflicts between functions of same name from different packages
@@ -30,7 +31,9 @@ pacman::p_load(readxl,
                rsconnect,
                wrappedtools,
                RColorBrewer,
-               UpSetR)
+               UpSetR,
+               grid,
+               webshot2)
 
 conflict_scout()
 conflicts_prefer(dplyr::filter,
@@ -47,12 +50,13 @@ In case needing to re-set working directory:
 
 ```{r}
 # Load the variables from the RDS file
-# loaded_vars <- readRDS("./results/all_variables_exons.rds")
+loaded_vars <- readRDS("./results/all_variables_exons.rds")
 # Optionally, assign them back to the global environment
-# list2env(loaded_vars, envir = .GlobalEnv)
+list2env(loaded_vars, envir = .GlobalEnv)
 ```
 
 # Import and prepare results from CSV files containing data of exons with significantly increased inclusion or skipping, produced by the analyses by DEXSeq DEU, rMATS, SUPPA, edgeR
+
 ```{r}
 DEXSeq_DEU_exons <- read_csv("./results/DEXSeq_DEU_significant_UpDn_exons.csv")
 rMATS_exons <- read_csv("./results/rMATS_SE_jcec_sigUpDn.csv")
@@ -63,6 +67,7 @@ edgeR_exons <- read_csv("./results/edgeR_exon_sig_UpDn_exons.csv")
 # Analyze overlap between genes among the four datasets with an UpSet plot
 
 ## Create data structures for UpSet plot and a basic version of it
+
 ```{r}
 # Combine all unique gene names from all datasets
 all_genes <- unique(c(rMATS_exons$geneSymbol, DEXSeq_DEU_exons$groupID, edgeR_exons$Geneid, SUPPA_exons$Gene))
@@ -84,12 +89,122 @@ input_list <- list(
   SUPPA = SUPPA_exons$Gene
 )
 
-# Visualize an UpSet plot
-upset(fromList(input_list), sets = c("rMATS", "DEXSeq", "edgeR", "SUPPA"))
+# Visualize the UpSet plot
+plot_UpSet_exons <- upset(fromList(input_list), sets = c("rMATS", "DEXSeq", "edgeR", "SUPPA"))
 ```
 
+## Interactive bar plot of overlaps using Plotly
+
+I wasn't fond of how this turned out, so I decided to scrap it in the end and use the non-interactive UpSet plot with tables showing the overlap in genes instead (it's very few genes anyway, so it's easy to display their names statically).
+
+```{r}
+# Create binary membership matrix
+set_matrix <- tibble(gene_id = all_genes) |>
+  mutate(
+    rMATS = gene_id %in% rMATS_exons$geneSymbol,
+    DEXSeq = gene_id %in% DEXSeq_DEU_exons$groupID,
+    edgeR = gene_id %in% edgeR_exons$Geneid,
+    SUPPA = gene_id %in% SUPPA_exons$Gene
+  )
+
+# Calculate intersections
+set_matrix_long <- set_matrix |>
+  pivot_longer(cols = c(rMATS, DEXSeq, edgeR, SUPPA), 
+               names_to = "Dataset", values_to = "Present") |>
+  filter(Present == TRUE) |>
+  group_by(gene_id) |>
+  summarise(Intersection = paste(Dataset, collapse = ", "))
+
+# Count the number of genes in each intersection
+intersection_counts <- set_matrix_long |>
+  group_by(Intersection) |>
+  summarise(Count = n(),
+            Genes = paste(gene_id, collapse = ", "))  # Concatenate gene names
+
+# Create an interactive bar chart with Plotly
+fig <- plot_ly(
+  data = intersection_counts,
+  x = ~Intersection,
+  y = ~Count,
+  type = 'bar',
+  text = ~paste("Genes: ", Genes),  # Add gene names as hover text
+  hoverinfo = 'text'
+)
+
+fig <- fig |>
+  layout(
+    title = "Interactive UpSet Plot",
+    xaxis = list(title = "Dataset Intersections"),
+    yaxis = list(title = "Number of Genes")
+  )
+
+fig
+
+```
+
+## Updated UpSet plot
+
+```{r}
+
+# Create a list of genes for each tool
+input_list <- list(
+  rMATS = rMATS_exons$geneSymbol,
+  DEXSeq = DEXSeq_DEU_exons$groupID,
+  edgeR = edgeR_exons$Geneid,
+  SUPPA = SUPPA_exons$Gene
+)
+
+# Set custom colors for each set
+set_colors <- c("DEXSeq" = "#386cb0", "SUPPA" = "#ffff99", "rMATS" = "#fdc086", "edgeR" = "#beaed4")
+
+
+plot_UpSet_exons_improved <- upset(
+  fromList(input_list),
+  sets = c("DEXSeq","SUPPA", "rMATS", "edgeR"),
+  keep.order = TRUE, # Keeps the set order specified
+  intersections = list(
+    list("edgeR", "DEXSeq"),
+    list("SUPPA", "DEXSeq"),
+    list("rMATS", "DEXSeq"),
+    list("rMATS", "SUPPA")
+  ),  # keep only bars for where there is an overlap and avoid using the simple counts for the datasets
+  number.angles = 30, # Rotate the numbers for better readability
+  mainbar.y.label = "Overlapping Genes", # Label for the main bar
+  sets.x.label = "Number of Genes", # Label for the set sizes
+  set_size.show = TRUE, # show nr of exons in each set
+  show.numbers = "yes", # Show the intersection sizes
+  sets.bar.color = set_colors,
+  shade.alpha = 0.5,
+  point.size = 10,
+  # text scale is organized as such: c(intersection size title, intersection size tick labels, set size title, set size tick labels, set names, numbers above bars)
+  text.scale = c(5, # intersection size title
+                 3, # intersection size tick labels
+                 3, # set size axis title
+                 3, # set size tick labels
+                 5, # set names
+                 5 # numbers above bars
+                 )
+)
+
+# Visualize the UpSet plot without the individual dataset bars (larger font, save as PNG)
+png("./plots/plot_UpSet_exons.png",
+    width = 3000,
+    height = 2000,
+    res = 100)  # Open a PNG device to save the plot as a PNG
+# Adjust the par() settings for font and margins
+par(family = "Arial", mar = c(4, 6, 4, 4)+.1)  # Use Arial font and slightly larger margins
+plot_UpSet_exons_improved
+
+dev.off()  # Close the PNG device
+
+
+
+```
 
 ## Make an interactive plot showing which gene is represented in which dataset
+
+This was a nice attempt, but I wasn't pleased with how the data displayed, so I decided to go with a table showing which genes were shown to have significantly differentially spliced exons in each overlap between datasets, for the ones where an overlap existed
+
 ```{r}
 # Count intersections for each dataset combination
 set_counts <- set_matrix |>
@@ -118,7 +233,72 @@ fig <- fig |> layout(
 fig
 ```
 
+## Flextable showing genes in overlaps between exon datasets
 
+I want to be able to easily display which genes were present in the overlaps between datasets (DEXSeq-edgeR, SUPPA-DEXSeq, rMATS-DEXSeq, rMATS-SUPPA), and have a column with the union of all of the genes that pop up in at least two datasets as having significantly differentially spliced exons.
+
+I had previously created the set_matrix that contains binary info on whether a gene is or isn't present in one of the datasets, so I can use this to construct the table.
+
+```{r}
+# Filter genes that are found in the overlaps
+overlap_DEXSeq_edgeR <- set_matrix |> filter(DEXSeq == TRUE & edgeR == TRUE) |> pull(gene_id)
+overlap_SUPPA_DEXSeq <- set_matrix |> filter(SUPPA == TRUE & DEXSeq == TRUE) |> pull(gene_id)
+overlap_rMATS_DEXSeq <- set_matrix |> filter(rMATS == TRUE & DEXSeq == TRUE) |> pull(gene_id)
+overlap_rMATS_SUPPA <- set_matrix |> filter(rMATS == TRUE & SUPPA == TRUE) |> pull(gene_id)
+
+# Union of all overlaps (genes present in at least two datasets)
+union_all <- set_matrix |> 
+  filter((rMATS + DEXSeq + edgeR + SUPPA) >= 2) |> 
+  pull(gene_id)
+
+# Create a data frame with columns of different lengths (pad with NA)
+gene_overlap_table <- tibble(
+  DEXSeq_edgeR = c(overlap_DEXSeq_edgeR, rep(NA, max(0, length(union_all) - length(overlap_DEXSeq_edgeR)))),
+  SUPPA_DEXSeq = c(overlap_SUPPA_DEXSeq, rep(NA, max(0, length(union_all) - length(overlap_SUPPA_DEXSeq)))),
+  rMATS_DEXSeq = c(overlap_rMATS_DEXSeq, rep(NA, max(0, length(union_all) - length(overlap_rMATS_DEXSeq)))),
+  rMATS_SUPPA = c(overlap_rMATS_SUPPA, rep(NA, max(0, length(union_all) - length(overlap_rMATS_SUPPA)))),
+  Union_All = sort(c(union_all, rep(NA, max(0, length(union_all) - length(union_all)))))
+)
+
+# Choose colors for the flextable to match the overlap bar colors from the UpSet plot (I set those colors up in Illustrator, not R, because UpSetR does not offer enough customization options to do so)
+
+# Original colors for each column (header)
+header_colors <- c("#9ab294", "#fcdb80", "#dcd3a6", "#dcb6ac", "#999999")  # Gray for Union
+
+# Tint colors (lighter versions of the header colors)
+tint_colors <- c("#d0dcd1", "#fef3d0", "#ece8d9", "#f3dedc", "#dddddd")
+
+# Create a FlexTable from the data frame
+overlap_flextable <- flextable(gene_overlap_table) |>
+  set_header_labels(
+    DEXSeq_edgeR = "DEXSeq ✚ edgeR",
+    SUPPA_DEXSeq = "SUPPA ✚ DEXSeq",
+    rMATS_DEXSeq = "rMATS ✚ DEXSeq",
+    rMATS_SUPPA = "rMATS ✚ SUPPA",
+    Union_All = "All Genes in\n>1 dataset"
+  ) |>
+  bg(part = "header", bg = header_colors) |>
+  autofit() |>   # Automatically fit columns to content
+  theme_box() |>    # Apply a simple box theme to the table
+  border_remove() |>
+  padding(padding.top = 1, padding.bottom = 1) |>
+  fontsize(part = "header", size = 10) 
+
+
+# Alternate background rows: apply tint to odd rows and white to even rows
+for (i in seq_along(tint_colors)) {
+  overlap_flextable <- overlap_flextable |>
+    bg(i = seq(1, nrow(gene_overlap_table), 2), j = i, bg = "white", part = "body") |>  # White for even rows
+    bg(i = seq(2, nrow(gene_overlap_table), 2), j = i, bg = tint_colors[i], part = "body")
+  }# Tint color for odd rows
+  
+  
+# Display the FlexTable
+overlap_flextable
+
+# Save flextable as image
+save_as_image(overlap_flextable, path = "./plots/overlap_flextable.png", webshot = "webshot2", zoom = 150 / 96) # reso you want/default reso, which is 96 dpi
+```
 
 # Save all variables from environment to an RDS file
 
@@ -147,4 +327,3 @@ file.copy(list.files(source_folder, full.names = TRUE), destination_folder, over
 ```{r}
 #rsconnect::deployApp('./results/Shiny_app_rnasplice_results')
 ```
-

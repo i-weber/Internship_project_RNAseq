@@ -147,15 +147,36 @@ ui <- fluidPage(
       ),
 
 ### * * Gene- and Transcript-Level Analysis Tab --------------------------------------------
-    tabPanel(
+tabPanel(
+  "Gene- and Transcript-Level Analysis", # name of the tab (must be same in server logic below)
 
-      "Gene- and Transcript-Level Analysis", # name of the tab (must be same in server logic below)
+  # Insert some space after title bar
+  br(),
+  div(style = "height: 5px;"),
 
-     # Insert some space after title bar
-      br(),
-      div(style = "height: 5px;"),
+  sidebarLayout( # split the tab contents into a main panel and a side panel with the navigation
+    mainPanel(
+      width = 9, # Leave space for the navigation panel on the right
 
-      ### * * * Row with search box and data download button ----
+
+      ### * * * Section: explanations --------------------------------------------
+      ### * * * * Row with explanation box ----
+      h3(id = "section1", "How the analysis was performed"),
+      p("For the gene expression, performed analysis of quant.sf files using DESeq2. For the more granular transcript expression analysis, used the data output by the pipeline for the differential transcript usage with DEXSeq2 (DEXSeq2 DTU)."),
+
+      ### * * * Section: quality checks --------------------------------------------
+      h3(id = "section2", "Data quality checks"),
+      p("NA counts, p-value distribution plots"),
+
+      ### * * * Section: gene and transcript analysis results --------------------------------------------
+      h3(id = "section3", "Gene and transcript expression changes"),
+      p("Results of the analyses. Data points are color-coded for significance and direction of the expression change. Only points with a significant FDR are colored as dark red (decreased expression) or light blue (increased expression).
+        <br><br>
+        In the gene expression analysis, the points that have dark centers represent genes that were also reported to be significantly changed in the publication that this dataset relates to.
+        <br><br>
+        Hover above data points to see what gene or transcript they represent. Click on the legend components to show expression+significance categories in isolation. Click and drag to zoom to particular points. Double click to exit zoom."),
+
+      ### * * * * Row with search box and data download button ----
       fluidRow(
         column(
           width = 6,
@@ -168,7 +189,7 @@ ui <- fluidPage(
       ),
 
 
-     ### * * * Row with volcano plots ----
+      ### * * * * Row with volcano plots ----
       fluidRow(
         column(
           width = 6,
@@ -177,9 +198,9 @@ ui <- fluidPage(
             status = "primary",
             plotlyOutput("plot_DESeq2"),
             p("Add explanations or details here")
-            ),
-
           ),
+
+        ),
         column(
           width = 6,
           box(
@@ -189,8 +210,20 @@ ui <- fluidPage(
             p("Add explanations or details here")
           )
         )
-        )
-      ),
+      )
+    ),
+
+    sidebarPanel(
+      width = 3, # Adjust width of the sidebar for navigation
+      h4("Navigation"),
+      tags$ul(
+        tags$li(tags$a(href = "#section1", "How the analysis was performed")),
+        tags$li(tags$a(href = "#section2", "Data quality checks")),
+        tags$li(tags$a(href = "#section3", "Gene and transcript expression changes"))
+      )
+    )
+  ),
+
 
 ### * * Exon-Level Analysis Tab --------------------------------------------
 
@@ -203,7 +236,7 @@ ui <- fluidPage(
       br(),
       div(style = "height: 5px;"),
 
-      ### * * * Row with volcano plots ----
+        ### * * * * Row with volcano plots ----
       fluidRow(
         column(
           width = 12,
@@ -234,7 +267,7 @@ tabPanel(
     )
   )
 
-  ### * * * Row with volcano plots ----
+    ### * * * * Row with volcano plots ----
 
 )
 

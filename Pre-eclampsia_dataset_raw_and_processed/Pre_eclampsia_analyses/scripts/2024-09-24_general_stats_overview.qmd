@@ -75,7 +75,6 @@ general_stats <- mutate(general_stats,
 write.csv(general_stats, file = "./results/General_stats.csv", row.names = T )
 ```
 
-
 # Sankey/alluvial plots to visualize how reads were used in the pipeline
 
 ## Test plot for one sample

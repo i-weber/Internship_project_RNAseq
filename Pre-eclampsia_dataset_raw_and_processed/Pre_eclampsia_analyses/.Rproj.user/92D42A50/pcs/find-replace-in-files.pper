@@ -1,6 +1,6 @@
 {
     "dialog-state": {
-        "query": "RDS",
+        "query": "flextable",
         "path": "D:/OneDrive/03-Skill development and educational/Applied Bioinformatics/4_2_R_programming/All relevant R stuff, data and scripts/scripts",
         "regex": false,
         "caseSensitive": false,
@@ -9,7 +9,7 @@
         "useGitGrep": true,
         "excludeGitIgnore": true,
         "excludeFilePatterns": [],
-        "resultsCount": 71,
+        "resultsCount": 67,
         "errorCount": 0,
         "replaceErrors": ""
     }
