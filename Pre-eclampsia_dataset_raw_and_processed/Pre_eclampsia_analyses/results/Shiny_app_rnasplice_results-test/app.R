@@ -2,6 +2,8 @@
 
 # In case needing to set the working directory to the app directory:
 # setwd("./results/Shiny_app_rnasplice_results-test")
+# To deploy:
+# rsconnect::deployApp(appName = 'shiny_app_deseq2_results')
 
 # ___________________________________________ -----------------------------------------------------
 
@@ -359,22 +361,163 @@ ui <- fluidPage(
             )
           ),
 
+          # Insert some space at the top
+          br(),
+          div(style = "height: 5px;"),
 
           #### * * * Section 2: Rationale ----
           h2(id = "section2", "Why this analysis?"),
-          p(HTML("XYZ")),
+          p(HTML("As an internship project, I wanted to perform an analysis that would both expand my skills in NGS data analysis and visualization <b><i>and</i></b> provide something potentially useful for our understanding of how our bodies work.
+                 I therefore searched for clinically relevant, cerebral cortex development-related RNA-seq datasets with attached publication.My research background is in prenatal brain development, so I kept an extra eye out for data related to this realm, because I knew that I'd be able to interpret the results better and check them for plausibility.
+                 <br><br>
+                 I selected only datasets uploaded last year and whose publications don't do highly in-depth analyses, as I believe that me working on this data will bring the biggest contribution to expanding our knowledge horizon. As to why I selected datasets that were associated with a publication: this was for me to be able to cross-check the results of my analyses and make sure I am performing my analysis properly.")),
+
+
+          # Insert some space at the top
+          br(),
+          div(style = "height: 20px;"),
+
 
           #### * * * Section 3: Background --------------------------------------------
           h2(id = "section3", "Biological Background"),
-          p("XYZ"),
+
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 8,
+              div(
+                style = "height: 100%; display: flex; align-items: center; justify-content: center;",
+                p(HTML("The study I chose analyzed a potential connection between a pregnancy disorder known as pre-eclampsia and autism spectrum disorders. Pre-eclampsia is a common and dangerous increase in maternal blood pressure that can occur after the 20th week of pregnancy. One in 20 pregnant people are affected by pre-eclampsia, which has a severe negative impact on both the pregnant person and the fetus. There is no treatment known to date, except for the delivery of the placenta, and very little is known about the long-term consequences on the development of the child's brain.
+          <br><br>
+          The authors used a pre-eclampsia mouse model in which the disorder was induced in pregnant mice by treating them with a compound called L-NAME. The mouse offspring from mothers that were exposed to L-NAME behaved in ways reminiscent of ASD and scored accordingly on several behavioral tests that are thought to assess metrics related to the condition.
+          <br><br>
+          For insights into what happens in the cerebral cortices of these mice before birth, the authors collected embryos from treated or control mother animals."
+                ))
+              )
+            ),
+            column(
+              width = 4,
+              #h3(HTML("Paired reads available for STAR alignment"), style = "text-align: center;"),
+              status = "primary",
+              img(src = "2024-09-29-experiment_setup.png", style = "max-width: 100%; max-height: 350px; height: auto; display: block; margin: 0 auto;")
+            )
+          ),
+
+          # Insert some space at the top
+          br(),
+          div(style = "height: 20px;"),
+
 
           #### * * * Section 4: original experiment --------------------------------------------
           h2(id = "section4", "The experiment from the original publication"),
-          p(HTML("XYZ")),
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 8,
+              div(
+                style = "height: 100%; display: flex; align-items: center; justify-content: center;",
+                p(HTML("To better understand the relationship between the two conditions, the authors sequenced RNAs extracted from the cortices of mouse embryos at day E 17.5, two days before birth, from mother animals that had or did not have elevated blood pressure, and similarly from the hippocampi of adult offspring. The authors generated cDNA libraries from the cortical RNAs of control and experimental condition embryonic cortices using a kit for stranded mRNA detection. This means that the kit enriches for poly-A-tailed mRNAs and also captures information regarding which genomic DNA strand the mRNAs were transcribed from."))
+              )
+            ),
+            column(
+              width = 4,
+              #h3(HTML("Paired reads available for STAR alignment"), style = "text-align: center;"),
+              status = "primary",
+              img(src = "2024-09-29-embryo_processing.png", style = "max-width: 100%; max-height: 350px; height: auto; display: block; margin: 0 auto;")
+            )
+          ),
+
+          # Insert some space at the top
+          br(),
+          div(style = "height: 20px;"),
+
 
           #### * * * Section 5: analyses I added --------------------------------------------
           h2(id = "section5", "Analyses I added"),
-          p(HTML("XYZ"))
+
+          ##### * * * * Row: AS biologically ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 8,
+              div(
+                style = "height: 100%; display: flex; align-items: center; justify-content: center;",
+                p(HTML("The original study focused on gene expression and identified around 250 genes that are differentially expressed under the prenatal stress of pre-eclampsia. I chose to re-analyze the data using a different suite of alignment, mapping, and expression analysis tools (STAR, Salmon, and DESeq).
+                       <br><br>Additionally, I wanted to focus on better understanding alternative pre-mRNA splicing. Alternative splicing is a post-transcriptional regulatory mechanism that can lead to the production of different mRNA (transcript) variants from the singular pre-mRNA a gene will produce. This often happens because certain parts of the pre-mRNA, called exons, can be left out in the process of creating the final, mature mRNA.
+                       <br><br>In the example on the right, by including or skipping a set of the two purple exons at the expense of the three green ones, one pre-mRNA can be turned into either a longer transcript variant (1) or a shorter one (2). In turn, this can, for instance, produce proteins with different intracellular signaling domains, which function differently."
+                ))
+              )
+            ),
+            column(
+              width = 4,
+              #h3(HTML("Paired reads available for STAR alignment"), style = "text-align: center;"),
+              status = "primary",
+              img(src = "2024-09-29-AS.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;")
+            )
+          ),
+
+          # Insert some space at the top
+          br(),
+          div(style = "height: 20px;"),
+
+
+          ##### * * * * Row: AS outcome ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 8,
+              div(
+                style = "height: 100%; display: flex; align-items: center; justify-content: center;",
+                p(HTML("The process of alternative splicing is highly responsive to changes in the organism's or cell's environment. Such external factors often result in a modified relative abundance of certain transcripts produced from the same gene, meaning that, from the total pool of transcripts a gene will produce, a larger or smaller percentage will be represented by one transcript or the other. On the right, you can see how this could look like for the example transcripts produced from the alternative splicing event we looked at above.
+                       <br><br>
+                       I reasoned that the high blood pressure and malformations of the placenta are external factors that could have an impact not just on gene expression, but also on alternative splicing. This is why I chose to start this analysis."
+                ))
+              )
+            ),
+            column(
+              width = 4,
+              #h3(HTML("Paired reads available for STAR alignment"), style = "text-align: center;"),
+              status = "primary",
+              img(src = "2024-09-29-AS_outcome.png", style = "max-width: 100%; max-height: 350px; height: auto; display: block; margin: 0 auto;")
+            )
+          ),
+
+
+          # Insert some space at the top
+          br(),
+          div(style = "height: 20px;"),
+
+
+          #### * * * Section 6: Tools I used --------------------------------------------
+          h2(id = "section6", "Tools I used"),
+
+          ##### * * * * Row: Tools text----
+          fluidRow(
+            div(
+              style = "height: 100%; display: flex; align-items: center; justify-content: center;",
+              p(HTML("I started processing the files of the experiment from NCBI as SRA archives using
+                       <a href='https://github.com/ncbi/sra-tools/'>the sratoolkit suite</a> from NCBI.
+                       <br><br>In a second step, I used the workflow management software Nextflow to deploy the <a href='https://nf-co.re/rnasplice/1.0.4/'>rnasplice</a> pipeline under Linux (I work on an Ubuntu 22.04 virtual machine, made with VMware Workstation Pro 17 on a Windows 10 host). The rnasplice pipeline encompasses the majority of the steps that are critical for performing an alternative splicing analysis, including using several tools for detecting alternative splicing events."
+              ))
+            )
+          ),
+
+          ##### * * * * Row: Nextflow pipeline----
+          fluidRow(
+            div(
+              style = "height: 100%; display: flex; align-items: center; justify-content: center;",
+              img(src = "https://raw.githubusercontent.com/nf-core/rnasplice/1.0.4/docs/rnasplice_map.png", style = "max-width: 100%; max-height: 350px; height: auto; display: block; margin: 0 auto;")
+            )
+          ),
+
+          ##### * * * * Row: post-processing ----
+          fluidRow(
+            div(
+              style = "height: 100%; display: flex; align-items: center; justify-content: center;",
+              p(HTML("I processed the results of the pipeline using R in RStudio. For the gene expression analysis, I used the files output by the pipeline in DESeq2. After obtaining all of the results, I assembled them into this app using Shiny."
+              ))
+            )
+          ),
         ),
 
         sidebarPanel(
@@ -386,7 +529,8 @@ ui <- fluidPage(
             tags$li(tags$a(href = "#section2", "Why this analysis?")),
             tags$li(tags$a(href = "#section3", "Background")),
             tags$li(tags$a(href = "#section4", "The experiment from the original publication")),
-            tags$li(tags$a(href = "#section5", "Analyses I added"))
+            tags$li(tags$a(href = "#section5", "Analyses I added")),
+            tags$li(tags$a(href = "#section6", "Tools I used"))
           )
         )
       )
@@ -414,15 +558,17 @@ ui <- fluidPage(
           #### * * * Section 11: Initial read counts ----
           h2(id = "section11", "Initial read counts"),
 
-          ##### * * * * Row: read counts after trimming ----
+          ##### * * * * Row: read counts after trimming -----
           fluidRow(
             class = "custom-row",
             column(
               width = 6,
               div(
                 style = "height: 100%; display: flex; align-items: center; justify-content: center;",
-                p("The SRR archives I downloaded from NCBI GEO all contained around 20 million reads for each of the samples. After trimming the reads where needed using Cutadapt in the rnasplice pipeline, only the biological replicate 4 from the control/untreated cortices had 19.3 million reads available for pairing. Every other sample retained over 20 million reads that were available for alignment with STAR."
-                )
+                p(HTML("I downloaded the datasets directly from the entry of this study on GEO in SRA/SRR format and extracted the FastQ files from them using the sratoolkit from NCBI.
+                       <br><br>
+                       The SRR archives I downloaded from NCBI GEO all contained around 20 million reads for each of the samples. After trimming the reads where needed using Cutadapt in the rnasplice pipeline, only the biological replicate 4 from the control/untreated cortices had 19.3 million reads available for pairing. Every other sample retained over 20 million reads that were available for alignment with STAR."
+                ))
               )
             ),
             column(
@@ -505,499 +651,499 @@ ui <- fluidPage(
 
           #### * * * Section 13: Coverage --------------------------------------------
           h2(id = "section13", "Coverage"),
-          p("XYZ"),
+          p("I wanted to understand whether the numbers of reads that Salmon mapped are sufficient to have a coverage of the transcriptome that suffices for alternative splicing analysis. The coverage is calculated as:"),
 
-          ##### * * * * Row:coverage ----
+          ##### * * * * Row: coverage ----
           fluidRow(
-            align = "center",
 
-            # MathJax equation for coverage
+           # MathJax equation for coverage
             withMathJax(
-              h3("The coverage is calculated as:"),
               p("$$\\text{Coverage} = \\frac{\\text{Total Bases Sequenced}}{\\text{Transcriptome Size}}$$")
             ),
 
             # Dynamic calculation output in MathJax
             withMathJax(
-              h3("For 14.1 to 15.8 million reads mapped to the mouse transcriptome by Salmon (read length = 150 bp, paired-end reads):"),
+              p("For 14.1 to 15.8 million reads mapped to the mouse transcriptome by Salmon (read length = 150 bp, paired-end reads):"),
               uiOutput("coverage_formula")
             )
-          )
-      ),
+          ),
 
-      sidebarPanel(
-        class = "sidebar",
-        width = 2, # Adjust width of the sidebar for navigation
-        h4("Navigation"),
-        tags$ul(
-          tags$li(tags$a(href = "#section11", "Initial read counts")),
-          tags$li(tags$a(href = "#section12", "Read usage in pipeline")),
-          tags$li(tags$a(href = "#section13", "Coverage"))
+          p("This confirmed that I had a high enough coverage to perform an alternative splicing analysis.")
+        ),
+
+        sidebarPanel(
+          class = "sidebar",
+          width = 2, # Adjust width of the sidebar for navigation
+          h4("Navigation"),
+          tags$ul(
+            tags$li(tags$a(href = "#section11", "Initial read counts")),
+            tags$li(tags$a(href = "#section12", "Read usage in pipeline")),
+            tags$li(tags$a(href = "#section13", "Coverage"))
+          )
         )
       )
-    )
-  ),
+    ),
 
 
-  ## ___________________ -----------------------------------------------------
-  ### * * Tab 3: Gene- and Transcript-Level Analysis --------------------------------------------
-  tabPanel(
-    "Gene- and Transcript-Level Analysis", # name of the tab (must be same in server logic below)
+    ## ___________________ -----------------------------------------------------
+    ### * * Tab 3: Gene- and Transcript-Level Analysis --------------------------------------------
+    tabPanel(
+      "Gene- and Transcript-Level Analysis", # name of the tab (must be same in server logic below)
 
-    # Insert some space after title bar
-    br(),
-    div(style = "height: 5px;"),
+      # Insert some space after title bar
+      br(),
+      div(style = "height: 5px;"),
 
-    sidebarLayout( # split the tab contents into a main panel and a side panel with the navigation
-      mainPanel(
-        class = "main-panel",
-        width = 10, # Leave space for the navigation panel on the right
+      sidebarLayout( # split the tab contents into a main panel and a side panel with the navigation
+        mainPanel(
+          class = "main-panel",
+          width = 10, # Leave space for the navigation panel on the right
 
 
-        #### * * * Section 21: explanations --------------------------------------------
-        ##### * * * * Row: explanation box ----
-        h2(id = "section21", "How I performed the analysis"),
-        p(HTML("To find genes that were up- or downregulated in the pre-eclampsia cortices, I performed an analysis of the quant.sf files output by Salmon using DESeq2. For the more granular transcript expression analysis, I used the data output by the pipeline for differential transcript usage analysis with DEXSeq2 (DEXSeq2 DTU).
+          #### * * * Section 21: explanations --------------------------------------------
+          ##### * * * * Row: explanation box ----
+          h2(id = "section21", "How I performed the analysis"),
+          p(HTML("To find genes that were up- or downregulated in the pre-eclampsia cortices, I performed an analysis of the quant.sf files output by Salmon using DESeq2. For the more granular transcript expression analysis, I used the data output by the pipeline for differential transcript usage analysis with DEXSeq2 (DEXSeq2 DTU).
           <br><br>
           I chose to investigate transcript expression in addition to gene expression, because, even if the overall expression level of a gene does not change when considering it as a sum of the levels of all transcripts it generates, one thing can still change: the relative abundance of its transcripts to one another. This can be a first indication of post-transcriptional regulatory mechanisms, such as alternative splicing or alternative promoter usage. I therefore analyzed gene expression differences with DESeq2 and transcript abundance differences with DEXSeq DTU.
                  ")),
 
 
-        #### * * * Section 22: QC --------------------------------------------
-        h2(id = "section22", "Data quality checks"),
-        p(HTML("The first checks for the dataset are very basic: I ensured that the samples had comparable numbers of reads that were mapped to genes, and I checked how the distribution of read counts look like across all of the genes detected in each sample.
+          #### * * * Section 22: QC --------------------------------------------
+          h2(id = "section22", "Data quality checks"),
+          p(HTML("The first checks for the dataset are very basic: I ensured that the samples had comparable numbers of reads that were mapped to genes, and I checked how the distribution of read counts look like across all of the genes detected in each sample.
                  <br><br>")),
 
-        ##### * * * * Row: mapped read counts and distr per gene ----
-        fluidRow(
-          class = "custom-row",
-          column(
-            width = 6,
-            h3(HTML("Total read counts in DESeq2 object"), style = "text-align: center;"),
-            status = "primary",
-            plotlyOutput("plot_DESeq2_total_counts"),
-            #tags$iframe(src = "DESeq2_total_raw_counts.html"), #, style = "height: 1000px; width: 90%;"
-            p("These are the reads that the DESeq2 object used for generating the analyses. They correspond to the total number of reads mapped by Salmon (see the General stats and QC tab")
-          ),
-          column(
-            width = 6,
-            h3(HTML("DESeq2 read count per gene"), style = "text-align: center;"),
-            status = "primary",
-            plotlyOutput("plot_DESeq2_countsgene"),
-            p("Here, you can see how many reads DESeq2 found per gene. As expected, most genes have a fairly low read count, even zero. Some very few genes are extremely highly expressed, and the ones in this category are biologically relevant. For example, Tubb and MAP genes are typically neuronal microtubule proteins, and well-known to be highly abundant.")
-          )
-        ),
-
-
-        # Insert some space between rows
-        br(),
-        div(style = "height: 50px;"),
-
-        ##### * * * * Row: valid FDR and FDR distribution plot ----
-        fluidRow(
-          class = "custom-row",
-          column(
-            width = 6,
-            h3(HTML("Valid and invalid FDRs in DESeq2 result"), style = "text-align: center;"),
-            status = "primary",
-            img(src = "valid_padjGene_afterDESeq2_plot.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;"),
-            p("The data from DESeq contained a number of cases in which DESeq could not calculate a FDR for particular genes. This can have a variety of causes, mainly low expression, but the number of affected genes was fairly low. These genes are simply not displayed in the DESeq2 gene-level volcano plot in the next section.")
-          ),
-          column(
-            width = 6,
-            h3(HTML("Distribution of FDR values (DESeq2)"), style = "text-align: center;"),
-            status = "primary",
-            #plotlyOutput("plot_DESeq2_countsgene"),
-            tags$iframe(src = "DESeq2_padj_plot.html", style = "height: 400px; width: 90%;"),
-            p("The distribution of adjusted p-values/FDRs in the DESeq2 data. Interestingly, many genes had a very low FDR, with around one in five being significant. However, not all of these genes also had a strong enough up- or downregulation in the pre-eclampsia cortices to be considered biologically relevant.")
-          )
-        ),
-
-        # Insert some space between rows
-        br(),
-        div(style = "height: 50px;"),
-
-        ##### * * * * Row: DEXSeq DTU QC ----
-        fluidRow(
-          class = "custom-row",
-          column(
-            width = 6,
-            div(
-              style = "height: 100%; display: flex; align-items: center; justify-content: center;",
-              p(HTML("<br><br><br><br><br><br><br><br><br>
-                The data from DEXSeq DTU did, surprisingly, not contain any undefined (NA) nominal p values, FDR values, or log2 fold change values. You can inspect the distribution of the FDR values in the plot to the right. "))
+          ##### * * * * Row: mapped read counts and distr per gene ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 6,
+              h3(HTML("Total read counts in DESeq2 object"), style = "text-align: center;"),
+              status = "primary",
+              plotlyOutput("plot_DESeq2_total_counts"),
+              #tags$iframe(src = "DESeq2_total_raw_counts.html"), #, style = "height: 1000px; width: 90%;"
+              p("These are the reads that the DESeq2 object used for generating the analyses. They correspond to the total number of reads mapped by Salmon (see the General stats and QC tab")
+            ),
+            column(
+              width = 6,
+              h3(HTML("DESeq2 read count per gene"), style = "text-align: center;"),
+              status = "primary",
+              plotlyOutput("plot_DESeq2_countsgene"),
+              p("Here, you can see how many reads DESeq2 found per gene. As expected, most genes have a fairly low read count, even zero. Some very few genes are extremely highly expressed, and the ones in this category are biologically relevant. For example, Tubb and MAP genes are typically neuronal microtubule proteins, and well-known to be highly abundant.")
             )
           ),
-          column(
-            width = 6,
-            h3(HTML("Distribution of FDR values (DEXSeq DTU)"), style = "text-align: center;"),
-            status = "primary",
-            #plotlyOutput("plot_DESeq2_countsgene"),
-            tags$iframe(src = "DEXSeq_DTU_padj_plot.html", style = "height: 400px; width: 90%;"),
-            p("The distribution of adjusted p-values/FDRs in the DEXSeq2 data is multi-modal and seems to not follow a clear distribution like that of the DESeq2 data. However, in this case, most of the detected transcripts do not have a significant FDR.")
-          )
-        ),
 
 
-        #### * * * Section 23: gene and transcript analysis results --------------------------------------------
-        h2(id = "section23", "Gene and transcript expression changes"),
-        p(HTML("Results of the analyses. Data points are color-coded for significance and direction of the expression change. Only points with a significant FDR are colored as dark red (decreased expression) or light blue (increased expression).
+          # Insert some space between rows
+          br(),
+          div(style = "height: 50px;"),
+
+          ##### * * * * Row: valid FDR and FDR distribution plot ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 6,
+              h3(HTML("Valid and invalid FDRs in DESeq2 result"), style = "text-align: center;"),
+              status = "primary",
+              img(src = "valid_padjGene_afterDESeq2_plot.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;"),
+              p("The data from DESeq contained a number of cases in which DESeq could not calculate a FDR for particular genes. This can have a variety of causes, mainly low expression, but the number of affected genes was fairly low. These genes are simply not displayed in the DESeq2 gene-level volcano plot in the next section.")
+            ),
+            column(
+              width = 6,
+              h3(HTML("Distribution of FDR values (DESeq2)"), style = "text-align: center;"),
+              status = "primary",
+              #plotlyOutput("plot_DESeq2_countsgene"),
+              tags$iframe(src = "DESeq2_padj_plot.html", style = "height: 400px; width: 90%;"),
+              p("The distribution of adjusted p-values/FDRs in the DESeq2 data. Interestingly, many genes had a very low FDR, with around one in five being significant. However, not all of these genes also had a strong enough up- or downregulation in the pre-eclampsia cortices to be considered biologically relevant.")
+            )
+          ),
+
+          # Insert some space between rows
+          br(),
+          div(style = "height: 50px;"),
+
+          ##### * * * * Row: DEXSeq DTU QC ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 6,
+              div(
+                style = "height: 100%; display: flex; align-items: center; justify-content: center;",
+                p(HTML("<br><br><br><br><br><br><br><br><br>
+                The data from DEXSeq DTU did, surprisingly, not contain any undefined (NA) nominal p values, FDR values, or log2 fold change values. You can inspect the distribution of the FDR values in the plot to the right. "))
+              )
+            ),
+            column(
+              width = 6,
+              h3(HTML("Distribution of FDR values (DEXSeq DTU)"), style = "text-align: center;"),
+              status = "primary",
+              #plotlyOutput("plot_DESeq2_countsgene"),
+              tags$iframe(src = "DEXSeq_DTU_padj_plot.html", style = "height: 400px; width: 90%;"),
+              p("The distribution of adjusted p-values/FDRs in the DEXSeq2 data is multi-modal and seems to not follow a clear distribution like that of the DESeq2 data. However, in this case, most of the detected transcripts do not have a significant FDR.")
+            )
+          ),
+
+
+          #### * * * Section 23: gene and transcript analysis results --------------------------------------------
+          h2(id = "section23", "Gene and transcript expression changes"),
+          p(HTML("Results of the analyses. Data points are color-coded for significance and direction of the expression change. Only points with a significant FDR are colored as dark red (decreased expression) or light blue (increased expression).
         <br><br>
 
         Hover above data points to see what gene or transcript they represent. Double click on the legend components to show expression+significance categories in isolation. Click and drag to zoom to particular points. Double click to exit zoom.")),
 
-        # Insert some space before columns
-        br(),
-        div(style = "height: 5px;"),
+          # Insert some space before columns
+          br(),
+          div(style = "height: 5px;"),
 
-        ##### * * * * Row: volcano plots ----
-        fluidRow(
-          class = "custom-row",
-          column(
-            width = 6,
-            h3(HTML("Gene expression levels<br>(DESeq2)"), style = "text-align: center;"),
-            status = "primary",
-            plotlyOutput("plot_DESeq2", height = "600px", width = "100%"),
-            #tags$iframe(src = "Gene_raw_volcano_overlap_labels2.html", style = "height: 400px; width: 90%;"),
-            p("The data points with dark centers are part of the ~250 genes indicated by the authors of the original study to be significantly deregulated in the pre-eclampsia cortices. Genes that are specifically labeled with the persistent name and arrow are those whose deregulation they validated experimentally. Interestingly, two of the most interesting candidates from the publication, the GABA receptor units Grin2a and Grin2b were not detected as significantly changed by DESeq2 on the basis of the STAR alignment and Salmon mapping that I performed with the rnasplice pipeline. The authors of the study had used a different alignment and mapping toolkit and a tool called EBSeq for differential gene expression analysis, not DESeq2.")
-          ),
-          column(
-            width = 6,
-            h3(HTML("Transcript expression levels<br>(DEXSeq DTU)"),  style = "text-align: center;"),
-            status = "primary",
-            plotlyOutput("plot_DEXSeq_DTU", height = "600px", width = "100%"),
-            p("XYZ")
+          ##### * * * * Row: DESeq2 and DEXSeq volcano plots ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 6,
+              h3(HTML("Gene expression levels (DESeq2)"), style = "text-align: center;"),
+              status = "primary",
+              plotlyOutput("plot_DESeq2", height = "600px", width = "100%"),
+              #tags$iframe(src = "Gene_raw_volcano_overlap_labels2.html", style = "height: 400px; width: 90%;"),
+              p("The data points with dark centers are part of the ~250 genes indicated by the authors of the original study to be significantly deregulated in the pre-eclampsia cortices. Genes that are specifically labeled with the persistent name and arrow are those whose deregulation they validated experimentally. Interestingly, two of the most interesting candidates from the publication, the GABA receptor units Grin2a and Grin2b were not detected as significantly changed by DESeq2 on the basis of the STAR alignment and Salmon mapping that I performed with the rnasplice pipeline. The authors of the study had used a different alignment and mapping toolkit and a tool called EBSeq for differential gene expression analysis, not DESeq2.")
+            ),
+            column(
+              width = 6,
+              h3(HTML("Transcript expression levels (DEXSeq DTU)"),  style = "text-align: center;"),
+              status = "primary",
+              plotlyOutput("plot_DEXSeq_DTU", height = "600px", width = "100%"),
+              p("XYZ")
 
-          )
-        )
-      ),
-
-      sidebarPanel(
-        class = "sidebar",
-        width = 2, # Adjust width of the sidebar for navigation
-        h4("Navigation"),
-        tags$ul(
-          tags$li(tags$a(href = "#section21", "How I performed the analysis")),
-          tags$li(tags$a(href = "#section22", "Data quality checks")),
-          tags$li(tags$a(href = "#section23", "Gene and transcript expression changes"))
-        )
-      )
-    )
-  ),
-
-
-
-  ## ___________________ -----------------------------------------------------
-  ### * * Tab 4: Exon-Level Analysis --------------------------------------------
-
-  tabPanel(
-    "Exon-Level Analysis",
-    #
-    # Insert some space after title
-    br(),
-    div(style = "height: 5px;"),
-    #
-
-    sidebarLayout( # split the tab contents into a main panel and a side panel with the navigation
-      mainPanel(
-        class = "main-panel",
-        width = 10, # Leave space for the navigation panel on the right
-
-
-        #### * * * Section 31: explanations --------------------------------------------
-        ##### * * * * Row: explanation box ----
-        h2(id = "section31", "How I performed the analysis"),
-        p(HTML("For the differential splicing analysis, I focused on the splicing of exons, as all four of the bioinformatic tools employed in the pipeline analyzed this type of splicing event. The tools the pipeline used were SUPPA, edgeR, rMATS, and DEXSeq DEU (differential exon usage, a different mode of the tool I also used for differential transcript usage analysis).")),
-
-        #### * * * Section 32: QC --------------------------------------------
-        ##### * * * * Row: explanation box ----
-        h2(id = "section32", "Data quality checks"),
-        p(HTML("XYZ")),
-
-        ##### * * * * Row: DEXSeq DEU QC ----
-        fluidRow(
-          class = "custom-row",
-          column(
-            width = 4,
-            h3(HTML("Valid log2FC values DEXSEQ DEU"), style = "text-align: center;"),
-            status = "primary",
-            img(src = "valid_log2fold_afterDEXSeqDEU_plot.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;"), #, style = "height: 1000px; width: 90%;"
-            p("XYZ")
-          ),
-          column(
-            width = 4,
-            h3(HTML("Valid FDR values DEXSeq DEU"), style = "text-align: center;"),
-            status = "primary",
-            img(src = "valid_padjExon_afterDEXSeqDEU_plot.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;"), #, style = "height: 1000px; width: 90%;"
-            p("XYZ")
-          ),
-          column(
-            width = 4,
-            h3(HTML("Distribution of FDR values (DEXSeq DEU)"), style = "text-align: center;"),
-            status = "primary",
-            tags$iframe(src = "DEXSeq_DEU_padj_plot.html", style = "height: 400px; width: 90%;"),
-            p("XYZ")
+            )
           )
         ),
 
+        sidebarPanel(
+          class = "sidebar",
+          width = 2, # Adjust width of the sidebar for navigation
+          h4("Navigation"),
+          tags$ul(
+            tags$li(tags$a(href = "#section21", "How I performed the analysis")),
+            tags$li(tags$a(href = "#section22", "Data quality checks")),
+            tags$li(tags$a(href = "#section23", "Gene and transcript expression changes"))
+          )
+        )
+      )
+    ),
 
-        # Insert some space between rows
-        br(),
-        div(style = "height: 50px;"),
 
-        ##### * * * * Row: SUPPA QC ----
-        fluidRow(
-          class = "custom-row",
-          column(
-            width = 6,
-            div(
-              style = "height: 100%; display: flex; align-items: center; justify-content: center;",
-              p(HTML("<br><br><br><br><br><br><br><br><br>
+
+    ## ___________________ -----------------------------------------------------
+    ### * * Tab 4: Exon-Level Analysis --------------------------------------------
+
+    tabPanel(
+      "Exon-Level Analysis",
+      #
+      # Insert some space after title
+      br(),
+      div(style = "height: 5px;"),
+      #
+
+      sidebarLayout( # split the tab contents into a main panel and a side panel with the navigation
+        mainPanel(
+          class = "main-panel",
+          width = 10, # Leave space for the navigation panel on the right
+
+
+          #### * * * Section 31: explanations --------------------------------------------
+          ##### * * * * Row: explanation box ----
+          h2(id = "section31", "How I performed the analysis"),
+          p(HTML("For the differential splicing analysis, I focused on the splicing of exons, as all four of the bioinformatic tools employed in the pipeline analyzed this type of splicing event. The tools the pipeline used were SUPPA, edgeR, rMATS, and DEXSeq DEU (differential exon usage, a different mode of the tool I also used for differential transcript usage analysis).")),
+
+          #### * * * Section 32: QC --------------------------------------------
+          ##### * * * * Row: explanation box ----
+          h2(id = "section32", "Data quality checks"),
+          p(HTML("XYZ")),
+
+          ##### * * * * Row: DEXSeq DEU QC ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 4,
+              h3(HTML("Valid log2FC values DEXSEQ DEU"), style = "text-align: center;"),
+              status = "primary",
+              img(src = "valid_log2fold_afterDEXSeqDEU_plot.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;"), #, style = "height: 1000px; width: 90%;"
+              p("XYZ")
+            ),
+            column(
+              width = 4,
+              h3(HTML("Valid FDR values DEXSeq DEU"), style = "text-align: center;"),
+              status = "primary",
+              img(src = "valid_padjExon_afterDEXSeqDEU_plot.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;"), #, style = "height: 1000px; width: 90%;"
+              p("XYZ")
+            ),
+            column(
+              width = 4,
+              h3(HTML("Distribution of FDR values (DEXSeq DEU)"), style = "text-align: center;"),
+              status = "primary",
+              tags$iframe(src = "DEXSeq_DEU_padj_plot.html", style = "height: 400px; width: 90%;"),
+              p("XYZ")
+            )
+          ),
+
+
+          # Insert some space between rows
+          br(),
+          div(style = "height: 50px;"),
+
+          ##### * * * * Row: SUPPA QC ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 6,
+              div(
+                style = "height: 100%; display: flex; align-items: center; justify-content: center;",
+                p(HTML("<br><br><br><br><br><br><br><br><br>
                 The data from SUPPA did not contain any undefined (NA) nominal p values, FDR values, or log2 fold change values. You can inspect the distribution of the FDR values in the plot to the right. The distribution of adjusted p-values/FDRs in the SUPPA data seems to have a cutoff at 0.46, with 278 exons being under the significance threshold."))
+              )
+            ),
+            column(
+              width = 6,
+              h3(HTML("Distribution of FDR values (SUPPA)"), style = "text-align: center;"),
+              status = "primary",
+              #plotlyOutput("plot_DESeq2_countsgene"),
+              tags$iframe(src = "SUPPA_SE_padj_plot.html", style = "height: 400px; width: 90%;")
             )
           ),
-          column(
-            width = 6,
-            h3(HTML("Distribution of FDR values (SUPPA)"), style = "text-align: center;"),
-            status = "primary",
-            #plotlyOutput("plot_DESeq2_countsgene"),
-            tags$iframe(src = "SUPPA_SE_padj_plot.html", style = "height: 400px; width: 90%;")
-          )
-        ),
 
-        # Insert some space between rows
-        br(),
-        div(style = "height: 50px;"),
+          # Insert some space between rows
+          br(),
+          div(style = "height: 50px;"),
 
-        ##### * * * * Row: rMATS QC ----
-        fluidRow(
-          class = "custom-row",
-          column(
-            width = 6,
-            h3(HTML("Valid FDR values rMATS"), style = "text-align: center;"),
-            status = "primary",
-            #plotlyOutput("plot_DESeq2_countsgene"), "valid_padjExon_rMATS_plot.png"
-            #tags$iframe(src = "DEXSeq_DTU_padj_plot.html", style = "height: 400px; width: 90%;"),
-            img(src = "valid_padjExon_rMATS_plot.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;"),
-            p("XYZ.")
+          ##### * * * * Row: rMATS QC ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 6,
+              h3(HTML("Valid FDR values rMATS"), style = "text-align: center;"),
+              status = "primary",
+              #plotlyOutput("plot_DESeq2_countsgene"), "valid_padjExon_rMATS_plot.png"
+              #tags$iframe(src = "DEXSeq_DTU_padj_plot.html", style = "height: 400px; width: 90%;"),
+              img(src = "valid_padjExon_rMATS_plot.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;"),
+              p("XYZ.")
+            ),
+
+            column(
+              width = 6,
+              h3(HTML("Distribution of FDR values (rMATS)"), style = "text-align: center;"),
+              status = "primary",
+              #plotlyOutput("plot_DESeq2_countsgene"), "valid_padjExon_rMATS_plot.png"
+              tags$iframe(src = "rMATS_SE_FDR_plot_density.html", style = "height: 400px; width: 90%;"),
+              #img(src = "valid_padjExon_rMATS_plot.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;"),
+              p("XYZ.")
+            )
           ),
 
-          column(
-            width = 6,
-            h3(HTML("Distribution of FDR values (rMATS)"), style = "text-align: center;"),
-            status = "primary",
-            #plotlyOutput("plot_DESeq2_countsgene"), "valid_padjExon_rMATS_plot.png"
-            tags$iframe(src = "rMATS_SE_FDR_plot_density.html", style = "height: 400px; width: 90%;"),
-            #img(src = "valid_padjExon_rMATS_plot.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;"),
-            p("XYZ.")
-          )
-        ),
+          # Insert some space between rows
+          br(),
+          div(style = "height: 50px;"),
 
-        # Insert some space between rows
-        br(),
-        div(style = "height: 50px;"),
-
-        ##### * * * * Row: edgeR QC ----
-        fluidRow(
-          class = "custom-row",
-          column(
-            width = 6,
-            div(
-              style = "height: 100%; display: flex; align-items: center; justify-content: center;",
-              p(HTML("<br><br><br><br><br><br><br><br><br>
+          ##### * * * * Row: edgeR QC ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 6,
+              div(
+                style = "height: 100%; display: flex; align-items: center; justify-content: center;",
+                p(HTML("<br><br><br><br><br><br><br><br><br>
                 The data from edgeR did not contain any undefined (NA) nominal p values, FDR values, or log2 fold change values. You can inspect the distribution of the FDR values in the plot to the right. In comparison to the other tools, the edgeR data contained many exons that were significantly changed. However, as visible in the volcano plot below, the changes for the vast majority of them were of a magnitude that is likely not biologically relevant."))
+              )
+            ),
+            column(
+              width = 6,
+              h3(HTML("Distribution of FDR values (edgeR)"), style = "text-align: center;"),
+              status = "primary",
+              #plotlyOutput("plot_DESeq2_countsgene"),
+              tags$iframe(src = "edgeR_SE_FDR_plot_density.html", style = "height: 400px; width: 90%;")
             )
           ),
-          column(
-            width = 6,
-            h3(HTML("Distribution of FDR values (edgeR)"), style = "text-align: center;"),
-            status = "primary",
-            #plotlyOutput("plot_DESeq2_countsgene"),
-            tags$iframe(src = "edgeR_SE_FDR_plot_density.html", style = "height: 400px; width: 90%;")
-          )
-        ),
 
-        #### * * * Section 33: individual tool results --------------------------------------------
-        ##### * * * * Row: explanation box ----
-        h2(id = "section33", "Differentially spliced exons from individual tools"),
-        p(HTML("XYZ")),
+          #### * * * Section 33: individual tool results --------------------------------------------
+          ##### * * * * Row: explanation box ----
+          h2(id = "section33", "Differentially spliced exons from individual tools"),
+          p(HTML("XYZ")),
 
-        ##### * * * * Row: DEXSeq and SUPPA plots ----
-        fluidRow(
-          class = "custom-row",
-          column(
-            width = 6,
-            h3(HTML("Exons from DEXSeq DEU analysis"), style = "text-align: center;"),
-            status = "primary",
-            plotlyOutput("plot_DEXSeq_DEU", height = "600px", width = "100%"),
-            p("XYZ")
-          ),
-          column(
-            width = 6,
-            h3(HTML("Exons from SUPPA analysis"),  style = "text-align: center;"),
-            status = "primary",
-            plotlyOutput("plot_SUPPA", height = "600px", width = "100%"),
-            p("XYZ")
+          ##### * * * * Row: DEXSeq and SUPPA plots ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 6,
+              h3(HTML("Exons from DEXSeq DEU analysis"), style = "text-align: center;"),
+              status = "primary",
+              plotlyOutput("plot_DEXSeq_DEU", height = "600px", width = "100%"),
+              p("XYZ")
+            ),
+            column(
+              width = 6,
+              h3(HTML("Exons from SUPPA analysis"),  style = "text-align: center;"),
+              status = "primary",
+              plotlyOutput("plot_SUPPA", height = "600px", width = "100%"),
+              p("XYZ")
 
-          )
-        ),
-
-        ##### * * * * Row: rMATS and edgeR plots ----
-        fluidRow(
-          class = "custom-row",
-          column(
-            width = 6,
-            h3(HTML("Exons from rMATS analysis"), style = "text-align: center;"),
-            status = "primary",
-            plotlyOutput("plot_rMATS", height = "600px", width = "100%"),
-            p("XYZ")
-          ),
-          column(
-            width = 6,
-            h3(HTML("Exons from edgeR analysis"),  style = "text-align: center;"),
-            status = "primary",
-            plotlyOutput("plot_edgeR", height = "600px", width = "100%"),
-            p("XYZ")
-
-          )
-        ),
-
-        ##### * * * * Row: interpretations box ----
-        p(HTML("XYZ")),
-
-        #### * * * Section 34: Overlap of exon results --------------------------------------------
-        ##### * * * * Row: explanation box ----
-        h2(id = "section34", "Overlap of exon results"),
-        p(HTML("XYZ")),
-
-        ##### * * * * Row: UpSet plot and gene name table ----
-        fluidRow(
-          class = "custom-row",
-          column(
-            width = 5,
-            h3(HTML("Overlap between significantly changed exons from the four tools"), style = "text-align: center;"),
-            status = "primary",
-            #plotlyOutput("plot_DESeq2_countsgene"), "valid_padjExon_rMATS_plot.png"
-            #tags$iframe(src = "DEXSeq_DTU_padj_plot.html", style = "height: 400px; width: 90%;"),
-            img(src = "2023-09-26_UpSet_plot_genes_w_sig_exons.png", style = "max-width: 100%; max-height: 600px; height: auto; display: block; margin: 0 auto;"),
-            p("XYZ.")
+            )
           ),
 
-          column(
-            width = 7,
-            h3(HTML("Genes found to have significantly changed exons by more than one tool"), style = "text-align: center;"),
-            status = "primary",
-            #plotlyOutput("plot_DESeq2_countsgene"), "valid_padjExon_rMATS_plot.png"
-            tags$iframe(src = "overlap_flextable.html", style = "height: 600px; width: 90%;"),
-            #img(src = "valid_padjExon_rMATS_plot.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;"),
-            p("XYZ.")
-          )
+          ##### * * * * Row: rMATS and edgeR plots ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 6,
+              h3(HTML("Exons from rMATS analysis"), style = "text-align: center;"),
+              status = "primary",
+              plotlyOutput("plot_rMATS", height = "600px", width = "100%"),
+              p("XYZ")
+            ),
+            column(
+              width = 6,
+              h3(HTML("Exons from edgeR analysis"),  style = "text-align: center;"),
+              status = "primary",
+              plotlyOutput("plot_edgeR", height = "600px", width = "100%"),
+              p("XYZ")
+
+            )
+          ),
+
+          ##### * * * * Row: interpretations box ----
+          p(HTML("XYZ")),
+
+          #### * * * Section 34: Overlap of exon results --------------------------------------------
+          ##### * * * * Row: explanation box ----
+          h2(id = "section34", "Overlap of exon results"),
+          p(HTML("XYZ")),
+
+          ##### * * * * Row: UpSet plot and gene name table ----
+          fluidRow(
+            class = "custom-row",
+            column(
+              width = 5,
+              h3(HTML("Overlap between significantly changed exons from the four tools"), style = "text-align: center;"),
+              status = "primary",
+              #plotlyOutput("plot_DESeq2_countsgene"), "valid_padjExon_rMATS_plot.png"
+              #tags$iframe(src = "DEXSeq_DTU_padj_plot.html", style = "height: 400px; width: 90%;"),
+              img(src = "2023-09-26_UpSet_plot_genes_w_sig_exons.png", style = "max-width: 100%; max-height: 600px; height: auto; display: block; margin: 0 auto;"),
+              p("XYZ.")
+            ),
+
+            column(
+              width = 7,
+              h3(HTML("Genes found to have significantly changed exons by more than one tool"), style = "text-align: center;"),
+              status = "primary",
+              #plotlyOutput("plot_DESeq2_countsgene"), "valid_padjExon_rMATS_plot.png"
+              tags$iframe(src = "overlap_flextable.html", style = "height: 600px; width: 90%;"),
+              #img(src = "valid_padjExon_rMATS_plot.png", style = "max-width: 100%; max-height: 400px; height: auto; display: block; margin: 0 auto;"),
+              p("XYZ.")
+            )
+          ),
+
+
+          ##### * * * * Row: interpretations box ----
+          p(HTML("XYZ")),
         ),
 
 
-        ##### * * * * Row: interpretations box ----
-        p(HTML("XYZ")),
-      ),
-
-
-      sidebarPanel(
-        class = "sidebar",
-        width = 2, # Adjust width of the sidebar for navigation
-        h4("Navigation"),
-        tags$ul(
-          tags$li(tags$a(href = "#section31", "How I performed the analysis")),
-          tags$li(tags$a(href = "#section32", "Data quality checks")),
-          tags$li(tags$a(href = "#section33", "Differentially spliced exons from individual tools")),
-          tags$li(tags$a(href = "#section34", "Overlap of exon results"))
+        sidebarPanel(
+          class = "sidebar",
+          width = 2, # Adjust width of the sidebar for navigation
+          h4("Navigation"),
+          tags$ul(
+            tags$li(tags$a(href = "#section31", "How I performed the analysis")),
+            tags$li(tags$a(href = "#section32", "Data quality checks")),
+            tags$li(tags$a(href = "#section33", "Differentially spliced exons from individual tools")),
+            tags$li(tags$a(href = "#section34", "Overlap of exon results"))
+          )
         )
       )
-    )
-  ),
+    ),
 
 
 
-  ## ___________________ -----------------------------------------------------
-  ### * * Tab 5: Sources --------------------------------------------
+    ## ___________________ -----------------------------------------------------
+    ### * * Tab 5: Sources --------------------------------------------
 
-  tabPanel(
-    "Sources",
+    tabPanel(
+      "Sources",
 
-    # Insert some space at the top
-    br(),
-    div(style = "height: 5px;"),
-
-
-    sidebarLayout( # split the tab contents into a main panel and a side panel with the navigation
-      mainPanel(
-        class = "main-panel",
-        width = 10, # Leave space for the navigation panel on the right
+      # Insert some space at the top
+      br(),
+      div(style = "height: 5px;"),
 
 
-        #### * * * Section 51: Publications ----
-        h2(id = "section51", "Publications"),
-        p(HTML("XYZ")),
+      sidebarLayout( # split the tab contents into a main panel and a side panel with the navigation
+        mainPanel(
+          class = "main-panel",
+          width = 10, # Leave space for the navigation panel on the right
 
-        #### * * * Section 52: Software --------------------------------------------
-        h2(id = "section52", "Software"),
-        p("XYZ"),
 
-        #### * * * Section 52: Other --------------------------------------------
-        h2(id = "section52", "Other"),
-        p("XYZ")
-      ),
+          #### * * * Section 51: Publications ----
+          h2(id = "section51", "Publications"),
+          p(HTML("XYZ")),
 
-      sidebarPanel(
-        class = "sidebar",
-        width = 2, # Adjust width of the sidebar for navigation
-        h4("Navigation"),
-        tags$ul(
-          tags$li(tags$a(href = "#section51", "Publications")),
-          tags$li(tags$a(href = "#section52", "Software")),
-          tags$li(tags$a(href = "#section52", "Other"))
+          #### * * * Section 52: Software --------------------------------------------
+          h2(id = "section52", "Software"),
+          p("XYZ"),
+
+          #### * * * Section 52: Other --------------------------------------------
+          h2(id = "section52", "Other"),
+          p("XYZ")
+        ),
+
+        sidebarPanel(
+          class = "sidebar",
+          width = 2, # Adjust width of the sidebar for navigation
+          h4("Navigation"),
+          tags$ul(
+            tags$li(tags$a(href = "#section51", "Publications")),
+            tags$li(tags$a(href = "#section52", "Software")),
+            tags$li(tags$a(href = "#section52", "Other"))
+          )
         )
       )
-    )
 
-  ),
+    ),
 
-  ## ___________________ -----------------------------------------------------
-  ### * * Tab 6: About me --------------------------------------------
+    ## ___________________ -----------------------------------------------------
+    ### * * Tab 6: About me --------------------------------------------
 
-  tabPanel(
-    "About me",
+    tabPanel(
+      "About me",
 
-    # Insert some space at the top
-    br(),
-    div(style = "height: 5px;"),
-
-
-    sidebarLayout( # split the tab contents into a main panel and a side panel with the navigation
-      mainPanel(
-        class = "main-panel",
-        width = 10, # Leave space for the navigation panel on the right
+      # Insert some space at the top
+      br(),
+      div(style = "height: 5px;"),
 
 
-        #### * * * Section 61: Who am I? ----
-        h2(id = "section61", "Who am I?"),
-        p(HTML("XYZ")),
+      sidebarLayout( # split the tab contents into a main panel and a side panel with the navigation
+        mainPanel(
+          class = "main-panel",
+          width = 10, # Leave space for the navigation panel on the right
 
-        #### * * * Section 62: Where to find me --------------------------------------------
-        h2(id = "section62", "Where to find me"),
-        p("XYZ")
-      ),
 
-      sidebarPanel(
-        class = "sidebar",
-        width = 2, # Adjust width of the sidebar for navigation
-        h4("Navigation"),
-        tags$ul(
-          tags$li(tags$a(href = "#section51", "Who am I")),
-          tags$li(tags$a(href = "#section52", "Where to find me"))
+          #### * * * Section 61: Who am I? ----
+          h2(id = "section61", "Who am I?"),
+          p(HTML("XYZ")),
+
+          #### * * * Section 62: Where to find me --------------------------------------------
+          h2(id = "section62", "Where to find me"),
+          p("XYZ")
+        ),
+
+        sidebarPanel(
+          class = "sidebar",
+          width = 2, # Adjust width of the sidebar for navigation
+          h4("Navigation"),
+          tags$ul(
+            tags$li(tags$a(href = "#section51", "Who am I")),
+            tags$li(tags$a(href = "#section52", "Where to find me"))
+          )
         )
       )
     )
   )
-)
 )
 
 
@@ -1057,7 +1203,7 @@ server <- function(input, output, session) {
   # ___________________ -----------------------------------------------------
   # Tab: General stats, QC -----------------------------------------------------
   #
-    ## * * Coverage calculation formula ----
+  ## * * Coverage calculation formula ----
 
   # Transcriptome size for mouse (in bases)
   transcriptome_size <- 50 * 10^6 # 50 million bases
@@ -1184,7 +1330,7 @@ server <- function(input, output, session) {
     }
   )
 
-  ### * * * Transcript-level plot ----
+  ### * * * Transcript-level DEXSeq DTU plot ----
   output$plot_DEXSeq_DTU <- renderPlotly(
     {
       plot_ly(data = DEXSeq_DTU_data,
@@ -1214,18 +1360,18 @@ server <- function(input, output, session) {
           color = I("black"), # I = collapse the mapping of all points onto one single color, which also ensures there's only one legend entry for this property, not 3 (there doesn't seem to be any easy way to prevent this second trace from inheriting the mapping to upregulated, downregulated, not significant from the first trace)
           hoveron = "fills", # useful so that the annotations are taken from the trace underneath and the labels then have the color of the large points (red, gray, or blue)
           showlegend = TRUE,
-          name = "from gene with<br>significant Q value"
+          name = "from gene with significant Q value"
         ) |>
         layout(
           title = list(text = paste(nrow(DEXSeq_DTU_data), " points plotted", sep = ""), x = 0.5),
-          annotations = list(
-            font = list(size = 14),  # Title font size
-            x = 0.5,
-            y = 1.08, # Position of the title (above the plot)
-            xref = "paper",  # Position relative to the entire plot
-            yref = "paper",
-            showarrow = FALSE
-          ),
+          # annotations = list(
+          #   font = list(size = 14),  # Title font size
+          #   x = 0.5,
+          #   y = 1.08, # Position of the title (above the plot)
+          #   xref = "paper",  # Position relative to the entire plot
+          #   yref = "paper",
+          #   showarrow = FALSE
+          # ),
           xaxis = list(title = list(text = "Log2(Fold Change Preeclampsia vs Control)"),
                        standoff = 1),
           yaxis = list(title = "-Log10(Adjusted P-Value (FDR) of transcript)"),

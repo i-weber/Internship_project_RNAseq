@@ -5,6 +5,6 @@ account: i-weber
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 12530424
-bundleId: 9157732
+bundleId: 9160034
 url: https://i-weber.shinyapps.io/shiny_app_deseq2_results/
 version: 1
