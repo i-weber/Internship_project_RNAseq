@@ -90,7 +90,7 @@ I omitted some files due to the size restrictions of GitHub:
 # 4. Sources
 
 - data: <a href='https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167193'>GSE167193</a>
-- <a href='	https://www.life-science-alliance.org/content/6/8/e202301957'>the source publication of Liu et al., 2023</a>
+- source [publication of Liu et al., 2023](https://www.life-science-alliance.org/content/6/8/e202301957)
 
 * Rnasplice pipeline   https://doi.org/10.5281/zenodo.8424632
 * The nf-core framework   https://doi.org/10.1038/s41587-020-0439-x
