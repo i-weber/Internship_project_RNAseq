@@ -1,6 +1,6 @@
 Welcome to my first NGS data analysis project! This is still a work in progress, in which I have invested around 280 hours of hands-on time up until now.
 
-I analyzed the RNA sequencing data from this study: **[GSE167193](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167193)** on GEO at NCBI. This study analyzed a potential connection between a pregnancy disorder known as pre-eclampsia and autism spectrum disorders. Pre-eclampsia is a common and dangerous increase in maternal blood pressure that can occur after the 20th week of pregnancy. One in 20 pregnant people are affected by pre-eclampsia, which has a severe negative impact on both the pregnant person and the fetus. There is no treatment known to date, except for the delivery of the placenta, and very little is known about the long-term consequences on the development of the child's brain.
+I analyzed the RNA sequencing data from this study: **[GSE167193](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167193)** on GEO at NCBI. This study, from the <a href='https://sites.rutgers.edu/shuo-xiao/'>lab of Shuo Xiao at Rutgers University</a> , analyzed a potential connection between a pregnancy disorder known as pre-eclampsia and autism spectrum disorders. Pre-eclampsia is a common and dangerous increase in maternal blood pressure that can occur after the 20th week of pregnancy. One in 20 pregnant people are affected by pre-eclampsia, which has a severe negative impact on both the pregnant person and the fetus. There is no treatment known to date, except for the delivery of the placenta, and very little is known about the long-term consequences on the development of the child's brain.
 
 The original study focused on gene expression and identified around 250 genes that are differentially expressed under the prenatal stress of pre-eclampsia. I chose to re-analyze the data using a different suite of alignment, mapping, and expression analysis tools (STAR, Salmon, and DESeq). Additionally, I wanted to focus on better understanding alternative pre-mRNA splicing. 
 
@@ -35,7 +35,7 @@ Any comments specific to each analysis or the app are within their respective sc
 # 2. What is *not* included in the repository
 I omitted some files due to the size restrictions of GitHub:
 - original FastQ files, BAM and tsv files resulting from the analyses or interim steps
-- RDS files that I used to save all of the variables in each of the scripts. These can be quickly re-generated the first time you re-run one of the scripts. I used them to be able to jump right back into each of the analyses on the quick.
+- RDS files that I used to save all of the variables in each of the scripts. These can be quickly re-generated the first time you run one of the scripts. I used them to be able to jump right back into each of the analyses on the quick.
 
 # 3. Current to do list
 
@@ -89,6 +89,8 @@ I omitted some files due to the size restrictions of GitHub:
 
 # 4. Sources
 
+- data: <a href='https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167193'>GSE167193</a>
+- <a href='	https://www.life-science-alliance.org/content/6/8/e202301957'>the source publication of Liu et al., 2023</a>
 
 * Rnasplice pipeline   https://doi.org/10.5281/zenodo.8424632
 * The nf-core framework   https://doi.org/10.1038/s41587-020-0439-x
