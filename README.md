@@ -14,13 +14,16 @@ To do so, I started out by employing the [rnasplice](https://doi.org/10.5281/zen
 # 1. Where to find specific files
 
 1. Description of how I progressed through the project: **"Knowledge_Progression_handling_RNA-seq_datasets"** 
+
 This includes: 
 - how I built my Linux virtual machine and how I transferred it from VirtualBox to VMWare Workstation Pro;
 - how I performed the analyses in Linux (Ubuntu) using the Nextflow rnasplice pipeline from nf-core;
 - how I checked the results of the pipeline
+
 I included this description file in both PDF and in the Obsidian markdown format. The images these files reference are in the folder **Own project images**.
 
 2.  Results directly from the rnasplice pipeline: **Pre-eclampsia_dataset_raw_and_processed -> Pre_eclampsia_mice_rnasplice_results**:  (copies of the output files from the different parts of the pipeline. Originals are on my virtual machine in the pipeline result folder.)
+
 Of potential general interest:
 - html report from MultiQC about the entirety of the pipeline, stored in **Pre-eclampsia_dataset_raw_and_processed -> Pre_eclampsia_mice_rnasplice_results -> multiqc**
 
